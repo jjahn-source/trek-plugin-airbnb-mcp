@@ -155,6 +155,30 @@ back and add flows are checked against the real UI, not a mock of it, along with
 first-run and not-yet-configured states, plus focus management and an
 accessible-name/keyboard-reachability audit of every control.
 
+### Releasing
+
+`trek-plugin publish` opens a fresh registry PR per version. That is right when the last
+entry is already merged, but while a PR is open it hands a maintainer one PR per bump for
+the same plugin — this entry's own history is nine `Ship airbnb-mcp 1.x` commits on a
+single branch, merged together.
+
+So: if a registry PR is open, release and amend it rather than opening another.
+
+```bash
+npx trek-plugin-sdk release . --repo jjahn-source/trek-plugin-airbnb-mcp --tag vX.Y.Z
+node scripts/registry-bump.mjs vX.Y.Z --dry-run   # shows the diff, pushes nothing
+node scripts/registry-bump.mjs vX.Y.Z
+```
+
+`release` cuts the GitHub release and stops short of the PR; `registry-bump` finds the one
+open PR for this plugin, merges the new version into the entry already on its branch, and
+pushes. It refuses to guess: no open PR and it tells you to use `publish`; more than one
+and it stops rather than pick. Re-running for a version already on the branch is a no-op —
+the original `publishedAt` is kept, so nothing is pushed just to move a timestamp.
+
+Both paths leave the same artifact and sha256; the only difference is how many PRs a
+maintainer has to look at.
+
 `server/mcp.js` is a dependency-free Streamable-HTTP MCP client (a TREK plugin ships as
 a flat bundle with no install step, so the official SDK is not worth its weight here).
 It reuses one session per access token, re-handshakes a dropped one exactly once, and

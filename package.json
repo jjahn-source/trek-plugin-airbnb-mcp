@@ -13,7 +13,8 @@
     "validate": "npx -y trek-plugin-sdk validate .",
     "smoke": "npx -y trek-plugin-sdk pack >/dev/null && rm -rf .smoke && mkdir -p .smoke && cd .smoke && unzip -oq ../plugin.zip && cd .. && node scripts/smoke.mjs .smoke/client/index.html",
     "shot": "npm run --silent smoke >/dev/null; node scripts/screenshot.mjs .smoke/client/index.html docs/screenshot.png",
-    "register": "node scripts/register-oauth-client.mjs"
+    "register": "node scripts/register-oauth-client.mjs",
+    "registry-bump": "node scripts/registry-bump.mjs"
   },
   "devDependencies": {
     "playwright": "^1.62.1",
