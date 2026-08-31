@@ -95,7 +95,7 @@ searches. Until a user connects, the tab shows a prompt instead of a search form
 
 ```bash
 npm install
-npm test          # 55 unit tests: MCP transport, session reuse, normalisation, every route
+npm test          # 62 unit tests: MCP transport, session reuse, normalisation, every route
 npm run smoke     # 20 browser checks: packs the frame and drives the real UI
 npm run dev       # hot-reloaded local harness
 npm run validate  # the registry's own publish gates
@@ -131,6 +131,11 @@ node scripts/capture-fixtures.mjs "Paris, France" 2026-10-10 2026-10-14
 It signs you in to OpenBnB in your browser, calls both tools, and writes the raw
 payloads to `test/fixtures/hosted-*.json`. The access token stays in the process — it
 is never printed and never written to disk; only public listing data is saved.
+
+`test/hosted.test.js` runs against those fixtures. It is the only part of the suite
+that checks the payload *shape* rather than assuming it, and it earns its keep: the
+first capture found five shape bugs at once, every one of them invisible to a fully
+green suite.
 
 ## Licence
 

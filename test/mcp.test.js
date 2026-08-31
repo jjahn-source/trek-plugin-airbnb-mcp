@@ -54,12 +54,14 @@ test('connect captures the session id and sends the initialized notification', a
   const fetchImpl = stubFetch([
     { status: 200, headers: { ...JSON_CT, 'mcp-session-id': 'sess-123' }, body: '{"id":1,"result":{"protocolVersion":"2025-06-18"}}' },
     { status: 202, headers: {}, body: '' },
+    { status: 200, headers: JSON_CT, body: '{"id":2,"result":{"tools":[{"name":"airbnb_search"},{"name":"airbnb_listing"}]}}' },
   ]);
   const c = new McpClient({ url: 'https://mcp.test/mcp', token: 'tok', fetchImpl });
   await c.connect();
 
   assert.equal(c.sessionId, 'sess-123');
-  assert.equal(fetchImpl.calls.length, 2);
+  assert.equal(fetchImpl.calls.length, 3, 'initialize, initialized, tools/list');
+  assert.deepEqual([...c.tools].sort(), ['airbnb_listing', 'airbnb_search']);
   assert.equal(fetchImpl.calls[0].body.method, 'initialize');
   assert.equal(fetchImpl.calls[0].init.headers.authorization, 'Bearer tok');
   // The notification must carry the session and have no id (it is not a request).
@@ -78,7 +80,8 @@ test('a JSON-RPC error becomes a throw, not a silent empty result', async () => 
   const fetchImpl = stubFetch([
     { status: 200, headers: JSON_CT, body: '{"id":1,"result":{}}' },
     { status: 202, headers: {}, body: '' },
-    { status: 200, headers: JSON_CT, body: '{"id":2,"error":{"code":-32602,"message":"bad args"}}' },
+    { status: 200, headers: JSON_CT, body: '{"id":2,"result":{"tools":[{"name":"airbnb_search"},{"name":"airbnb_listing"}]}}' },
+    { status: 200, headers: JSON_CT, body: '{"id":3,"error":{"code":-32602,"message":"bad args"}}' },
   ]);
   const c = new McpClient({ url: 'https://mcp.test/mcp', token: 't', fetchImpl });
   await c.connect();
@@ -109,13 +112,14 @@ test('close() terminates the session with a DELETE carrying the session id', asy
   const fetchImpl = stubFetch([
     { status: 200, headers: { ...JSON_CT, 'mcp-session-id': 'sess-9' }, body: '{"id":1,"result":{}}' },
     { status: 202, headers: {}, body: '' },
+    { status: 200, headers: JSON_CT, body: '{"id":2,"result":{"tools":[{"name":"airbnb_search"},{"name":"airbnb_listing"}]}}' },
     { status: 200, headers: {}, body: '' },
   ]);
   const c = new McpClient({ url: 'https://mcp.test/mcp', token: 'tok', fetchImpl });
   await c.connect();
   await c.close();
 
-  const del = fetchImpl.calls[2];
+  const del = fetchImpl.calls[3];
   assert.equal(del.init.method, 'DELETE');
   assert.equal(del.init.headers['mcp-session-id'], 'sess-9');
   assert.equal(del.init.headers.authorization, 'Bearer tok');
@@ -133,6 +137,7 @@ test('close() never throws, even when the server refuses termination', async () 
   const fetchImpl = stubFetch([
     { status: 200, headers: { ...JSON_CT, 'mcp-session-id': 's' }, body: '{"id":1,"result":{}}' },
     { status: 202, headers: {}, body: '' },
+    { status: 200, headers: JSON_CT, body: '{"id":2,"result":{"tools":[{"name":"airbnb_search"},{"name":"airbnb_listing"}]}}' },
   ]);
   const c = new McpClient({ url: 'https://mcp.test/mcp', token: 't', fetchImpl });
   await c.connect();

@@ -61,6 +61,19 @@ class McpClient {
     this.timeoutMs = timeoutMs || DEFAULT_TIMEOUT_MS;
     this.sessionId = null;
     this.nextId = 1;
+    /** Tool names the server advertises, filled in by connect(). */
+    this.tools = new Set();
+  }
+
+  /** Whether the connected server offers this tool. Empty set = we never asked. */
+  hasTool(name) {
+    return this.tools.size === 0 || this.tools.has(name);
+  }
+
+  /** The first of `names` the server offers, else the first name as a guess. */
+  pickTool(names) {
+    for (const n of names) if (this.tools.has(n)) return n;
+    return names[0];
   }
 
   async send(method, params, { notification = false } = {}) {
@@ -142,6 +155,19 @@ class McpClient {
     // handshake completed. Failing to notify is not fatal on every server, but
     // skipping it breaks the strict ones.
     await this.send('notifications/initialized', {}, { notification: true });
+
+    // Which tools exist differs between deployments: the hosted server offers
+    // `airbnb_listing`, the open-source one `airbnb_listing_details`. Asking once
+    // per session is cheaper than guessing wrong and burning a round trip on
+    // "-32602 Tool not found".
+    try {
+      const listed = await this.send('tools/list', {});
+      for (const t of (listed && listed.tools) || []) {
+        if (t && typeof t.name === 'string') this.tools.add(t.name);
+      }
+    } catch {
+      /* a server that will not list its tools still gets called with our defaults */
+    }
     return result;
   }
 

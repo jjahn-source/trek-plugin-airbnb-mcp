@@ -155,12 +155,22 @@ const searchPayload = payloadOf(search);
 const first = (searchPayload.searchResults || [])[0];
 console.log(`  Got ${(searchPayload.searchResults || []).length} results.`);
 
+// The hosted server names this `airbnb_listing`; the open-source one
+// `airbnb_listing_details`. Ask, rather than guess — guessing wrong is exactly
+// what produced a fixture containing "-32602 Tool not found".
+const listingTool = ['airbnb_listing', 'airbnb_listing_details'].find((n) => toolNames.includes(n));
 let listingPayload = null;
-if (first?.id) {
-  console.log(`  Fetching details for listing ${first.id}…`);
+if (first?.id && listingTool) {
+  console.log(`  Fetching details for listing ${first.id} via ${listingTool}…`);
   listingPayload = payloadOf(await rpc('tools/call', {
-    name: 'airbnb_listing_details', arguments: { id: String(first.id), ...(checkin ? { checkin } : {}), ...(checkout ? { checkout } : {}) },
+    name: listingTool, arguments: { id: String(first.id), ...(checkin ? { checkin } : {}), ...(checkout ? { checkout } : {}) },
   }));
+  if (listingPayload && typeof listingPayload.text === 'string' && /error/i.test(listingPayload.text)) {
+    console.error(`  ! ${listingTool} failed: ${listingPayload.text}`);
+    listingPayload = null;
+  }
+} else if (!listingTool) {
+  console.error(`  ! no listing tool offered; got: ${toolNames.join(', ')}`);
 }
 
 mkdirSync('test/fixtures', { recursive: true });

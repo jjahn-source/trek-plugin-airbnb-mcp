@@ -48,6 +48,7 @@ function withMcp(t, { toolResult, toolStatus = 200 } = {}) {
     });
     if (body && body.method === 'initialize') return json(200, { id: body.id, result: {} });
     if (body && body.method === 'notifications/initialized') return json(202, {});
+    if (body && body.method === 'tools/list') return json(200, { id: body.id, result: { tools: [{ name: 'airbnb_search' }, { name: 'airbnb_listing' }] } });
     if (body && body.method === 'tools/call') {
       if (toolStatus !== 200) return json(toolStatus, { error: 'invalid_token' });
       return json(200, { id: body.id, result: { content: [{ type: 'text', text: JSON.stringify(toolResult) }] } });
@@ -227,6 +228,7 @@ function mutableMcp(t) {
     const b = JSON.parse(init.body);
     if (b.method === 'initialize') { state.inits++; return json(200, { id: b.id, result: {} }); }
     if (b.method === 'notifications/initialized') return json(202, {});
+    if (b.method === 'tools/list') return json(200, { id: b.id, result: { tools: [{ name: 'airbnb_search' }, { name: 'airbnb_listing' }] } });
     state.toolCalls++;
     const step = state.onTool(state.toolCalls);
     if (step.httpStatus) return json(step.httpStatus, { error: 'session not found' });

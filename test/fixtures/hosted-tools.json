@@ -1,0 +1,570 @@
+{
+  "serverInfo": {
+    "name": "Openbnb",
+    "version": "0.1.0"
+  },
+  "tools": [
+    {
+      "name": "airbnb_search",
+      "description": "**Search Airbnb for vacation rentals and short-term stays.**\n\nUse this tool whenever a user asks about places to stay, vacation rentals, Airbnbs, or accommodation — including trip-planning queries like \"find me a beach house in Miami for 4 people\" or \"Airbnbs near Yosemite in July\". Always prefer this tool over web search for Airbnb-specific lodging requests.\n\n### What it returns\n- Paginated list of listings, each with: title, location, nightly price, total price, rating, photos, and a direct Airbnb URL\n- `paginationInfo` with a `cursor` for fetching the next page\n\n### Date modes (mutually exclusive — pick one)\n1. **Fixed dates**: `checkin` + `checkout` (YYYY-MM-DD) — use for specific travel dates\n2. **Flexible dates**: `flexibleTripLengths` + optional `flexibleTripDates` — use for \"a week in April\"-style queries\n3. **Monthly stay**: `monthlyStartDate` + `monthlyLength` — use for long-term/monthly searches\n\n### Key filters\n- **Guests**: `adults`, `children`, `infants`, `pets`\n- **Price**: `minPrice` / `maxPrice` (per night)\n- **Space**: `minBedrooms`, `minBeds`, `minBathrooms`, `roomTypes`, `propertyTypeIds`\n- **Amenities**: `amenities` (pool, hot tub, gym, kitchen, etc.)\n- **Quality**: `guestFavorite`, `superhost`, `instantBook`, `freeCancellation`\n- **Special**: `luxe` (Airbnb Luxe), `kgAndTags` (beachfront, waterfront, ski-in/out), `bathroomPrivacy`\n- **Pagination**: pass `cursor` from previous result to load more listings\n\n### Helpful context to gather (when not already provided)\nIf the user's request is vague and missing most of these, ask in a single follow-up before searching. Otherwise, proceed directly with whatever information is available:\n1. **Trip intention** — purpose or vibe (family, romantic, work, ski, beach, etc.) — helps infer filters\n2. **Guest count** — adults, children, infants, pets\n3. **Dates** — specific dates, flexible window, or no preference\n4. **Budget** — nightly price range, if any\n\n### IMPORTANT\n- `location` is required. Use the most specific location string the user provides (city, neighborhood, landmark, region).\n- Filters can be freely combined; Airbnb handles any edge cases server-side.\n\n### Re-calling the tool\nIf the user modifies any search criteria after calling this tool — including location, dates, price, bedrooms, guests, amenities, property type, or any other filter — call this tool again with the updated parameters so results stay in sync with the request. Do not filter or sort previous results yourself.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string"
+          },
+          "placeId": {
+            "type": "string"
+          },
+          "checkin": {
+            "type": "string"
+          },
+          "checkout": {
+            "type": "string"
+          },
+          "adults": {
+            "type": "number",
+            "minimum": 1
+          },
+          "children": {
+            "type": "number",
+            "minimum": 0
+          },
+          "infants": {
+            "type": "number",
+            "minimum": 0
+          },
+          "pets": {
+            "type": "number",
+            "minimum": 0
+          },
+          "minPrice": {
+            "type": "number",
+            "minimum": 0
+          },
+          "maxPrice": {
+            "type": "number",
+            "minimum": 0
+          },
+          "cursor": {
+            "type": "string"
+          },
+          "roomTypes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "Entire home/apt",
+                "Private room",
+                "Hotel room",
+                "Shared room"
+              ]
+            },
+            "description": "Filter by room type. Use 'Entire home/apt' for whole place rentals."
+          },
+          "minBedrooms": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Minimum number of bedrooms (0-8+)."
+          },
+          "minBeds": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Minimum number of beds (0-8+)."
+          },
+          "minBathrooms": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Minimum number of bathrooms (0-8+)."
+          },
+          "propertyTypeIds": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "Property type filter. Values: 1=House, 2=Guesthouse, 3=Apartment, 4=Hotel."
+          },
+          "amenities": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "pool",
+                "hot tub",
+                "gym",
+                "work from home",
+                "long term stay",
+                "family-friendly",
+                "beach",
+                "bbq",
+                "washer dryer",
+                "kitchen",
+                "self check-in",
+                "ev charger",
+                "king bed",
+                "accessible",
+                "sauna",
+                "fireplace",
+                "wifi",
+                "air conditioning",
+                "parking",
+                "tv",
+                "patio / balcony",
+                "fire pit",
+                "waterfront",
+                "bathtub"
+              ]
+            },
+            "description": "Amenity intents. Select all that apply."
+          },
+          "instantBook": {
+            "type": "boolean",
+            "description": "Only show listings with Instant Book enabled."
+          },
+          "freeCancellation": {
+            "type": "boolean",
+            "description": "Only show listings with free cancellation."
+          },
+          "guestFavorite": {
+            "type": "boolean",
+            "description": "Only show Guest Favorite homes."
+          },
+          "superhost": {
+            "type": "boolean",
+            "description": "Only show listings from Superhosts."
+          },
+          "luxe": {
+            "type": "boolean",
+            "description": "Only show Airbnb Luxe (luxury) listings."
+          },
+          "bathroomPrivacy": {
+            "type": "string",
+            "enum": [
+              "ENSUITE"
+            ],
+            "description": "Bathroom privacy: ENSUITE = private attached bathroom."
+          },
+          "kgAndTags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Special location tags. Values: 'Tag:789'=Beachfront, 'Tag:686'=Waterfront, 'Tag:681'=Ski-in/ski-out."
+          },
+          "hostLanguages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Filter by host language. Use ISO codes: 'en', 'es', 'fr', 'de', 'it', 'pt', 'zh', 'ja', 'ko', 'ar', 'ru', 'hi'."
+          },
+          "flexibleTripLengths": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "weekend_trip",
+                "one_week",
+                "one_month"
+              ]
+            },
+            "description": "Flexible trip length values: 'weekend_trip', 'one_week', 'one_month'. Use with flexibleTripDates for 'a week in April' style searches. Mutually exclusive with checkin/checkout."
+          },
+          "flexibleTripDates": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "january",
+                "february",
+                "march",
+                "april",
+                "may",
+                "june",
+                "july",
+                "august",
+                "september",
+                "october",
+                "november",
+                "december"
+              ]
+            },
+            "description": "Acceptable months for a flexible trip. Use with flexibleTripLengths. E.g. ['april','may'] means 'sometime in April or May'."
+          },
+          "monthlyStartDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "Start date for monthly stay search (YYYY-MM-DD). Use with monthlyLength for long-term stays."
+          },
+          "monthlyLength": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 12,
+            "description": "Number of months for a monthly stay search. Use with monthlyStartDate."
+          }
+        },
+        "required": [
+          "location"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      },
+      "_meta": {
+        "ui": {
+          "resourceUri": "ui://airbnb-search/app.html"
+        },
+        "openai.com/resultCanProduceWidget": true,
+        "openai/outputTemplate": "ui://airbnb-search/app.html",
+        "openai/toolInvocation/invoking": "Searching Airbnb listings...",
+        "openai/toolInvocation/invoked": "Airbnb search results loaded",
+        "ui/resourceUri": "ui://airbnb-search/app.html"
+      }
+    },
+    {
+      "name": "airbnb_listing",
+      "description": "**Get full details for a specific Airbnb listing.**\n\nUse this tool when the user wants to know more about a listing they found — amenities, house rules, description, exact location, or pricing for specific dates. Call this after `airbnb_search` when the user asks to \"see more\" or \"open\" a listing.\n\n### What it returns\n- **Location**: title, subtitle, latitude/longitude\n- **Description**: full listing description (HTML)\n- **Highlights**: key selling points (e.g. \"Superhost\", \"Self check-in\")\n- **Amenities**: grouped list of all amenities (kitchen, pool, washer, etc.)\n- **House rules**: check-in/out times, pet policy, quiet hours, etc.\n\n### Inputs\n- **`id`** (required) — the Airbnb listing ID (numeric string). Comes from `airbnb_search` results.\n- **`checkin`** / **`checkout`** (optional, YYYY-MM-DD) — include to get date-specific pricing and availability in the response.\n- **`adults`**, **`children`**, **`infants`**, **`pets`** — include to reflect guest count in pricing.\n\n### Re-calling the tool\nIf the user modifies dates, guests, or any other input after calling this tool, call this tool again with the updated parameters so results stay in sync with the request.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "checkin": {
+            "type": "string"
+          },
+          "checkout": {
+            "type": "string"
+          },
+          "adults": {
+            "type": "number",
+            "minimum": 1
+          },
+          "children": {
+            "type": "number",
+            "minimum": 0
+          },
+          "infants": {
+            "type": "number",
+            "minimum": 0
+          },
+          "pets": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      },
+      "_meta": {
+        "openai.com/resultCanProduceWidget": false,
+        "openai/toolInvocation/invoking": "Loading Airbnb listing...",
+        "openai/toolInvocation/invoked": "Airbnb listing loaded"
+      }
+    },
+    {
+      "name": "maps_geocode",
+      "description": "**Convert a human-readable address into geographic coordinates.**\n\nUse when you need the lat/lng for a location — e.g. to pass as a center point to `maps_search_places` or to pin a listing on a map.\n\n### What it returns\n- `location`: `{ lat, lng }`\n- `formatted_address`: standardized address string\n- `place_id`: Google Place ID (use with `maps_place_details`)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "The address or place name to geocode. Can be a full address, city, landmark, or region."
+          }
+        },
+        "required": [
+          "address"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      },
+      "_meta": {
+        "openai.com/resultCanProduceWidget": false,
+        "openai/toolInvocation/invoking": "Resolving address...",
+        "openai/toolInvocation/invoked": "Address resolved"
+      }
+    },
+    {
+      "name": "maps_reverse_geocode",
+      "description": "**Convert geographic coordinates into a human-readable address.**\n\nUse when you have a lat/lng (e.g. from a listing's location data) and need to show the user a readable address or neighborhood name.\n\n### What it returns\n- `formatted_address`: full address string\n- `place_id`: Google Place ID\n- `address_components`: structured breakdown (street, city, state, country, postal code)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "description": "Latitude coordinate"
+          },
+          "longitude": {
+            "type": "number",
+            "description": "Longitude coordinate"
+          }
+        },
+        "required": [
+          "latitude",
+          "longitude"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      },
+      "_meta": {
+        "openai.com/resultCanProduceWidget": false,
+        "openai/toolInvocation/invoking": "Looking up location...",
+        "openai/toolInvocation/invoked": "Location resolved"
+      }
+    },
+    {
+      "name": "maps_search_places",
+      "description": "**Search for nearby places by keyword using Google Places.**\n\nUse for travel planning queries like \"restaurants near the listing\", \"grocery stores in this area\", \"beaches near Miami\", or \"things to do in Barcelona\". Combine with `maps_geocode` to get a center point first.\n\n### What it returns\n- Array of places, each with: name, address, lat/lng, `place_id`, rating, and type tags\n- Use `place_id` with `maps_place_details` to get hours, phone, website, and reviews\n\n### Inputs\n- **`query`** (required) — free-text search, e.g. \"coffee shops\", \"beach\", \"supermarket\"\n- **`location`** (optional) — `{ latitude, longitude }` center point to bias results\n- **`radius`** (optional) — search radius in meters, max 50000 (only effective when `location` is set)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search query, e.g. 'restaurants', 'beach', 'grocery store'"
+          },
+          "location": {
+            "type": "object",
+            "properties": {
+              "latitude": {
+                "type": "number"
+              },
+              "longitude": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "latitude",
+              "longitude"
+            ],
+            "additionalProperties": false,
+            "description": "Optional center point to bias results toward a specific area"
+          },
+          "radius": {
+            "type": "number",
+            "description": "Search radius in meters (max 50000). Only effective when location is also provided."
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      },
+      "_meta": {
+        "openai.com/resultCanProduceWidget": false,
+        "openai/toolInvocation/invoking": "Searching nearby places...",
+        "openai/toolInvocation/invoked": "Places found"
+      }
+    },
+    {
+      "name": "maps_place_details",
+      "description": "**Get rich details about a specific place by its Google Place ID.**\n\nUse after `maps_search_places` or `maps_geocode` when the user wants more info about a specific place — hours, phone number, website, or reviews.\n\n### What it returns\n- Name, address, lat/lng\n- Phone number and website (if available)\n- Star rating\n- Opening hours (weekday text + open now)\n- Recent user reviews (up to 5)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "place_id": {
+            "type": "string",
+            "description": "Google Place ID — obtain from maps_search_places or maps_geocode results"
+          }
+        },
+        "required": [
+          "place_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      },
+      "_meta": {
+        "openai.com/resultCanProduceWidget": false,
+        "openai/toolInvocation/invoking": "Fetching place details...",
+        "openai/toolInvocation/invoked": "Place details loaded"
+      }
+    },
+    {
+      "name": "maps_distance_matrix",
+      "description": "**Calculate travel time and distance between multiple origins and destinations.**\n\nUse for trip-planning queries like \"how far is the listing from the beach?\", \"which rental is closest to downtown?\", or \"how long is the drive from the airport to each option?\". Supports comparing multiple locations in one call.\n\n### What it returns\n- Matrix of results: for each origin/destination pair — travel `duration` (text + seconds) and `distance` (text + meters)\n- Origin and destination addresses as resolved by Google\n\n### Inputs\n- **`origins`** — array of addresses or \"lat,lng\" strings (e.g. `[\"Miami Beach, FL\", \"25.7617,-80.1918\"]`)\n- **`destinations`** — array of addresses or \"lat,lng\" strings\n- **`mode`** — travel mode: `driving` (default), `walking`, `bicycling`, `transit`",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "origins": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Array of origin addresses or 'lat,lng' coordinate strings"
+          },
+          "destinations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Array of destination addresses or 'lat,lng' coordinate strings"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "driving",
+              "walking",
+              "bicycling",
+              "transit"
+            ],
+            "description": "Travel mode. Defaults to driving."
+          }
+        },
+        "required": [
+          "origins",
+          "destinations"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      },
+      "_meta": {
+        "openai.com/resultCanProduceWidget": false,
+        "openai/toolInvocation/invoking": "Calculating travel times...",
+        "openai/toolInvocation/invoked": "Travel times calculated"
+      }
+    },
+    {
+      "name": "maps_elevation",
+      "description": "**Get the elevation (altitude above sea level) for one or more locations.**\n\nUse for outdoor/nature trip queries like \"how high is this mountain cabin?\", \"is this area hilly?\", or comparing elevation across multiple listings or waypoints.\n\n### What it returns\n- Per location: `elevation` in meters, `location` (lat/lng echo), `resolution` (data sample spacing in meters)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "locations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "latitude": {
+                  "type": "number"
+                },
+                "longitude": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "latitude",
+                "longitude"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Array of { latitude, longitude } points to get elevation data for"
+          }
+        },
+        "required": [
+          "locations"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      },
+      "_meta": {
+        "openai.com/resultCanProduceWidget": false,
+        "openai/toolInvocation/invoking": "Fetching elevation...",
+        "openai/toolInvocation/invoked": "Elevation fetched"
+      }
+    },
+    {
+      "name": "maps_directions",
+      "description": "**Get turn-by-turn directions between two points.**\n\nUse when the user wants to know how to get from one place to another — e.g. \"how do I get from the airport to the listing?\", \"walking directions from the Airbnb to the beach\". For comparing multiple routes, prefer `maps_distance_matrix` instead.\n\n### What it returns\n- Best route: summary, total `distance` and `duration`\n- Step-by-step instructions with per-step distance and duration\n- Travel mode used\n\n### Inputs\n- **`origin`** — starting address or \"lat,lng\" string\n- **`destination`** — ending address or \"lat,lng\" string\n- **`mode`** — `driving` (default), `walking`, `bicycling`, `transit`",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "origin": {
+            "type": "string",
+            "description": "Starting point — address, place name, or 'lat,lng' string"
+          },
+          "destination": {
+            "type": "string",
+            "description": "Ending point — address, place name, or 'lat,lng' string"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "driving",
+              "walking",
+              "bicycling",
+              "transit"
+            ],
+            "description": "Travel mode. Defaults to driving."
+          }
+        },
+        "required": [
+          "origin",
+          "destination"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      },
+      "_meta": {
+        "openai.com/resultCanProduceWidget": false,
+        "openai/toolInvocation/invoking": "Computing directions...",
+        "openai/toolInvocation/invoked": "Directions ready"
+      }
+    }
+  ]
+}

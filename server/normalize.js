@@ -29,6 +29,40 @@ function findString(node, keys, depth = 0) {
   return null;
 }
 
+/**
+ * Read a field that the hosted endpoint returns as a bare string but the
+ * open-source server wraps in an object (`{body}` / `{text}`). Verified against
+ * real hosted output: `badges` is "Guest favourite", and structuredContent's
+ * lines are plain strings — both were being silently dropped before.
+ */
+function textOf(value, keys) {
+  if (typeof value === 'string') return value.trim() || null;
+  if (value && typeof value === 'object') {
+    for (const key of keys || ['body', 'text']) {
+      if (typeof value[key] === 'string' && value[key].trim()) return value[key].trim();
+    }
+  }
+  return null;
+}
+
+/**
+ * The next page's cursor.
+ *
+ * The hosted endpoint returns `pageCursors`: every page's cursor, in order —
+ * not a "next" pointer. Reading it as one left the cursor null, so Load more
+ * never appeared. Find where we are and step forward; the open-source server's
+ * `nextPageCursor` still wins when present.
+ */
+function nextCursor(pagination, currentCursor) {
+  if (!pagination || typeof pagination !== 'object') return null;
+  if (typeof pagination.nextPageCursor === 'string' && pagination.nextPageCursor) return pagination.nextPageCursor;
+  const cursors = Array.isArray(pagination.pageCursors) ? pagination.pageCursors : null;
+  if (!cursors || !cursors.length) return typeof pagination.cursor === 'string' ? pagination.cursor : null;
+  const index = currentCursor ? cursors.indexOf(currentCursor) : 0;
+  if (index < 0) return null; // a cursor we did not issue — stop rather than loop
+  return cursors[index + 1] || null;
+}
+
 /** Depth-first search for a numeric lat/lng pair. */
 function findCoords(node, depth = 0) {
   if (!node || typeof node !== 'object' || depth > 8) return null;
@@ -130,29 +164,32 @@ function normalizeResult(raw) {
   const { rating, reviews } = parseRating(ratingLabel);
   const coords = findCoords(raw.demandStayListing || raw) || null;
 
+  const sc = raw.structuredContent || {};
+
   const name =
     findString(raw.demandStayListing?.description || {}, [
       'localizedStringWithTranslationPreference',
       'name',
       'title',
     ]) ||
-    findString(raw.structuredContent || {}, ['primaryLine', 'body']) ||
+    textOf(sc.primaryLine) ||
     `Listing ${id}`;
 
-  const subtitle =
-    findString(raw.structuredContent?.mapCategoryInfo || {}, ['body']) ||
-    findString(raw.structuredContent?.secondaryLine || {}, ['body']) ||
-    null;
-
-  const area = findString(raw.structuredContent?.mapSecondaryLine || {}, ['body']) || null;
+  // The two servers use these lines differently. Open-source: mapCategoryInfo is the
+  // category ("Entire rental unit") and mapSecondaryLine the size ("2 beds"). Hosted:
+  // there is no mapCategoryInfo, primaryLine carries the room summary ("1 queen bed,
+  // 1 bathroom") and secondaryLine the host ("Individual host"), with mapSecondaryLine
+  // empty. Preferring the more specific field first satisfies both.
+  const subtitle = textOf(sc.mapCategoryInfo) || textOf(sc.primaryLine) || null;
+  const area = textOf(sc.mapSecondaryLine) || textOf(sc.secondaryLine) || null;
 
   return {
     id,
     url: typeof raw.url === 'string' ? raw.url : `${AIRBNB_ROOM}${id}`,
     name,
-    subtitle,
+    subtitle: subtitle === name ? null : subtitle,
     area,
-    badge: findString(raw.badges || {}, ['text']),
+    badge: textOf(raw.badges, ['text']),
     priceLabel,
     priceAmount: parsePriceAmount(priceLabel),
     ratingLabel,
@@ -160,12 +197,26 @@ function normalizeResult(raw) {
     reviews,
     lat: coords ? coords.lat : null,
     lng: coords ? coords.lng : null,
-    photos: findPhotos(raw).slice(0, 3),
+    photos: photosOf(raw).slice(0, 6),
   };
 }
 
+/**
+ * The hosted endpoint returns an explicit `photos` array (and a `thumbnailUrl`),
+ * already proxied through its own /image endpoint. Prefer those; fall back to
+ * scanning for image URLs, which is all the open-source server would ever offer.
+ */
+function photosOf(raw) {
+  const out = [];
+  const push = (u) => { if (typeof u === 'string' && u && !out.includes(u)) out.push(u); };
+  if (Array.isArray(raw.photos)) raw.photos.forEach(push);
+  push(raw.thumbnailUrl);
+  if (!out.length) findPhotos(raw).forEach(push);
+  return out;
+}
+
 /** `airbnb_search` payload -> { results, cursor, searchUrl }. Throws on a tool-level error. */
-function normalizeSearch(payload) {
+function normalizeSearch(payload, currentCursor) {
   if (!payload || typeof payload !== 'object') throw new Error('empty search payload');
   if (payload.error) {
     const err = new Error(String(payload.error));
@@ -174,10 +225,9 @@ function normalizeSearch(payload) {
   }
   const raw = Array.isArray(payload.searchResults) ? payload.searchResults : [];
   const results = raw.map(normalizeResult).filter(Boolean);
-  const pagination = payload.paginationInfo || {};
   return {
     results,
-    cursor: pagination.nextPageCursor || pagination.cursor || null,
+    cursor: nextCursor(payload.paginationInfo, currentCursor),
     searchUrl: payload.searchUrl || null,
   };
 }
@@ -217,13 +267,16 @@ function normalizeListing(id, payload) {
     amenities,
     lat: coords ? coords.lat : null,
     lng: coords ? coords.lng : null,
-    photos: findPhotos(payload).slice(0, 6),
+    photos: photosOf(payload).slice(0, 8),
   };
 }
 
 module.exports = {
   normalizeSearch,
   normalizeListing,
+  nextCursor,
+  textOf,
+  photosOf,
   normalizeResult,
   parseRating,
   parsePriceAmount,

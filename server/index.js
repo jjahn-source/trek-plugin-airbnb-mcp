@@ -62,7 +62,7 @@ function cacheClient(key, client) {
  *
  * Throws NOT_CONNECTED when the user has not linked an OpenBnB account yet.
  */
-async function callTool(ctx, name, args) {
+async function callTool(ctx, name, args, alternatives) {
   const token = await ctx.oauth.getAccessToken();
   if (!token) throw new McpError('no OpenBnB account linked', 'NOT_CONNECTED');
 
@@ -75,7 +75,7 @@ async function callTool(ctx, name, args) {
       evict(key);
     } else {
       try {
-        return await entry.client.callTool(name, args);
+        return await entry.client.callTool(alternatives ? entry.client.pickTool(alternatives) : name, args);
       } catch (err) {
         evict(key);
         // A bad token or a real tool failure (robots.txt, unknown listing) will
@@ -89,7 +89,7 @@ async function callTool(ctx, name, args) {
 
   const client = new McpClient({ url, token });
   await client.connect();
-  const payload = await client.callTool(name, args);
+  const payload = await client.callTool(alternatives ? client.pickTool(alternatives) : name, args);
   cacheClient(key, client);
   return payload;
 }
@@ -162,8 +162,13 @@ function isDate(v) {
   return typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
 }
 
-/** Only Airbnb's own image CDN is proxyable — anything else is refused before egress. */
-function parsePhotoUrl(raw) {
+/**
+ * Only Airbnb's image CDN or the configured MCP host are proxyable; anything else
+ * is refused before egress. The hosted OpenBnB server rewrites listing images
+ * through its own /image endpoint, so restricting this to muscache.com (as it was)
+ * rejected every real photo.
+ */
+function parsePhotoUrl(raw, mcpHost) {
   if (typeof raw !== 'string' || raw.length > 2000) return null;
   let url;
   try {
@@ -172,7 +177,9 @@ function parsePhotoUrl(raw) {
     return null;
   }
   if (url.protocol !== 'https:') return null;
-  if (!/(^|\.)muscache\.com$/i.test(url.hostname)) return null;
+  const onCdn = /(^|\.)muscache\.com$/i.test(url.hostname);
+  const onMcpHost = !!mcpHost && url.hostname.toLowerCase() === mcpHost.toLowerCase();
+  if (!onCdn && !onMcpHost) return null;
   return url;
 }
 
@@ -293,7 +300,7 @@ module.exports = definePlugin({
 
         try {
           const payload = await callTool(ctx, 'airbnb_search', args);
-          const out = normalizeSearch(payload);
+          const out = normalizeSearch(payload, args.cursor || null);
           out.results = out.results.slice(0, SEARCH_PAGE_MAX);
 
           const tripId = toInt(b.tripId);
@@ -358,7 +365,9 @@ module.exports = definePlugin({
         if (adults != null && adults > 0) args.adults = adults;
 
         try {
-          const payload = await callTool(ctx, 'airbnb_listing_details', args);
+          // The hosted server names this `airbnb_listing`; the open-source one
+          // `airbnb_listing_details`. Ask the session which it has.
+          const payload = await callTool(ctx, 'airbnb_listing', args, ['airbnb_listing', 'airbnb_listing_details']);
           return reply(200, normalizeListing(id, payload));
         } catch (err) {
           return errorReply(err, ctx);
@@ -373,7 +382,7 @@ module.exports = definePlugin({
       path: '/photo',
       auth: true,
       async handler(req, ctx) {
-        const url = parsePhotoUrl(req.query && req.query.url);
+        const url = parsePhotoUrl(req.query && req.query.url, new URL(mcpUrl(ctx)).hostname);
         if (!url) return reply(400, { error: 'unsupported photo URL' });
         const key = url.toString();
         if (photoCache.has(key)) return reply(200, { dataUri: photoCache.get(key) });
