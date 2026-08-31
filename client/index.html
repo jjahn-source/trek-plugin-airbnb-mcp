@@ -7,6 +7,9 @@
   <!-- trek:ui -->
   <style>
     body { margin: 0; }
+    /* .results sets display:grid, which outranks the UA's [hidden] rule and left
+       the grid on screen behind the detail view. Make hidden authoritative. */
+    [hidden] { display: none !important; }
     .wrap { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
     .form-grid {
       display: grid; gap: 10px;
@@ -29,6 +32,10 @@
     .empty { padding: 32px 16px; text-align: center; }
     .state { max-width: 560px; }
     .price { font-weight: 600; }
+    .detail-photos { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+    .detail-photos img { height: 190px; border-radius: 10px; flex: 0 0 auto; }
+    .amenities { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+    .detail-desc { white-space: pre-wrap; line-height: 1.5; margin: 0; }
     .sr-only {
       position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
       overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
@@ -78,6 +85,7 @@
     </form>
 
     <div id="status" class="trek-muted" role="status" aria-live="polite" style="min-height:20px"></div>
+    <div id="detail" hidden></div>
     <div class="results" id="results"></div>
     <div class="trek-cluster" style="justify-content:center">
       <button class="trek-btn trek-btn--secondary" id="more" hidden>Load more</button>
@@ -135,7 +143,7 @@
     return l.rating + ' ★' + (l.reviews != null ? ' (' + l.reviews + ')' : '');
   }
 
-  function cardHtml(l, i) {
+  function cardHtml(l) {
     // No photo: render no image block at all rather than a large empty box. The
     // open-source OpenBnB server returns no imagery, so this is the common case.
     var img = l.photos && l.photos.length
@@ -153,8 +161,8 @@
             '<span class="trek-muted" style="font-size:12px">' + esc(ratingText(l)) + '</span>' +
           '</div>' +
           '<div class="card-foot">' +
-            '<button class="trek-btn trek-btn--primary" data-add="' + i + '">Add to trip</button>' +
-            '<button class="trek-btn trek-btn--ghost" data-open="' + i + '">Airbnb</button>' +
+            '<button class="trek-btn trek-btn--primary" data-add="' + esc(l.id) + '">Add to trip</button>' +
+            '<button class="trek-btn trek-btn--ghost" data-details="' + esc(l.id) + '">Details</button>' +
           '</div>' +
         '</div>' +
       '</div>';
@@ -177,8 +185,11 @@
   }
 
   function render() {
+    // A fresh render always returns to the grid — the open detail belonged to the
+    // previous result set and its Back button would otherwise reveal stale cards.
+    if (!$('detail').hidden) showResults();
     var items = sorted(listings);
-    $('results').innerHTML = items.map(function (l) { return cardHtml(l, listings.indexOf(l)); }).join('');
+    $('results').innerHTML = items.map(cardHtml).join('');
     $('count').hidden = !listings.length;
     $('count').textContent = listings.length + (cursor ? '+' : '') + ' stays';
     $('more').hidden = !cursor;
@@ -259,16 +270,101 @@
 
   $('sort').addEventListener('change', render);
 
-  $('results').addEventListener('click', async function (e) {
-    var addBtn = e.target.closest('[data-add]');
-    var openBtn = e.target.closest('[data-open]');
-    if (openBtn) {
-      var l0 = listings[Number(openBtn.getAttribute('data-open'))];
-      if (l0 && l0.url) trek.openExternal(l0.url);
-      return;
+  var byId = function (id) {
+    for (var i = 0; i < listings.length; i++) { if (String(listings[i].id) === String(id)) return listings[i]; }
+    return null;
+  };
+
+  /** Full listing records, keyed by id — details are immutable per search, so one fetch each. */
+  var detailCache = {};
+
+  function amenitiesHtml(amenities) {
+    var groups = Object.keys(amenities || {});
+    if (!groups.length) return '';
+    return '<div class="trek-sectionhead">Amenities</div><div class="amenities">' +
+      groups.map(function (g) {
+        return '<div class="trek-field">' +
+          '<div class="trek-field-label">' + esc(g) + '</div>' +
+          '<div class="trek-field-value">' + esc(amenities[g]) + '</div>' +
+        '</div>';
+      }).join('') + '</div>';
+  }
+
+  function detailHtml(l, d) {
+    var photos = (d.photos || []).length
+      ? '<div class="detail-photos">' + d.photos.map(function (u) {
+          return '<img alt="" loading="lazy" data-photo="' + esc(u) + '" />';
+        }).join('') + '</div>'
+      : '';
+    return '<div class="trek-glass trek-stack" style="padding:16px">' +
+      '<div class="trek-cluster">' +
+        '<button class="trek-btn trek-btn--ghost" id="detail-back">&larr; Back to results</button>' +
+        '<button class="trek-btn trek-btn--primary" data-add="' + esc(l.id) + '">Add to trip</button>' +
+        '<button class="trek-btn trek-btn--ghost" id="detail-open">Open on Airbnb</button>' +
+      '</div>' +
+      '<div class="trek-title">' + esc(d.title || l.name) + '</div>' +
+      '<div class="trek-muted" style="font-size:12px">' +
+        esc([l.subtitle, l.area, l.priceLabel, ratingText(l)].filter(Boolean).join(' · ')) + '</div>' +
+      photos +
+      (d.description ? '<p class="detail-desc">' + esc(d.description) + '</p>' : '') +
+      (d.highlights ? '<div class="trek-sectionhead">Highlights</div><p class="detail-desc">' + esc(d.highlights) + '</p>' : '') +
+      amenitiesHtml(d.amenities) +
+      (d.houseRules ? '<div class="trek-sectionhead">House rules</div><p class="detail-desc">' + esc(d.houseRules) + '</p>' : '') +
+      '</div>';
+  }
+
+  function showResults() {
+    $('detail').hidden = true;
+    $('detail').innerHTML = '';
+    $('results').hidden = false;
+    $('more').hidden = !cursor;
+  }
+
+  async function openDetails(id) {
+    var l = byId(id);
+    if (!l) return;
+    $('results').hidden = true;
+    $('more').hidden = true;
+    $('detail').hidden = false;
+    $('detail').innerHTML = '<div class="trek-muted empty">Loading the listing…</div>';
+
+    try {
+      if (!detailCache[id]) {
+        var q = '/listing?id=' + encodeURIComponent(id);
+        if ($('checkin').value) q += '&checkin=' + encodeURIComponent($('checkin').value);
+        if ($('checkout').value) q += '&checkout=' + encodeURIComponent($('checkout').value);
+        if ($('adults').value) q += '&adults=' + encodeURIComponent($('adults').value);
+        detailCache[id] = await trek.invoke(q);
+      }
+      $('detail').innerHTML = detailHtml(l, detailCache[id]);
+      $('detail-back').addEventListener('click', showResults);
+      // The grid the user clicked from is now hidden, so focus has to follow the
+      // view change or a keyboard user is left on a detached element.
+      $('detail-back').focus();
+      $('detail-open').addEventListener('click', function () { if (l.url) trek.openExternal(l.url); });
+      loadPhotos();
+    } catch (err) {
+      if (err.code === 403 || err.code === 401) {
+        showResults();
+        renderGate('disconnected');
+        trek.notify('warning', err.message);
+        return;
+      }
+      // Keep the user in the detail view with a way back, rather than a blank panel.
+      $('detail').innerHTML = '<div class="trek-glass trek-stack" style="padding:16px">' +
+        '<button class="trek-btn trek-btn--ghost" id="detail-back">&larr; Back to results</button>' +
+        '<p class="trek-muted">' + esc(err.message || 'Could not load this listing.') + '</p></div>';
+      $('detail-back').addEventListener('click', showResults);
     }
+  }
+
+  async function onCardClick(e) {
+    var detailsBtn = e.target.closest('[data-details]');
+    if (detailsBtn) { openDetails(detailsBtn.getAttribute('data-details')); return; }
+
+    var addBtn = e.target.closest('[data-add]');
     if (!addBtn) return;
-    var l = listings[Number(addBtn.getAttribute('data-add'))];
+    var l = byId(addBtn.getAttribute('data-add'));
     if (!l) return;
     addBtn.disabled = true;
     addBtn.textContent = 'Adding…';
@@ -289,7 +385,12 @@
       addBtn.textContent = 'Add to trip';
       trek.notify('error', err.message || 'Could not add the stay');
     }
-  });
+  }
+
+  // One delegated handler serves both the grid and the detail panel, so the
+  // detail view's "Add to trip" button behaves exactly like a card's.
+  $('results').addEventListener('click', onCardClick);
+  $('detail').addEventListener('click', onCardClick);
 
   /** Restore the previous search so a tab switch does not throw the results away. */
   async function restore() {

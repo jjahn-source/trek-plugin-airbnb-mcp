@@ -12,6 +12,10 @@ guests, price and property type, sort by price or rating, page through more resu
 and add any stay to the trip with one click. An added stay keeps its price, rating and
 booking dates, which show up again in the place-detail panel later.
 
+**Details** on any card opens the full listing for your dates — description, highlights,
+amenities grouped the way Airbnb groups them (including what is *not* included), and the
+house rules — without leaving TREK. Listings are fetched once and cached for the session.
+
 The search itself runs against the hosted [OpenBnB MCP server](https://openbnb.ai)
 over the Model Context Protocol. **This plugin does no scraping of its own.** It holds
 no API key, no cookie and no shared account: every query is made with the short-lived
@@ -79,10 +83,17 @@ searches. Until a user connects, the tab shows a prompt instead of a search form
 
 ```bash
 npm install
-npm test          # 39 tests: MCP transport, session reuse, normalisation, every route
+npm test          # 39 unit tests: MCP transport, session reuse, normalisation, every route
+npm run smoke     # 9 browser checks: packs the frame and drives the real UI
 npm run dev       # hot-reloaded local harness
 npm run validate  # the registry's own publish gates
 ```
+
+`npm test` covers the server through the SDK's mock host, so the permission model is
+exercised rather than stubbed. `npm run smoke` covers the half unit tests cannot reach:
+it packs the plugin, loads the frame with the design kit inlined exactly as it ships, and
+stands in for the host over the documented `postMessage` protocol — so the search, detail,
+back and add flows are checked against the real UI, not a mock of it.
 
 `server/mcp.js` is a dependency-free Streamable-HTTP MCP client (a TREK plugin ships as
 a flat bundle with no install step, so the official SDK is not worth its weight here).

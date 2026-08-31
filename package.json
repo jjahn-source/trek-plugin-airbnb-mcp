@@ -1,6 +1,6 @@
 {
   "name": "trek-plugin-airbnb-mcp",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "commonjs",
   "description": "TREK trip-page plugin: search Airbnb via each traveller's own OpenBnB MCP account.",
@@ -10,7 +10,9 @@
     "dev": "npx -y trek-plugin-sdk dev",
     "pack": "npx -y trek-plugin-sdk pack",
     "status": "npx -y trek-plugin-sdk status",
-    "validate": "npx -y trek-plugin-sdk validate ."
+    "validate": "npx -y trek-plugin-sdk validate .",
+    "smoke": "npx -y trek-plugin-sdk pack >/dev/null && rm -rf .smoke && mkdir -p .smoke && cd .smoke && unzip -oq ../plugin.zip && cd .. && node scripts/smoke.mjs .smoke/client/index.html",
+    "shot": "npm run --silent smoke >/dev/null; node scripts/screenshot.mjs .smoke/client/index.html docs/screenshot.png"
   },
   "devDependencies": {
     "playwright": "^1.62.1",
