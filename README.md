@@ -46,9 +46,13 @@ account, no dashboard, no support ticket:
 node scripts/register-oauth-client.mjs https://trek.example.com
 ```
 
-Pass the **public base URL your users reach TREK on**. The redirect URI is derived
-from it, and OpenBnB will only redirect to the URI registered here. The script
-discovers OpenBnB's endpoints, registers a confidential client and prints five values.
+Pass exactly your server's **`APP_URL`** — the public base URL your users reach TREK
+on, *including any path* if TREK is hosted under one (`https://example.com/trek`).
+TREK builds the OAuth redirect from `APP_URL`, and OpenBnB only redirects to the URI
+registered here, so a mismatch shows up later as a sign-in that never completes. The
+script prints the redirect URI it registers — check it against your `APP_URL`.
+
+It discovers OpenBnB's endpoints, registers a confidential client and prints five values.
 
 ### 2. Paste them into the plugin's settings (admin, once)
 

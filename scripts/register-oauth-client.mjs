@@ -32,9 +32,10 @@ if (!appUrl || appUrl === '--help' || appUrl === '-h') {
   Example:
     node scripts/register-oauth-client.mjs https://trek.example.com
 
-  <your-trek-url> must be the PUBLIC base URL your users reach TREK on — it has
-  to match the app URL TREK is configured with, because the redirect URI is
-  derived from it and OpenBnB will only redirect to the URI registered here.
+  <your-trek-url> must be exactly your server's APP_URL — the public base URL
+  your users reach TREK on, INCLUDING any path if TREK is hosted under one
+  (https://example.com/trek). The redirect URI is derived from it and OpenBnB
+  only redirects to the URI registered here, so a mismatch breaks sign-in.
 `);
   process.exit(appUrl ? 0 : 1);
 }
@@ -49,7 +50,13 @@ if (base.protocol !== 'https:' && base.hostname !== 'localhost' && base.hostname
   die('TREK must be reachable over https (or be localhost) for the OAuth redirect to work.');
 }
 
-const redirectUri = `${base.origin}/api/plugin-oauth/${PLUGIN_ID}/callback`;
+// TREK builds the redirect as `${getAppUrl()}/api/plugin-oauth/<id>/callback`, and
+// getAppUrl() is APP_URL with trailing slashes stripped — PATH INCLUDED. Using the
+// origin here would silently drop a subpath (https://example.com/trek), and OAuth
+// compares redirect URIs exactly, so the mismatch would only surface as a failed
+// sign-in much later. Mirror getAppUrl() precisely instead.
+const appBase = appUrl.replace(/\/+$/, '');
+const redirectUri = `${appBase}/api/plugin-oauth/${PLUGIN_ID}/callback`;
 
 // Discover the endpoints rather than hardcoding them, so a moved endpoint or a
 // self-hosted compatible server keeps working.
