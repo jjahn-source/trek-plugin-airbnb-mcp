@@ -99,11 +99,18 @@ await fetch('/api/admin/plugins/airbnb-mcp/config', {
 }).then(r => r.json())
 ```
 
-Then restart the plugin (**Admin → Plugins → ⋯ → Restart**) so it picks the values up. The
-secret is stored encrypted either way and never leaves the host.
+Activate the plugin first (**Admin → Plugins → Airbnb Stays**, toggle it on) — the call
+above stores the settings either way, but there is nothing running to read them until it
+is active.
 
-The plugin's own tab tells you which keys are still missing, so you can check your work
-there.
+Then **restart it**: **Admin → Plugins → ⋯ → Restart**. This step is required, not
+tidiness — a plugin reads its settings once, when its process starts, so without a restart
+the save appears to work and nothing changes. (Do not reach for `POST /reload`: that
+endpoint is dev-only and answers 403 on a normal install. The panel's Restart is a
+deactivate/activate cycle, which is the mechanism you want.)
+
+The secret is stored encrypted either way and never leaves the host. The plugin's own tab
+lists the keys still missing, so you can check your work there.
 
 > The map and the MCP endpoint need no configuration at all — they fall back to built-in
 > defaults, and their settings exist only to override them.
