@@ -11,8 +11,13 @@ free [OpenBnB](https://openbnb.ai) account.
 Adds an **Airbnb** tab to the trip planner. It seeds the search from the trip you are
 looking at (destination and the trip's start/end dates), then lets you filter by
 guests, price and property type, sort by price or rating, page through more results,
-and add any stay to the trip with one click. An added stay keeps its price, rating and
-booking dates, which show up again in the place-detail panel later.
+and add any stay to the trip with one click.
+
+A stay is somewhere you sleep, so when your check-in and check-out dates match days
+on the trip it is added as a **lodging block spanning those nights** — the same thing
+the planner creates by hand, partner hotel reservation included — not just a pin on
+the map. Dates outside the trip still add the place on its own. Either way it keeps
+its price, rating and booking dates, which show up again in the place-detail panel.
 
 **Details** on any card opens the full listing for your dates — description, highlights,
 amenities grouped the way Airbnb groups them (including what is *not* included), and the
@@ -80,6 +85,7 @@ searches. Until a user connects, the tab shows a prompt instead of a search form
 | `db:meta` | Records the listing id, price, rating and booking dates against a place you added, so the place-detail panel can show them later. |
 | `db:read:trips` | Reads the open trip's title and start/end dates to pre-fill the destination and check-in/check-out fields. |
 | `db:write:places` | Creates the place on the trip when you press "Add to trip". |
+| `db:write:accommodations` | When the check-in and check-out dates line up with days on the trip, the stay is added as a lodging block spanning those nights (which also creates the matching hotel reservation), rather than just a pin on the map. If the dates fall outside the trip, or you cannot edit days, the place is still added on its own. |
 | `oauth:client` | Lets TREK run the OAuth flow to OpenBnB for each user and hand this plugin a short-lived access token for whoever is searching. The client secret and refresh token stay with the host. |
 | `http:outbound:mcp.openbnb.ai` | The one network call this plugin makes: the MCP request that runs the search or fetches a listing's details. |
 | `http:outbound:*.muscache.com` | Listing photos live on Airbnb's image CDN. The plugin frame's CSP blocks remote images, so photos are fetched here and passed to the page as data URIs. No other host is proxied. |
@@ -89,8 +95,8 @@ searches. Until a user connects, the tab shows a prompt instead of a search form
 
 ```bash
 npm install
-npm test          # 42 unit tests: MCP transport, session reuse, normalisation, every route
-npm run smoke     # 13 browser checks: packs the frame and drives the real UI
+npm test          # 47 unit tests: MCP transport, session reuse, normalisation, every route
+npm run smoke     # 14 browser checks: packs the frame and drives the real UI
 npm run dev       # hot-reloaded local harness
 npm run validate  # the registry's own publish gates
 ```

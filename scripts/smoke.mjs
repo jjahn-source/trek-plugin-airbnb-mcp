@@ -68,7 +68,7 @@ await page.addInitScript(({ results: R, listing: L }) => {
       if (sub === '/status') data = { configured: true, connected: true, endpoint: 'https://mcp.openbnb.ai/mcp' };
       else if (sub === '/last') data = { params: { location: 'Paris, France', adults: 2 }, results: R, cursor: null };
       else if (sub === '/listing') data = L;
-      else if (sub === '/add') data = { place: { id: 99 } };
+      else if (sub === '/add') data = { place: { id: 99 }, accommodation: { id: 5 } };
       window.postMessage({ type: 'trek:response', requestId: m.requestId, data }, '*');
     }
   });
@@ -108,6 +108,9 @@ await page.locator('#detail [data-add="1"]').click();
 await page.waitForFunction(() => document.querySelector('#detail [data-add]')?.textContent.includes('Added'), { timeout: 10000 });
 const addCall = invoked.find((c) => c.sub === '/add');
 t('adds from the detail view', !!addCall && addCall.body.listing.id === '1' && addCall.body.tripId === 7);
+const notify = await page.evaluate(() => window.__lastNotify);
+t('says the stay became lodging, not just a pin',
+  !!notify && notify.level === 'success' && /lodging for those nights/i.test(notify.message));
 
 // --- second scenario: a connected user with no previous search ------------------
 {

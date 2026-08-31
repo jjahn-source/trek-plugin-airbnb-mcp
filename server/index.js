@@ -147,6 +147,45 @@ function parsePhotoUrl(raw) {
   return url;
 }
 
+/**
+ * Turn an added stay into a real lodging block when we can.
+ *
+ * A bare place is a poor fit for somewhere you SLEEP: TREK models that as a
+ * day_accommodation spanning the nights, which also creates the partner hotel
+ * reservation. That needs the trip to actually have days on the chosen dates, so
+ * this is opportunistic — if the dates fall outside the trip, or the user lacks
+ * day_edit, the place still stands on its own and the add succeeds either way.
+ *
+ * `check_in`/`check_out` on an accommodation are TIMES (the planner renders them
+ * with fmtTime, alongside a check_in_end window), not dates — the dates come from
+ * start_day_id/end_day_id. We do not know Airbnb's times, so they stay null.
+ */
+async function lodgingFor(ctx, tripId, place, listing, body) {
+  if (!isDate(body.checkin) || !isDate(body.checkout)) return null;
+  try {
+    const days = await ctx.trips.getDays(tripId);
+    const dayIdByDate = {};
+    for (const d of days || []) {
+      if (d && d.id != null && d.date) dayIdByDate[String(d.date).slice(0, 10)] = d.id;
+    }
+    const startDayId = dayIdByDate[body.checkin];
+    const endDayId = dayIdByDate[body.checkout];
+    if (!startDayId || !endDayId) return null;
+
+    return await ctx.accommodations.create(tripId, {
+      place_id: place.id,
+      start_day_id: startDayId,
+      end_day_id: endDayId,
+      notes: [listing.url, listing.priceLabel].filter(Boolean).join(' — ').slice(0, 2000) || null,
+    });
+  } catch (err) {
+    // A missing day_edit permission, or any other refusal, must not lose the place
+    // the user just added.
+    ctx.log.warn(`airbnb-mcp: could not create the lodging block — ${err && err.message}`);
+    return null;
+  }
+}
+
 module.exports = definePlugin({
   async onLoad(ctx) {
     await ctx.db.migrate(
@@ -348,6 +387,7 @@ module.exports = definePlugin({
           if (notes) fields.notes = notes.slice(0, 2000);
 
           const place = await ctx.places.create(tripId, fields);
+          const accommodation = await lodgingFor(ctx, tripId, place, listing, b);
           await ctx.meta.set('place', place.id, 'airbnb', {
             listingId: String(listing.id),
             listingUrl: listing.url || null,
@@ -359,7 +399,7 @@ module.exports = definePlugin({
             adults: toInt(b.adults),
             addedAt: new Date().toISOString(),
           });
-          return reply(200, { place });
+          return reply(200, { place, accommodation: accommodation || null });
         } catch (err) {
           return errorReply(err, ctx);
         }

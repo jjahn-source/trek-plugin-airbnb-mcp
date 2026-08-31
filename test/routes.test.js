@@ -5,7 +5,7 @@ const { createMockHost } = require('trek-plugin-sdk/testing');
 const plugin = require('../server/index.js');
 
 const GRANTS = [
-  'db:own', 'db:meta', 'db:read:trips', 'db:write:places',
+  'db:own', 'db:meta', 'db:read:trips', 'db:write:places', 'db:write:accommodations',
   'oauth:client', 'http:outbound:mcp.openbnb.ai', 'http:outbound:*.muscache.com',
   'hook:place-detail-provider',
 ];
@@ -63,7 +63,17 @@ function host(opts = {}) {
     grants: GRANTS,
     config: { ...OAUTH_CONFIG, ...(opts.config || {}) },
     actingUserId: 42,
-    trips: { 7: { members: [42], data: { id: 7, title: 'Paris', start_date: '2026-10-10', end_date: '2026-10-14' } } },
+    trips: {
+      7: {
+        members: [42],
+        data: { id: 7, title: 'Paris', start_date: '2026-10-10', end_date: '2026-10-14' },
+        days: [
+          { id: 501, date: '2026-10-10' }, { id: 502, date: '2026-10-11' },
+          { id: 503, date: '2026-10-12' }, { id: 504, date: '2026-10-13' },
+          { id: 505, date: '2026-10-14' },
+        ],
+      },
+    },
     ...opts,
   });
 }
@@ -309,4 +319,84 @@ test('a search failure reaches the client as the friendly copy, not the raw text
   const res = await h.run(plugin).route({ method: 'POST', path: '/search' }, { body: { location: 'Paris' } });
   assert.equal(res.status, 502);
   assert.match(body(res).error, /OpenBnB MCP endpoint/, 'the actionable copy, not the bare upstream string');
+});
+
+// --- lodging blocks ------------------------------------------------------------
+// A stay is somewhere you sleep, so when the dates line up with real trip days it
+// becomes a day_accommodation (which also creates the partner hotel reservation),
+// not just a pin on the map.
+
+const LISTING = {
+  id: '1001', name: 'Le Marais loft', url: 'https://www.airbnb.com/rooms/1001',
+  lat: 48.86, lng: 2.35, priceLabel: '$900 for 3 nights', rating: 4.9, reviews: 20,
+};
+
+test('adding a stay whose dates match trip days creates a lodging block', async (t) => {
+  withMcp(t, {});
+  const h = host({ oauthAccessToken: 'tok' });
+  const res = await h.run(plugin).route({ method: 'POST', path: '/add' }, {
+    body: { tripId: 7, checkin: '2026-10-10', checkout: '2026-10-14', adults: 2, listing: LISTING },
+  });
+
+  assert.equal(res.status, 200);
+  const out = body(res);
+  assert.ok(out.place, 'the place is still created');
+  assert.ok(out.accommodation, 'and a lodging block alongside it');
+});
+
+test('the lodging block spans the right days and leaves the times unset', async (t) => {
+  withMcp(t, {});
+  const calls = [];
+  const h = host({ oauthAccessToken: 'tok' });
+  const realCreate = h.ctx.accommodations.create.bind(h.ctx.accommodations);
+  h.ctx.accommodations.create = async (tripId, input) => { calls.push({ tripId, input }); return realCreate(tripId, input); };
+
+  await h.run(plugin).route({ method: 'POST', path: '/add' }, {
+    body: { tripId: 7, checkin: '2026-10-11', checkout: '2026-10-13', listing: LISTING },
+  });
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].input.start_day_id, 502, '11 Oct is day 502');
+  assert.equal(calls[0].input.end_day_id, 504, '13 Oct is day 504');
+  // check_in/check_out are TIMES in TREK's model; we do not know Airbnb's, so they stay unset.
+  assert.equal(calls[0].input.check_in, undefined);
+  assert.equal(calls[0].input.check_out, undefined);
+  assert.match(calls[0].input.notes, /airbnb\.com\/rooms\/1001/);
+});
+
+test('dates outside the trip still add the place, without a lodging block', async (t) => {
+  withMcp(t, {});
+  const h = host({ oauthAccessToken: 'tok' });
+  const res = await h.run(plugin).route({ method: 'POST', path: '/add' }, {
+    body: { tripId: 7, checkin: '2027-01-01', checkout: '2027-01-05', listing: LISTING },
+  });
+  assert.equal(res.status, 200);
+  assert.ok(body(res).place);
+  assert.equal(body(res).accommodation, null);
+});
+
+test('no dates at all means no lodging block, and no wasted day lookup', async (t) => {
+  withMcp(t, {});
+  const h = host({ oauthAccessToken: 'tok' });
+  let daysRead = 0;
+  const realGetDays = h.ctx.trips.getDays.bind(h.ctx.trips);
+  h.ctx.trips.getDays = async (id) => { daysRead++; return realGetDays(id); };
+
+  const res = await h.run(plugin).route({ method: 'POST', path: '/add' }, { body: { tripId: 7, listing: LISTING } });
+  assert.equal(res.status, 200);
+  assert.equal(body(res).accommodation, null);
+  assert.equal(daysRead, 0, 'skips the day read when there are no dates to match');
+});
+
+test('a refused accommodation write never loses the place the user just added', async (t) => {
+  withMcp(t, {});
+  const h = host({ oauthAccessToken: 'tok' });
+  h.ctx.accommodations.create = async () => { throw new Error('PERMISSION_DENIED: day_edit'); };
+
+  const res = await h.run(plugin).route({ method: 'POST', path: '/add' }, {
+    body: { tripId: 7, checkin: '2026-10-10', checkout: '2026-10-14', listing: LISTING },
+  });
+  assert.equal(res.status, 200, 'the add still succeeds');
+  assert.ok(body(res).place);
+  assert.equal(body(res).accommodation, null);
 });

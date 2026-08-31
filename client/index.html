@@ -369,7 +369,7 @@
     addBtn.disabled = true;
     addBtn.textContent = 'Adding…';
     try {
-      await trek.invoke('/add', {
+      var added = await trek.invoke('/add', {
         method: 'POST',
         body: {
           tripId: Number(tripId), listing: l,
@@ -379,7 +379,11 @@
         },
       });
       addBtn.textContent = 'Added ✓';
-      trek.notify('success', l.name + ' added to the trip');
+      // Say which of the two things actually happened — a lodging block that spans
+      // the nights is a materially different outcome from a pin on the map.
+      trek.notify('success', added && added.accommodation
+        ? l.name + ' added as lodging for those nights'
+        : l.name + ' added to the trip');
     } catch (err) {
       addBtn.disabled = false;
       addBtn.textContent = 'Add to trip';
