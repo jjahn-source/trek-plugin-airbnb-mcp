@@ -199,18 +199,27 @@
     loadPhotos();
   }
 
+  /** Data URIs already fetched this session, keyed by the original photo URL. */
+  var photoCache = {};
+
   /**
    * The frame's CSP forbids remote images, so each photo is fetched through the
    * plugin's own proxy and swapped in as a data URI. Failures stay silent — a
    * missing picture must never break the card.
+   *
+   * render() rebuilds the whole grid (a sort, or a Load more), so without this
+   * cache every re-render re-invoked the proxy once per visible card.
    */
   function loadPhotos() {
     var imgs = document.querySelectorAll('img[data-photo]');
     Array.prototype.forEach.call(imgs, function (img) {
       var url = img.getAttribute('data-photo');
       img.removeAttribute('data-photo');
+      if (photoCache[url]) { img.src = photoCache[url]; return; }
       trek.invoke('/photo?url=' + encodeURIComponent(url))
-        .then(function (r) { if (r && r.dataUri) img.src = r.dataUri; })
+        .then(function (r) {
+          if (r && r.dataUri) { photoCache[url] = r.dataUri; img.src = r.dataUri; }
+        })
         .catch(function () { /* keep the neutral placeholder */ });
     });
   }

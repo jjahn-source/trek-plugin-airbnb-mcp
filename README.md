@@ -95,8 +95,8 @@ searches. Until a user connects, the tab shows a prompt instead of a search form
 
 ```bash
 npm install
-npm test          # 47 unit tests: MCP transport, session reuse, normalisation, every route
-npm run smoke     # 14 browser checks: packs the frame and drives the real UI
+npm test          # 51 unit tests: MCP transport, session reuse, normalisation, every route
+npm run smoke     # 17 browser checks: packs the frame and drives the real UI
 npm run dev       # hot-reloaded local harness
 npm run validate  # the registry's own publish gates
 ```

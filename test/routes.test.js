@@ -400,3 +400,64 @@ test('a refused accommodation write never loses the place the user just added', 
   assert.ok(body(res).place);
   assert.equal(body(res).accommodation, null);
 });
+
+// --- restore cache -------------------------------------------------------------
+
+test('cachePayload trims results instead of slicing the JSON string', () => {
+  const { cachePayload } = plugin;
+  const out = {
+    results: Array.from({ length: 40 }, (_, i) => ({ id: String(i), name: 'x'.repeat(500) })),
+    cursor: 'c',
+    searchUrl: 'https://example.com',
+  };
+
+  const full = cachePayload({ location: 'Paris' }, out, 400000);
+  assert.equal(JSON.parse(full).results.length, 40, 'a normal page is cached whole');
+
+  const trimmed = cachePayload({ location: 'Paris' }, out, 5000);
+  const parsed = JSON.parse(trimmed); // the point: it must still parse
+  assert.ok(trimmed.length <= 5000);
+  assert.ok(parsed.results.length > 0 && parsed.results.length < 40, 'kept some results, not all');
+  assert.equal(parsed.cursor, 'c', 'the cursor survives trimming');
+  assert.equal(parsed.params.location, 'Paris');
+});
+
+test('cachePayload returns null rather than caching something unparseable', () => {
+  const out = { results: [{ id: '1', name: 'x'.repeat(100) }], cursor: null, searchUrl: null };
+  assert.equal(plugin.cachePayload({ location: 'y'.repeat(500) }, out, 50), null);
+});
+
+test('/last parses exactly what cachePayload wrote, and returns it', async () => {
+  // The mock host's db.query serves canned rows keyed by SQL (it is not a real
+  // SQLite), so this covers the seam that matters: the bytes cachePayload produces
+  // are what /last reads back and parses.
+  const out = { results: [{ id: '1001', name: 'Le Marais loft' }], cursor: 'next-1', searchUrl: 'https://x' };
+  const payload = plugin.cachePayload({ location: 'Paris' }, out, 400000);
+
+  const h = createMockHost({
+    grants: GRANTS,
+    config: OAUTH_CONFIG,
+    actingUserId: 42,
+    queryResults: { 'SELECT payload FROM last_search WHERE trip_id = ? AND user_id = ?': [{ payload }] },
+  });
+
+  const res = await h.run(plugin).route({ method: 'GET', path: '/last' }, { query: { tripId: '7' } });
+  assert.equal(res.status, 200);
+  const restored = body(res);
+  assert.equal(restored.results.length, 1);
+  assert.equal(restored.results[0].name, 'Le Marais loft');
+  assert.equal(restored.cursor, 'next-1');
+  assert.equal(restored.params.location, 'Paris');
+});
+
+test('/last degrades to an empty object when the stored row is unparseable', async () => {
+  const h = createMockHost({
+    grants: GRANTS,
+    config: OAUTH_CONFIG,
+    actingUserId: 42,
+    queryResults: { 'SELECT payload FROM last_search WHERE trip_id = ? AND user_id = ?': [{ payload: '{"results":[{"id"' }] },
+  });
+  const res = await h.run(plugin).route({ method: 'GET', path: '/last' }, { query: { tripId: '7' } });
+  assert.equal(res.status, 200);
+  assert.deepEqual(body(res), {}, 'a corrupt row must not break the tab');
+});

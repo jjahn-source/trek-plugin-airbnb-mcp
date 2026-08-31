@@ -8,6 +8,7 @@ const DEFAULT_MCP_URL = 'https://mcp.openbnb.ai/mcp';
 const PHOTO_MAX_BYTES = 3 * 1024 * 1024;
 const PHOTO_CACHE_MAX = 120;
 const SEARCH_PAGE_MAX = 40;
+const LAST_SEARCH_MAX_BYTES = 400000;
 
 /** Photo bytes are immutable per URL, so an in-process LRU is safe and cheap. */
 const photoCache = new Map();
@@ -122,6 +123,25 @@ function errorReply(err, ctx) {
   // Log the real message, show the actionable one.
   ctx.log.warn(`airbnb-mcp: ${err && err.message}`);
   return reply(502, { error: friendlyError(err && err.message) });
+}
+
+/**
+ * Serialise the restore cache, trimming RESULTS until it fits.
+ *
+ * Slicing the JSON string instead (what this used to do) cuts it mid-structure:
+ * the blob is then unparseable, `/last` throws, the error is swallowed, and restore
+ * silently stops working — after having written a few hundred KB of garbage per
+ * trip and user. Returns null when even an empty result set will not fit, which
+ * means "do not cache", not "cache something broken".
+ */
+function cachePayload(params, out, maxBytes) {
+  let results = out.results;
+  for (;;) {
+    const json = JSON.stringify({ params, ...out, results });
+    if (json.length <= maxBytes) return json;
+    if (!results.length) return null;
+    results = results.slice(0, Math.floor(results.length / 2));
+  }
 }
 
 function toInt(v, fallback = null) {
@@ -271,14 +291,17 @@ module.exports = definePlugin({
           if (tripId && req.user && req.user.id) {
             // Best-effort: losing the restore cache must never fail the search.
             try {
-              await ctx.db.exec(
-                `INSERT INTO last_search (trip_id, user_id, payload, updated_at) VALUES (?, ?, ?, ?)
-                 ON CONFLICT(trip_id, user_id) DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at`,
-                tripId,
-                req.user.id,
-                JSON.stringify({ params: b, ...out }).slice(0, 400000),
-                Date.now(),
-              );
+              const payload = cachePayload(b, out, LAST_SEARCH_MAX_BYTES);
+              if (payload) {
+                await ctx.db.exec(
+                  `INSERT INTO last_search (trip_id, user_id, payload, updated_at) VALUES (?, ?, ?, ?)
+                   ON CONFLICT(trip_id, user_id) DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at`,
+                  tripId,
+                  req.user.id,
+                  payload,
+                  Date.now(),
+                );
+              }
             } catch (err) {
               ctx.log.warn(`airbnb-mcp: could not cache last search — ${err && err.message}`);
             }
@@ -433,3 +456,4 @@ module.exports = definePlugin({
 
 // Exposed for tests; the host only ever uses the default plugin export above.
 module.exports.friendlyError = friendlyError;
+module.exports.cachePayload = cachePayload;

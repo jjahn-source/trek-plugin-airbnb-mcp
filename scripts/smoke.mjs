@@ -20,7 +20,7 @@ if (!frame) {
 }
 
 const RESULTS = [
-  { id: '1', url: 'https://www.airbnb.com/rooms/1', name: 'Sunlit loft above Rue des Rosiers', subtitle: 'Entire rental unit', area: 'Le Marais · 2 beds', badge: 'Guest favourite', priceLabel: '$1,240 for 4 nights', priceAmount: 1240, rating: 4.92, reviews: 148, photos: [] },
+  { id: '1', url: 'https://www.airbnb.com/rooms/1', name: 'Sunlit loft above Rue des Rosiers', subtitle: 'Entire rental unit', area: 'Le Marais · 2 beds', badge: 'Guest favourite', priceLabel: '$1,240 for 4 nights', priceAmount: 1240, rating: 4.92, reviews: 148, photos: ['https://a0.muscache.com/im/pictures/one.jpg'] },
   { id: '2', url: 'https://www.airbnb.com/rooms/2', name: 'Quiet studio by Canal Saint-Martin', subtitle: 'Entire rental unit', area: '10th arr. · 1 bed', badge: null, priceLabel: '$860 for 4 nights', priceAmount: 860, rating: 4.78, reviews: 92, photos: [] },
 ];
 
@@ -69,6 +69,7 @@ await page.addInitScript(({ results: R, listing: L }) => {
       else if (sub === '/last') data = { params: { location: 'Paris, France', adults: 2 }, results: R, cursor: null };
       else if (sub === '/listing') data = L;
       else if (sub === '/add') data = { place: { id: 99 }, accommodation: { id: 5 } };
+      else if (sub === '/photo') data = { dataUri: 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==' };
       window.postMessage({ type: 'trek:response', requestId: m.requestId, data }, '*');
     }
   });
@@ -79,6 +80,19 @@ await page.goto('file://' + path.resolve(frame));
 // 1. results render from the restored search
 await page.waitForSelector('.trek-card', { timeout: 15000 });
 t('renders restored search results', (await page.locator('.trek-card').count()) === 2);
+
+// 1b. photos load through the proxy, and a re-render reuses them
+await page.waitForFunction(() => {
+  const img = document.querySelector('.thumb');
+  return img && img.src.startsWith('data:');
+}, { timeout: 10000 });
+const photoCallsBefore = invoked.filter((c) => c.sub.startsWith('/photo')).length;
+t('fetches the listing photo through the proxy as a data URI', photoCallsBefore === 1);
+await page.selectOption('#sort', 'price');   // forces a full re-render of the grid
+await page.waitForTimeout(300);
+const photoCallsAfter = invoked.filter((c) => c.sub.startsWith('/photo')).length;
+t('reuses the cached photo across a re-render', photoCallsAfter === photoCallsBefore);
+t('the photo survives the re-render', await page.locator('.thumb').first().evaluate((e) => e.src.startsWith('data:')));
 
 // 2. Details opens the listing view
 await page.locator('[data-details="1"]').click();
