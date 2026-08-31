@@ -96,7 +96,7 @@ searches. Until a user connects, the tab shows a prompt instead of a search form
 ```bash
 npm install
 npm test          # 55 unit tests: MCP transport, session reuse, normalisation, every route
-npm run smoke     # 17 browser checks: packs the frame and drives the real UI
+npm run smoke     # 20 browser checks: packs the frame and drives the real UI
 npm run dev       # hot-reloaded local harness
 npm run validate  # the registry's own publish gates
 ```
@@ -106,7 +106,8 @@ exercised rather than stubbed. `npm run smoke` covers the half unit tests cannot
 it packs the plugin, loads the frame with the design kit inlined exactly as it ships, and
 stands in for the host over the documented `postMessage` protocol — so the search, detail,
 back and add flows are checked against the real UI, not a mock of it, along with the
-first-run and not-yet-configured states.
+first-run and not-yet-configured states, plus focus management and an
+accessible-name/keyboard-reachability audit of every control.
 
 `server/mcp.js` is a dependency-free Streamable-HTTP MCP client (a TREK plugin ships as
 a flat bundle with no install step, so the official SDK is not worth its weight here).

@@ -322,16 +322,26 @@
       '</div>';
   }
 
+  /** The card's Details button that opened the current detail view, so Back can
+   *  put focus back where it came from instead of dropping it on <body>. */
+  var returnFocusId = null;
+
   function showResults() {
     $('detail').hidden = true;
     $('detail').innerHTML = '';
     $('results').hidden = false;
     $('more').hidden = !cursor;
+    if (returnFocusId) {
+      var back = document.querySelector('[data-details="' + returnFocusId + '"]');
+      returnFocusId = null;
+      if (back) back.focus();
+    }
   }
 
   async function openDetails(id) {
     var l = byId(id);
     if (!l) return;
+    returnFocusId = String(id);
     $('results').hidden = true;
     $('more').hidden = true;
     $('detail').hidden = false;

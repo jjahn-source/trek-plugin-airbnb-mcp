@@ -106,9 +106,37 @@ t('shows amenity groups', detailLower.includes('bathroom') && detailLower.includ
 t('shows house rules', detailText.includes('Quiet hours'));
 t('hides the results grid while the detail is open', await page.locator('#results').isHidden());
 
+// 2b. focus follows the view change, and comes back again
+t('opening details moves focus into the detail view',
+  await page.evaluate(() => document.activeElement && document.activeElement.id === 'detail-back'));
+
 // 3. Back returns to the grid
 await page.locator('#detail-back').click();
 t('Back restores the results grid', await page.locator('#results').isVisible() && (await page.locator('#detail').isHidden()));
+t('Back returns focus to the card it came from',
+  await page.evaluate(() => {
+    const a = document.activeElement;
+    return !!a && a.getAttribute('data-details') === '1';
+  }));
+
+// 3b. every control carries an accessible name, and none is keyboard-unreachable
+const a11y = await page.evaluate(() => {
+  const problems = [];
+  document.querySelectorAll('input, select').forEach((el) => {
+    const named = (el.labels && el.labels.length > 0) || el.getAttribute('aria-label') || el.getAttribute('title');
+    if (!named) problems.push(`unlabelled ${el.tagName.toLowerCase()}#${el.id || '?'}`);
+  });
+  document.querySelectorAll('button').forEach((el) => {
+    const name = (el.textContent || '').trim() || el.getAttribute('aria-label');
+    if (!name) problems.push(`button with no accessible name: ${el.className}`);
+    if (el.tabIndex < 0) problems.push(`button not reachable by keyboard: ${name}`);
+  });
+  document.querySelectorAll('img').forEach((el) => {
+    if (el.getAttribute('alt') === null) problems.push('img with no alt attribute');
+  });
+  return problems;
+});
+t('every control has an accessible name and is keyboard-reachable', a11y.length === 0, a11y.join('; '));
 
 // 4. a second Details click is served from cache (no second /listing call)
 const before = invoked.filter((c) => c.sub.startsWith('/listing')).length;
