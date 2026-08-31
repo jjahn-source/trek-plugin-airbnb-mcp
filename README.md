@@ -118,6 +118,20 @@ for the fields it wants rather than indexing fixed paths, because the hosted end
 is a superset of the open-source server and both reshape whatever Airbnb's page
 happens to contain.
 
+## Verifying against the real service
+
+The normalisers were written against the **open-source** OpenBnB server's schema. The
+hosted endpoint is a superset, so its exact shapes are an assumption until something
+checks them. To capture real responses:
+
+```bash
+node scripts/capture-fixtures.mjs "Paris, France" 2026-10-10 2026-10-14
+```
+
+It signs you in to OpenBnB in your browser, calls both tools, and writes the raw
+payloads to `test/fixtures/hosted-*.json`. The access token stays in the process — it
+is never printed and never written to disk; only public listing data is saved.
+
 ## Licence
 
 MIT — see [LICENSE](./LICENSE).
