@@ -1,0 +1,18 @@
+{
+  "search": {
+    "places": [
+      {
+        "name": "Tokyo",
+        "formatted_address": "Tokyo, Japan",
+        "location": { "lat": 35.6764225, "lng": 139.650027 },
+        "place_id": "ChIJ51cu8IcbXWARiRtXIothAS4",
+        "types": ["administrative_area_level_1", "political"]
+      }
+    ]
+  },
+  "geocode": {
+    "location": { "lat": 35.6764225, "lng": 139.650027 },
+    "formatted_address": "Tokyo, Japan",
+    "place_id": "ChIJ51cu8IcbXWARiRtXIothAS4"
+  }
+}

@@ -342,6 +342,64 @@ function normalizeListing(id, payload) {
   };
 }
 
+/**
+ * Destination suggestions out of a `maps_search_places` or `maps_geocode` payload.
+ *
+ * Deliberately shape-tolerant. Unlike the Airbnb tools, these two have no captured
+ * fixture from the hosted server yet, and Google-derived payloads legitimately differ
+ * between the Places and Geocoding shapes (`displayName` vs `name`, `formattedAddress`
+ * vs `formatted_address`, `location.latitude` vs `geometry.location.lat`). Reading all
+ * of them costs a few lines; guessing one and being wrong costs a dead typeahead with
+ * no error to show for it. Anything unrecognised yields [] and the user types by hand.
+ */
+function placeCandidates(payload) {
+  const str = (v) => (typeof v === 'string' && v.trim() ? v.trim() : null);
+  if (!payload || typeof payload !== 'object') return [];
+  const rows =
+    (Array.isArray(payload.places) && payload.places) ||
+    (Array.isArray(payload.results) && payload.results) ||
+    (Array.isArray(payload.candidates) && payload.candidates) ||
+    (Array.isArray(payload.suggestions) && payload.suggestions) ||
+    (Array.isArray(payload) ? payload : null) ||
+    // Geocode resolves a single place; treat the object itself as a one-row list.
+    (payload.formatted_address || payload.formattedAddress || payload.location ? [payload] : []);
+
+  const out = [];
+  for (const r of rows) {
+    if (!r || typeof r !== 'object') continue;
+
+    const display =
+      (r.displayName && typeof r.displayName === 'object' ? r.displayName.text : r.displayName) ||
+      r.name || r.title || null;
+    const address =
+      r.formattedAddress || r.formatted_address || r.address || r.vicinity || r.description || null;
+
+    const name = str(display);
+    const addr = str(address);
+    // A geocode row has only an address — that IS the label. A places row has both, so
+    // the name leads and the address becomes the secondary line.
+    const label = name || addr;
+    if (!label) continue;
+    const sublabel = name && addr && addr !== name ? addr : null;
+
+    const loc = r.location || (r.geometry && r.geometry.location) || r;
+    let lat = null;
+    let lng = null;
+    if (loc && typeof loc === 'object') {
+      const a = loc.latitude != null ? loc.latitude : loc.lat;
+      const b = loc.longitude != null ? loc.longitude : loc.lng;
+      const na = Number(a);
+      const nb = Number(b);
+      if (Number.isFinite(na) && Number.isFinite(nb) && Math.abs(na) <= 90 && Math.abs(nb) <= 180 && !(na === 0 && nb === 0)) {
+        lat = na;
+        lng = nb;
+      }
+    }
+    out.push({ label, sublabel, lat, lng });
+  }
+  return out;
+}
+
 module.exports = {
   normalizeSearch,
   normalizeListing,
@@ -357,4 +415,5 @@ module.exports = {
   findCoords,
   findPhotos,
   findString,
+  placeCandidates,
 };

@@ -2,7 +2,9 @@
 
 const { definePlugin } = require('trek-plugin-sdk');
 const { McpClient, McpError } = require('./mcp');
-const { normalizeSearch, normalizeListing } = require('./normalize');
+const { normalizeSearch, normalizeListing, placeCandidates } = require('./normalize')
+const { staticMap } = require('./map');
+const commute = require('./commute');
 
 const DEFAULT_MCP_URL = 'https://mcp.openbnb.ai/mcp';
 const PHOTO_MAX_BYTES = 3 * 1024 * 1024;
@@ -280,6 +282,58 @@ module.exports = definePlugin({
     },
 
     {
+      /**
+       * Destination typeahead. `maps_search_places` takes a bare query and returns
+       * several candidates, which is what a suggestion list wants; `maps_geocode`
+       * resolves exactly one and is the better answer for a region ("tokyo japan"),
+       * so it backfills when places comes back empty. Both ride the acting user's
+       * existing OpenBnB session — no extra vendor, no extra egress host.
+       *
+       * A failure here is never fatal: the user can always type a location by hand,
+       * so an upstream error degrades to an empty list rather than an error banner.
+       */
+      method: 'GET',
+      path: '/places',
+      auth: true,
+      async handler(req, ctx) {
+        const q = typeof (req.query && req.query.q) === 'string' ? req.query.q.trim() : '';
+        if (q.length < 2) return reply(200, { suggestions: [] });
+
+        const seen = new Set();
+        const out = [];
+        const push = (label, sub, lat, lng) => {
+          const name = String(label || '').trim();
+          if (!name) return;
+          const key = name.toLowerCase();
+          if (seen.has(key)) return;
+          seen.add(key);
+          out.push({ label: name, sublabel: String(sub || '').trim() || null, lat: lat ?? null, lng: lng ?? null });
+        };
+
+        try {
+          const payload = await callTool(ctx, 'maps_search_places', { query: q });
+          for (const p of placeCandidates(payload)) push(p.label, p.sublabel, p.lat, p.lng);
+        } catch (err) {
+          // NOT_CONNECTED is the one case worth surfacing — the caller shows the
+          // connect gate rather than a silently empty list.
+          if (err && err.code === 'NOT_CONNECTED') return errorReply(err, ctx);
+          ctx.log.info(`places: search failed (${err && err.message})`);
+        }
+
+        if (!out.length) {
+          try {
+            const payload = await callTool(ctx, 'maps_geocode', { address: q });
+            for (const p of placeCandidates(payload)) push(p.label, p.sublabel, p.lat, p.lng);
+          } catch (err) {
+            ctx.log.info(`places: geocode failed (${err && err.message})`);
+          }
+        }
+
+        return reply(200, { suggestions: out.slice(0, 6) });
+      },
+    },
+
+    {
       method: 'POST',
       path: '/search',
       auth: true,
@@ -376,6 +430,51 @@ module.exports = definePlugin({
     },
 
     {
+      // Travel time from each stay to the places already on the trip. One matrix
+      // call covers up to 20 results, so this costs one round trip rather than one
+      // per listing.
+      method: 'POST',
+      path: '/commute',
+      auth: true,
+      async handler(req, ctx) {
+        const b = req.body && typeof req.body === 'object' ? req.body : {};
+        const tripId = toInt(b.tripId);
+        if (!tripId) return reply(400, { error: 'tripId is required' });
+
+        const origins = commute.pickOrigins(b.listings);
+        if (!origins.length) return reply(200, { destinations: [], times: {}, reason: 'no listings with coordinates' });
+
+        let destinations;
+        try {
+          destinations = commute.pickDestinations(await ctx.trips.getPlaces(tripId));
+        } catch (err) {
+          return errorReply(err, ctx);
+        }
+        if (!destinations.length) {
+          // Not an error: a trip with nothing pinned yet simply has nothing to
+          // measure against, and the UI says so rather than showing a failure.
+          return reply(200, { destinations: [], times: {}, reason: 'no places on this trip have coordinates yet' });
+        }
+
+        const mode = commute.normalizeMode(b.mode);
+        try {
+          const payload = await callTool(ctx, 'maps_distance_matrix', {
+            origins: origins.map((o) => o.coord),
+            destinations: destinations.map((d) => d.coord),
+            mode,
+          });
+          return reply(200, {
+            mode,
+            destinations: destinations.map((d) => ({ placeId: d.id, name: d.name })),
+            times: commute.normalizeMatrix(payload, origins, destinations),
+          });
+        } catch (err) {
+          return errorReply(err, ctx);
+        }
+      },
+    },
+
+    {
       // The plugin frame's CSP is `img-src 'self' data: blob:` — a remote <img>
       // never renders. Listing photos therefore come back as data URIs through here.
       method: 'GET',
@@ -399,6 +498,45 @@ module.exports = definePlugin({
           return reply(200, { dataUri });
         } catch (err) {
           return reply(502, { error: (err && err.message) || 'photo fetch failed' });
+        }
+      },
+    },
+
+    {
+      /**
+       * Static map tiles around a listing, as data URIs. The frame's CSP forbids remote
+       * images, so the fetch has to happen here — same reason as /photo.
+       *
+       * The tile source is an INSTANCE setting, so an operator who runs their own tile
+       * server (or pays for one) points this at it and adds the host under Admin →
+       * Plugins → Allowed hosts; the manifest declares `operatorEgress` for exactly that.
+       */
+      method: 'GET',
+      path: '/map',
+      auth: true,
+      async handler(req, ctx) {
+        const q = req.query || {};
+        const lat = Number(q.lat);
+        const lng = Number(q.lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+          return reply(400, { error: 'lat and lng are required' });
+        }
+        const zoom = Math.min(18, Math.max(3, Number(q.zoom) || 14));
+        const cfg = ctx.config || {};
+        const dark = String(q.theme || '') === 'dark';
+        const template = (dark ? cfg.map_tile_url_dark : cfg.map_tile_url) || cfg.map_tile_url;
+        if (!template) return reply(200, { unavailable: true, reason: 'No map tile source is configured.' });
+
+        try {
+          const map = await staticMap({ lat, lng, zoom, template });
+          if (!map.tiles.some(Boolean)) {
+            return reply(200, { unavailable: true, reason: 'The map service did not return any tiles.' });
+          }
+          return reply(200, Object.assign({ attribution: cfg.map_attribution || '' }, map));
+        } catch (err) {
+          // A missing map must never take the listing down with it.
+          ctx.log.info(`map: ${(err && err.message) || 'failed'}`);
+          return reply(200, { unavailable: true, reason: 'The map could not be loaded.' });
         }
       },
     },

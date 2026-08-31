@@ -1,17 +1,26 @@
-# Airbnb via OpenBnB
+# Airbnb Stays
 
 [![CI](https://github.com/jjahn-source/trek-plugin-airbnb-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/jjahn-source/trek-plugin-airbnb-mcp/actions/workflows/ci.yml)
 
-A TREK trip-page plugin that searches Airbnb stays for your trip dates and adds the
-ones you like to the trip as places — with each traveller signed in to **their own**
-free [OpenBnB](https://openbnb.ai) account.
+Find somewhere to stay without leaving your trip — search Airbnb for your dates,
+compare prices and ratings, and add the winner to the plan in one tap.
 
 ## What it does
 
-Adds an **Airbnb** tab to the trip planner. It seeds the search from the trip you are
-looking at (destination and the trip's start/end dates), then lets you filter by
-guests, price and property type, sort by price or rating, page through more results,
-and add any stay to the trip with one click.
+Adds an **Airbnb** tab to the trip planner, with the search bar you already know:
+where, check in, check out, and a guest picker. The destination box completes as you
+type, dates are picked on a two-month range calendar, and both dates come from the trip
+you are looking at — so most searches are one click. Filters for price and place type,
+sorting by price or rating, and paging through more results are all there when you
+want them.
+
+Open any stay and **"Where you'll be"** shows the neighbourhood it sits in. Airbnb only
+publishes an approximate location until a booking is confirmed, so the map marks an
+area rather than pretending to know the front door.
+
+Each result also shows travel time to the places already pinned on the trip. One
+distance-matrix request compares up to 20 stays at once, and the traveller can
+switch between transit, driving, walking and cycling without leaving the results.
 
 A stay is somewhere you sleep, so when your check-in and check-out dates match days
 on the trip it is added as a **lodging block spanning those nights** — the same thing
@@ -23,16 +32,16 @@ its price, rating and booking dates, which show up again in the place-detail pan
 amenities grouped the way Airbnb groups them (including what is *not* included), and the
 house rules — without leaving TREK. Listings are fetched once and cached for the session.
 
-The search itself runs against the hosted [OpenBnB MCP server](https://openbnb.ai)
-over the Model Context Protocol. **This plugin does no scraping of its own.** It holds
-no API key, no cookie and no shared account: every query is made with the short-lived
-OAuth token of the person who typed it, which TREK obtains and stores on their behalf.
+### How the search works
 
-Why that matters: Airbnb has no public API for third-party apps, and their
-`robots.txt` disallows the search path outright — a self-hosted scraper has to be run
-with `--ignore-robots-txt` to return anything at all. Routing through OpenBnB moves
-that relationship to a service the traveller signs up to themselves, under their own
-terms, instead of burying it inside your TREK server.
+Searches run against the hosted [OpenBnB MCP server](https://openbnb.ai). The plugin
+holds no API key, no cookie and no shared account: every query is made with the
+short-lived OAuth token of the person who typed it, which TREK obtains and stores on
+their behalf. One traveller's account is never used for another's searches.
+
+Airbnb has no public API for third-party apps, so going through OpenBnB is what makes
+this work without your TREK server taking on that relationship — each traveller signs
+up to OpenBnB themselves, under their own terms. Accounts are free.
 
 If you have not connected an account yet the tab explains what to do rather than
 failing; if your session expires mid-search the plugin says so and sends you back to
@@ -50,7 +59,7 @@ OpenBnB supports OAuth Dynamic Client Registration, so this is one command — n
 account, no dashboard, no support ticket:
 
 ```bash
-node scripts/register-oauth-client.mjs https://trek.example.com
+npm run register -- https://trek.example.com
 ```
 
 Pass exactly your server's **`APP_URL`** — the public base URL your users reach TREK
@@ -59,20 +68,21 @@ TREK builds the OAuth redirect from `APP_URL`, and OpenBnB only redirects to the
 registered here, so a mismatch shows up later as a sign-in that never completes. The
 script prints the redirect URI it registers — check it against your `APP_URL`.
 
-It discovers OpenBnB's endpoints, registers a confidential client and prints five values.
+It registers a confidential client and prints a **client id** and **client secret**.
 
-### 2. Paste them into the plugin's settings (admin, once)
+### 2. Paste those two values into the plugin's settings (admin, once)
 
-In TREK, go to **Admin → Plugins → Airbnb via OpenBnB → Settings** and fill in
-`OAuth authorize URL`, `OAuth token URL`, `OAuth client id` and `OAuth client secret`
-exactly as printed. Leave `OAuth scopes` blank. The secret is stored encrypted and
-never leaves the host.
+In TREK, go to **Admin → Plugins → Airbnb Stays → Settings** and fill in
+`OAuth client id` and `OAuth client secret`. That is all you need to touch: the
+authorize, token and MCP endpoints are constants of the OpenBnB service and arrive
+already filled in. The secret is stored encrypted and never leaves the host.
 
-`OpenBnB MCP endpoint` is optional — leave it blank to use `https://mcp.openbnb.ai/mcp`.
+> Needs TREK 4.2 or newer for the settings form and the pre-filled endpoints. On an
+> older TREK the same four values still work, they just all have to be entered by hand.
 
 ### 3. Each traveller connects their own account
 
-Every user goes to **Settings → Plugins → Airbnb via OpenBnB → Connect** once and
+Every user goes to **Settings → Plugins → Airbnb Stays → Connect** once and
 signs in to OpenBnB with Google, an email address or SSO. OpenBnB accounts are free.
 TREK never sees the password, and one person's account is never used for another's
 searches. Until a user connects, the tab shows a prompt instead of a search form.
@@ -89,14 +99,15 @@ searches. Until a user connects, the tab shows a prompt instead of a search form
 | `oauth:client` | Lets TREK run the OAuth flow to OpenBnB for each user and hand this plugin a short-lived access token for whoever is searching. The client secret and refresh token stay with the host. |
 | `http:outbound:mcp.openbnb.ai` | The one network call this plugin makes: the MCP request that runs the search or fetches a listing's details. |
 | `http:outbound:*.muscache.com` | Listing photos live on Airbnb's image CDN. The plugin frame's CSP blocks remote images, so photos are fetched here and passed to the page as data URIs. No other host is proxied. |
+| `http:outbound:tile.openstreetmap.org` | Map tiles for the "Where you'll be" map in a listing's details. Same reason as the photos: the frame's CSP blocks remote images, so tiles are fetched here and passed to the page as data URIs. The tile source is an admin setting — point it at another provider and add that host under **Allowed hosts**. |
 | `hook:place-detail-provider` | Adds the Airbnb link, price and rating rows to the detail panel of a place this plugin added. |
 
 ## Development
 
 ```bash
 npm install
-npm test          # 67 unit tests: MCP transport, session reuse, normalisation, every route
-npm run smoke     # 21 browser checks: packs the frame and drives the real UI
+npm test          # 97 unit tests: MCP transport, session reuse, normalisation, tile maths, every route
+npm run smoke     # 47 browser checks: packs the frame and drives the real UI
 npm run dev       # hot-reloaded local harness
 npm run validate  # the registry's own publish gates
 ```
@@ -128,7 +139,7 @@ checks them. To capture real responses:
 node scripts/capture-fixtures.mjs "Paris, France" 2026-10-10 2026-10-14
 ```
 
-It signs you in to OpenBnB in your browser, calls both tools, and writes the raw
+It signs you in to OpenBnB in your browser, calls the listing and map tools, and writes the raw
 payloads to `test/fixtures/hosted-*.json`. The access token stays in the process — it
 is never printed and never written to disk; only public listing data is saved.
 

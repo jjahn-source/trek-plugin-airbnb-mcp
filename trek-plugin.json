@@ -1,12 +1,12 @@
 {
   "id": "airbnb-mcp",
-  "name": "Airbnb via OpenBnB",
-  "version": "1.4.2",
+  "name": "Airbnb Stays",
+  "version": "1.6.0",
   "apiVersion": 1,
   "type": "trip-page",
   "trek": ">=4.0.0 <5.0.0",
   "author": "John Jahn",
-  "description": "Search Airbnb stays for your trip dates and add them to the trip. Each traveller signs in to their own free OpenBnB account - no scraping, no shared credentials.",
+  "description": "Find somewhere to stay without leaving your trip — search Airbnb for your dates, compare prices and ratings, and add the winner to the plan in one tap.",
   "icon": "BedDouble",
   "license": "MIT",
   "homepage": "https://github.com/jjahn-source/trek-plugin-airbnb-mcp",
@@ -20,11 +20,13 @@
     "oauth:client",
     "http:outbound:mcp.openbnb.ai",
     "http:outbound:*.muscache.com",
+    "http:outbound:tile.openstreetmap.org",
     "hook:place-detail-provider"
   ],
   "egress": [
     "mcp.openbnb.ai",
-    "*.muscache.com"
+    "*.muscache.com",
+    "tile.openstreetmap.org"
   ],
   "capabilities": {
     "tripPage": {
@@ -36,27 +38,21 @@
       "key": "oauth_authorize_url",
       "label": "OAuth authorize URL",
       "input_type": "text",
-      "required": true,
+      "required": false,
       "scope": "instance",
       "placeholder": "https://mcp.openbnb.ai/authorize",
-      "hint": "OpenBnB's authorize endpoint. Use the value printed by scripts/register-oauth-client.mjs."
+      "hint": "Pre-filled for the hosted OpenBnB service. Change only if you run your own.",
+      "default": "https://mcp.openbnb.ai/authorize"
     },
     {
       "key": "oauth_token_url",
       "label": "OAuth token URL",
       "input_type": "text",
-      "required": true,
-      "scope": "instance",
-      "placeholder": "https://mcp.openbnb.ai/token",
-      "hint": "OpenBnB's token endpoint."
-    },
-    {
-      "key": "oauth_scopes",
-      "label": "OAuth scopes (space-separated)",
-      "input_type": "text",
       "required": false,
       "scope": "instance",
-      "hint": "Leave blank. OpenBnB issues a full-access token for the signed-in account."
+      "placeholder": "https://mcp.openbnb.ai/token",
+      "hint": "Pre-filled for the hosted OpenBnB service. Change only if you run your own.",
+      "default": "https://mcp.openbnb.ai/token"
     },
     {
       "key": "oauth_client_id",
@@ -64,7 +60,7 @@
       "input_type": "text",
       "required": true,
       "scope": "instance",
-      "hint": "From the one-off registration script. Unique to this TREK instance."
+      "hint": "Run `npm run register -- <your TREK URL>` once, then paste the client id it prints."
     },
     {
       "key": "oauth_client_secret",
@@ -73,7 +69,7 @@
       "required": true,
       "secret": true,
       "scope": "instance",
-      "hint": "From the same script. Stored encrypted; never leaves the host."
+      "hint": "From the same command. Stored encrypted; never leaves this server."
     },
     {
       "key": "mcp_url",
@@ -82,7 +78,36 @@
       "required": false,
       "scope": "instance",
       "placeholder": "https://mcp.openbnb.ai/mcp",
-      "hint": "Override only if you run a compatible MCP endpoint of your own. Defaults to the hosted OpenBnB server."
+      "hint": "Pre-filled for the hosted OpenBnB service. Change only if you run your own.",
+      "default": "https://mcp.openbnb.ai/mcp"
+    },
+    {
+      "key": "map_tile_url",
+      "label": "Map tiles",
+      "input_type": "text",
+      "required": false,
+      "scope": "instance",
+      "default": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+      "hint": "Slippy-map template for the listing map. Defaults to OpenStreetMap, which needs no key. To use CARTO or another provider, paste its template (key included) and add the host under Allowed hosts."
+    },
+    {
+      "key": "map_tile_url_dark",
+      "label": "Map tiles (dark theme)",
+      "input_type": "text",
+      "required": false,
+      "scope": "instance",
+      "default": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+      "hint": "Used on a dark theme. CARTO’s dark_all style suits dark mode well if you have a CARTO key."
+    },
+    {
+      "key": "map_attribution",
+      "label": "Map attribution",
+      "input_type": "text",
+      "required": false,
+      "scope": "instance",
+      "default": "© OpenStreetMap contributors",
+      "hint": "Shown under the map. Change it if you change the tile source — most providers require their own credit."
     }
-  ]
+  ],
+  "operatorEgress": true
 }

@@ -173,7 +173,44 @@ if (first?.id && listingTool) {
   console.error(`  ! no listing tool offered; got: ${toolNames.join(', ')}`);
 }
 
+// --- the maps tools 2.0 uses ---------------------------------------------------
+// Captured for the same reason as the listing payloads: the shapes are an
+// assumption until something checks them, and assumptions have been wrong nine
+// times on this endpoint already.
+const capturedLat = first?.demandStayListing?.location?.coordinate?.latitude;
+const capturedLng = first?.demandStayListing?.location?.coordinate?.longitude;
+const origin = Number.isFinite(capturedLat) && Number.isFinite(capturedLng)
+  ? `${capturedLat},${capturedLng}`
+  : '48.8566,2.3522';
+
+let matrixPayload = null;
+if (toolNames.includes('maps_distance_matrix')) {
+  console.log(`  Measuring travel time from ${origin}…`);
+  matrixPayload = payloadOf(await rpc('tools/call', {
+    name: 'maps_distance_matrix',
+    arguments: {
+      origins: [origin],
+      // A landmark, a station and a raw coordinate — the three shapes a trip's
+      // places actually come in.
+      destinations: ['Louvre Museum, Paris', 'Gare du Nord, Paris', '48.8584,2.2945'],
+      mode: 'transit',
+    },
+  }));
+}
+
+let placesPayload = null;
+if (toolNames.includes('maps_search_places')) {
+  console.log('  Searching nearby places…');
+  const [lat, lng] = origin.split(',').map(Number);
+  placesPayload = payloadOf(await rpc('tools/call', {
+    name: 'maps_search_places',
+    arguments: { query: 'restaurants', location: { latitude: lat, longitude: lng }, radius: 800 },
+  }));
+}
+
 mkdirSync('test/fixtures', { recursive: true });
+if (matrixPayload) writeFileSync('test/fixtures/hosted-distance-matrix.json', JSON.stringify(matrixPayload, null, 2));
+if (placesPayload) writeFileSync('test/fixtures/hosted-places.json', JSON.stringify(placesPayload, null, 2));
 writeFileSync('test/fixtures/hosted-tools.json', JSON.stringify({ serverInfo: init.result?.serverInfo, tools: tools.result?.tools }, null, 2));
 writeFileSync('test/fixtures/hosted-search.json', JSON.stringify(searchPayload, null, 2));
 if (listingPayload) writeFileSync('test/fixtures/hosted-listing.json', JSON.stringify(listingPayload, null, 2));
@@ -181,7 +218,7 @@ if (listingPayload) writeFileSync('test/fixtures/hosted-listing.json', JSON.stri
 console.log(`
   Wrote:
     test/fixtures/hosted-tools.json
-    test/fixtures/hosted-search.json${listingPayload ? '\n    test/fixtures/hosted-listing.json' : ''}
+    test/fixtures/hosted-search.json${listingPayload ? '\n    test/fixtures/hosted-listing.json' : ''}${matrixPayload ? '\n    test/fixtures/hosted-distance-matrix.json' : ''}${placesPayload ? '\n    test/fixtures/hosted-places.json' : ''}
 
   These contain public listing data only — no token, no account details.
   Hand them back to Claude and the normalisers can be checked against reality.

@@ -21,6 +21,7 @@ if (!frame) {
 // Real listings, normalised from the captured hosted-endpoint response — so the
 // store card shows what the plugin actually renders, not a hand-written mock.
 const { normalizeSearch } = await import('../server/normalize.js').then((m) => m.default ?? m);
+const { staticMap } = await import('../server/map.js').then((m) => m.default ?? m);
 const captured = JSON.parse(readFileSync(new URL('../test/fixtures/hosted-search.json', import.meta.url), 'utf8'));
 const RESULTS = normalizeSearch(captured, null).results;
 
@@ -40,8 +41,25 @@ await Promise.all(
 );
 console.log(`fetched ${Object.keys(PHOTOS).length}/${RESULTS.length} listing photos`);
 
+// A REAL mosaic from the default tile source, so the captured image shows the map a
+// traveller actually gets rather than a stand-in.
+const firstWithCoords = RESULTS.find((r) => r.lat != null && r.lng != null);
+const MAP = firstWithCoords
+  ? Object.assign(
+      { attribution: '© OpenStreetMap contributors' },
+      await staticMap({
+        lat: Number(firstWithCoords.lat),
+        lng: Number(firstWithCoords.lng),
+        zoom: 15,
+        template: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      }),
+    )
+  : { unavailable: true, reason: 'no coordinates in the fixture' };
+console.log(`map tiles: ${(MAP.tiles || []).filter(Boolean).length}/${(MAP.tiles || []).length}`);
+
 const FIXTURES = {
   '/status': { configured: true, connected: true, endpoint: 'https://mcp.openbnb.ai/mcp' },
+  '/map': MAP,
   '/last': { params: { location: 'Paris, France', checkin: '2026-10-10', checkout: '2026-10-14', adults: 2 }, results: RESULTS, cursor: 'next' },
   '/photos': PHOTOS,
 };
@@ -82,7 +100,13 @@ await page.addInitScript((fixtures) => {
 
 await page.goto('file://' + path.resolve(frame));
 // Wait for the restored results to paint rather than racing a fixed delay.
-await page.waitForSelector('.trek-card', { timeout: 15000 });
+await page.waitForSelector('.card:not(.sk)', { timeout: 15000 });
+// SHOT_OPEN=<selector> opens one control before capturing, for documenting the
+// calendar and the guest picker rather than only the closed bar.
+if (process.env.SHOT_OPEN) {
+  await page.locator(process.env.SHOT_OPEN).first().click();
+  await page.waitForTimeout(250);
+}
 await page.waitForTimeout(400);
 await page.screenshot({ path: out });
 await browser.close();

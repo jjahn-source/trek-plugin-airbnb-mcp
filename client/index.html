@@ -3,37 +3,268 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Airbnb via OpenBnB</title>
+  <title>Airbnb Stays</title>
   <!-- trek:ui -->
   <style>
     body { margin: 0; }
     /* .results sets display:grid, which outranks the UA's [hidden] rule and left
        the grid on screen behind the detail view. Make hidden authoritative. */
     [hidden] { display: none !important; }
-    .wrap { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
-    .form-grid {
-      display: grid; gap: 10px;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+
+    /* A trip page is a FILLING surface: the kit anchors body at height:100% with
+       overflow:hidden and scrolls `.trek-scroll` instead. Without this the grid was
+       simply clipped at the frame edge with no way to reach the rest of the results.
+       html needs the height too, or body's 100% resolves against nothing. */
+    [data-fill] { height: 100%; }
+    .trek-scroll { height: 100%; }
+    .wrap { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+
+    /* ---------------------------------------------------------------- search bar */
+    /* Sticky so the filters stay reachable however far down the results you are.
+       --trek-inset-top is the space the HOST already keeps clear; aligning to it
+       keeps this bar level with TREK's own chrome instead of tucking under it. */
+    .searchbar {
+      position: sticky; top: var(--trek-inset-top, 0px); z-index: 20;
+      display: flex; flex-direction: column; gap: 10px;
+      padding: 12px; margin: -4px 0 0;
+      background: var(--glass-bg, var(--bg-card)); backdrop-filter: blur(var(--glass-blur, 12px));
+      border: 1px solid var(--glass-border, var(--border-primary)); border-radius: var(--r-xl, 18px);
+      box-shadow: var(--glass-shadow, var(--shadow-card));
     }
-    .form-grid .wide { grid-column: 1 / -1; }
+    /* One pill divided into segments, the way the Airbnb bar reads. It collapses to
+       stacked full-width rows on a phone rather than squeezing four fields into a row. */
+    .segbar {
+      display: grid; align-items: stretch; gap: 0;
+      grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.1fr) auto;
+      border: 1px solid var(--border-primary); border-radius: 999px;
+      background: var(--bg-input); overflow: visible;
+    }
+    /* Each segment sits in its own positioned slot, so a popover anchored inside it
+       opens under THAT segment. A popover parented to the bar itself lands at the bar's
+       left edge no matter which segment opened it. */
+    .seg-slot { position: relative; min-width: 0; display: flex; }
+    .seg-slot + .seg-slot .seg, .seg-slot:not(:first-child) .seg { border-left: 1px solid var(--border-primary); }
+    .seg {
+      position: relative; display: flex; flex-direction: column; justify-content: center;
+      gap: 1px; padding: 8px 16px; min-width: 0; width: 100%; text-align: left;
+      background: none; border: 0; color: var(--text-primary);
+      font: inherit; cursor: pointer; border-radius: 999px;
+    }
+    .seg:hover { background: var(--bg-hover); }
+    .seg-slot:first-child .seg { padding-left: 20px; }
+    .seg-label {
+      font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+      color: var(--text-faint); pointer-events: none;
+    }
+    .seg-input {
+      border: 0; background: none; padding: 0; margin: 0; width: 100%; min-width: 0;
+      color: var(--text-primary); font: inherit; font-size: 14px; line-height: 1.3;
+    }
+    .seg-input:focus { outline: none; }
+    .seg-input::placeholder { color: var(--text-faint); }
+    .seg-value { font-size: 14px; line-height: 1.3; color: var(--text-primary); }
+    .seg-value.is-empty { color: var(--text-faint); }
+    .search-go {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      margin: 4px; padding: 0 18px; min-height: 40px; border: 0; border-radius: 999px;
+      background: var(--accent); color: var(--accent-text, #fff);
+      font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: background .15s var(--trek-ease, ease);
+    }
+    .search-go:hover:not(:disabled) { background: var(--accent-hover, var(--accent)); }
+    .search-go:disabled { opacity: .6; cursor: default; }
+
+    @media (max-width: 720px) {
+      .segbar { grid-template-columns: 1fr 1fr; border-radius: var(--r-xl, 18px); }
+      .seg-slot .seg { border-left: 0; border-bottom: 1px solid var(--border-primary); border-radius: 0; }
+      .seg-where { grid-column: 1 / -1; }
+      .search-go { grid-column: 1 / -1; margin: 8px; }
+      /* Anchored popovers would overflow a narrow frame; pin them to the bar instead. */
+      .pop-right, .pop-dates { left: 0; right: 0; transform: none; min-width: 0; }
+      .cal-months { grid-template-columns: 1fr; }
+    }
+
+    /* ------------------------------------------------------------- autocomplete */
+    .suggest {
+      position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 30;
+      margin: 0; padding: 6px; list-style: none; max-height: 280px; overflow-y: auto;
+      background: var(--bg-card); border: 1px solid var(--border-primary);
+      border-radius: 14px; box-shadow: var(--shadow-md, var(--shadow-card));
+    }
+    .suggest li {
+      display: flex; flex-direction: column; gap: 1px; padding: 9px 12px;
+      border-radius: 10px; cursor: pointer;
+    }
+    .suggest li[aria-selected="true"], .suggest li:hover { background: var(--bg-hover); }
+    .suggest-main { font-size: 14px; color: var(--text-primary); }
+    .suggest-sub { font-size: 12px; color: var(--text-muted); }
+
+    /* ------------------------------------------------------------ popovers/filters */
+    .filters-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .chip-btn {
+      display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px;
+      border: 1px solid var(--border-primary); border-radius: 999px;
+      background: var(--bg-card); color: var(--text-primary);
+      font: inherit; font-size: 13px; cursor: pointer;
+    }
+    .chip-btn:hover { background: var(--bg-hover); }
+    .chip-btn[aria-expanded="true"] { border-color: var(--accent); }
+    .chip-count {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+      background: var(--accent); color: var(--accent-text, #fff); font-size: 11px; font-weight: 700;
+    }
+    .pop {
+      /* top:100% is load-bearing: a .seg-slot is a flex container, so without it the
+         popover's static position is BESIDE the segment and it renders over the bar. */
+      position: absolute; top: 100%; z-index: 30; margin-top: 8px; padding: 14px; min-width: 260px;
+      background: var(--bg-card); border: 1px solid var(--border-primary);
+      border-radius: 16px; box-shadow: var(--shadow-md, var(--shadow-card));
+    }
+    /* Right-aligned so a popover under the last segments stays inside the bar. */
+    .pop-right { right: 0; }
+    .pop-dates { right: 0; padding: 16px; }
+
+    /* Calendar — deliberately the same visual language as TREK's own date picker:
+       narrow weekday initials, a 7-column grid, 32px cells, accent for the selection. */
+    .cal-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+    .cal-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+    .cal-nav {
+      width: 28px; height: 28px; border-radius: 50%; border: 0; background: none;
+      color: var(--text-faint); font-size: 18px; line-height: 1; cursor: pointer;
+    }
+    .cal-nav:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .cal-months { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .cal-month-name { text-align: center; font-size: 12px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+    .cal-dow { text-align: center; font-size: 10px; font-weight: 600; color: var(--text-faint); padding: 2px 0; }
+    .cal-day {
+      width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+      border: 0; border-radius: 50%; background: none; color: var(--text-primary);
+      font: inherit; font-size: 12px; cursor: pointer;
+    }
+    .cal-day:hover:not(:disabled) { background: var(--bg-hover); }
+    .cal-day:disabled { opacity: .3; cursor: not-allowed; }
+    /* The nights between the two ends read as one block, the way a stay does. */
+    .cal-day.in-range { background: var(--accent-subtle, var(--bg-hover)); border-radius: 0; }
+    .cal-day.is-end { background: var(--accent); color: var(--accent-text, #fff); }
+    .cal-day.is-today:not(.is-end) { box-shadow: inset 0 0 0 1px var(--border-primary); }
+
+    .pop-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      padding: 8px 0;
+    }
+    .pop-row + .pop-row { border-top: 1px solid var(--border-primary); }
+    .pop-row-label { font-size: 14px; color: var(--text-primary); }
+    .pop-row-hint { font-size: 12px; color: var(--text-muted); }
+    .stepper { display: flex; align-items: center; gap: 12px; }
+    .stepper button {
+      width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border-primary);
+      background: none; color: var(--text-primary); font-size: 17px; line-height: 1; cursor: pointer;
+    }
+    .stepper button:hover:not(:disabled) { border-color: var(--text-primary); }
+    .stepper button:disabled { opacity: .35; cursor: default; }
+    .stepper output { min-width: 20px; text-align: center; font-size: 14px; }
+    .pop-actions { display: flex; justify-content: space-between; gap: 8px; padding-top: 12px; }
+
+    /* ------------------------------------------------------------------- results */
     .results {
-      display: grid; gap: 12px;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      display: grid; gap: 22px 16px;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
     }
-    .card { display: flex; flex-direction: column; overflow: hidden; padding: 0; }
+    .card {
+      display: flex; flex-direction: column; gap: 8px; padding: 0;
+      background: none; border: 0; box-shadow: none; cursor: pointer;
+    }
+    .card-media { position: relative; }
     .thumb {
-      width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block;
-      background: var(--bg-hover, rgba(128,128,128,.12));
+      width: 100%; aspect-ratio: 20 / 19; object-fit: cover; display: block;
+      border-radius: 14px; background: var(--bg-tertiary, var(--bg-hover));
     }
-    .card-body { padding: 12px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
-    .card-name { font-weight: 600; line-height: 1.3; }
-    .card-foot { margin-top: auto; display: flex; gap: 8px; padding-top: 8px; }
-    .card-foot .trek-btn { flex: 1; }
-    .empty { padding: 32px 16px; text-align: center; }
+    .thumb-empty {
+      width: 100%; aspect-ratio: 20 / 19; border-radius: 14px;
+      background: var(--bg-tertiary, var(--bg-hover));
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-faint); font-size: 12px;
+    }
+    .card-badge {
+      position: absolute; top: 10px; left: 10px; padding: 5px 10px; border-radius: 999px;
+      background: var(--bg-card); color: var(--text-primary);
+      font-size: 11px; font-weight: 700; box-shadow: var(--shadow-sm, var(--shadow-card));
+    }
+    /* The add button rides the image the way Airbnb's heart does. It stays visible on
+       touch (no hover to reveal it) and only fades in on pointer devices. */
+    .card-add {
+      position: absolute; top: 8px; right: 8px; width: 32px; height: 32px;
+      display: inline-flex; align-items: center; justify-content: center;
+      border: 0; border-radius: 50%; cursor: pointer; font-size: 17px; line-height: 1;
+      background: var(--bg-card); color: var(--text-primary);
+      box-shadow: var(--shadow-sm, var(--shadow-card));
+      transition: transform .15s var(--trek-ease, ease);
+    }
+    .card-add:hover:not(:disabled) { transform: scale(1.08); }
+    .card-add:disabled { opacity: .55; cursor: default; }
+    /* Always visible, the way Airbnb's heart is. Hiding it until hover made the card's
+       primary action undiscoverable — and invisible entirely on touch. Hover only
+       strengthens it. */
+    .card-add { opacity: .92; }
+    .card:hover .card-add, .card-add:focus-visible, .card-add.is-done { opacity: 1; }
+    .card-line { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+    .card-name {
+      font-weight: 600; font-size: 14px; line-height: 1.35; color: var(--text-primary);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .card-rating { flex: 0 0 auto; font-size: 13px; color: var(--text-primary); }
+    .card-sub {
+      font-size: 13px; color: var(--text-muted);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .card-price { font-size: 14px; color: var(--text-primary); }
+    .card-price .amount { font-weight: 600; }
+    .commute { display: grid; gap: 3px; padding-top: 2px; }
+    .commute-row { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--text-muted); }
+    .commute-row span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .commute-row strong { flex: 0 0 auto; color: var(--text-secondary); font-weight: 600; }
+
+    /* Skeletons: the grid keeps its shape while a search runs, so results appear in
+       place instead of the page jumping from an empty box to a full grid. */
+    .sk { pointer-events: none; }
+    .sk-box { border-radius: 14px; background: var(--bg-hover); animation: sk 1.2s ease-in-out infinite; }
+    .sk-media { aspect-ratio: 20 / 19; }
+    .sk-line { height: 12px; border-radius: 6px; }
+    .sk-line.short { width: 55%; }
+    @keyframes sk { 0%, 100% { opacity: .55 } 50% { opacity: .95 } }
+    @media (prefers-reduced-motion: reduce) { .sk-box { animation: none } }
+
+    .empty { padding: 40px 16px; text-align: center; }
+    .empty-title { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
     .state { max-width: 560px; }
-    .price { font-weight: 600; }
+    /* Map mosaic. The tiles arrive as data URIs (the frame's CSP blocks remote images)
+       and are laid out with CSS grid, then shifted so the listing's area sits in the
+       middle of the viewport box — no image compositing on the server. */
+    .map-box {
+      /* Capped so the 3x3 mosaic covers it. Wider than the mosaic and the tiles would
+         sit in the middle of an empty box with gutters either side. */
+      position: relative; height: 240px; max-width: 620px; border-radius: 14px; overflow: hidden;
+      background: var(--bg-tertiary, var(--bg-hover)); border: 1px solid var(--border-primary);
+    }
+    .map-mosaic { position: absolute; display: grid; }
+    .map-mosaic img { display: block; width: 256px; height: 256px; }
+    /* An approximate circle, not a pin: Airbnb only publishes a rough location before
+       booking, and a pin would claim precision the data does not have. */
+    .map-area {
+      position: absolute; width: 116px; height: 116px; border-radius: 50%;
+      background: color-mix(in srgb, var(--accent) 22%, transparent);
+      border: 2px solid var(--accent); transform: translate(-50%, -50%); pointer-events: none;
+    }
+    .map-attr {
+      position: absolute; right: 6px; bottom: 4px; padding: 1px 6px; border-radius: 6px;
+      background: color-mix(in srgb, var(--bg-card) 82%, transparent);
+      font-size: 10px; color: var(--text-muted);
+    }
+    .map-note { font-size: 12px; color: var(--text-muted); margin: 6px 0 0; }
     .detail-photos { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
-    .detail-photos img { height: 190px; border-radius: 10px; flex: 0 0 auto; }
+    .detail-photos img { height: 190px; border-radius: 12px; flex: 0 0 auto; }
     .amenities { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
     .detail-desc { white-space: pre-wrap; line-height: 1.5; margin: 0; }
     .sr-only {
@@ -43,52 +274,153 @@
   </style>
 </head>
 <body>
-<div class="wrap">
-  <div id="gate"></div>
+<div class="trek-scroll">
+  <div class="wrap">
+    <div id="gate"></div>
 
-  <div id="app" hidden>
-    <form id="search-form" class="trek-glass trek-stack" style="padding:14px">
-      <div class="form-grid">
-        <label class="wide">
-          <span class="trek-label">Where</span>
-          <input class="trek-input" id="location" name="location" required placeholder="Paris, France" autocomplete="off" />
-        </label>
-        <label><span class="trek-label">Check in</span><input class="trek-input" type="date" id="checkin" /></label>
-        <label><span class="trek-label">Check out</span><input class="trek-input" type="date" id="checkout" /></label>
-        <label><span class="trek-label">Adults</span><input class="trek-input" type="number" id="adults" min="1" max="16" value="2" /></label>
-        <label><span class="trek-label">Children</span><input class="trek-input" type="number" id="children" min="0" max="15" value="0" /></label>
-        <label><span class="trek-label">Min price</span><input class="trek-input" type="number" id="minPrice" min="0" placeholder="any" /></label>
-        <label><span class="trek-label">Max price</span><input class="trek-input" type="number" id="maxPrice" min="0" placeholder="any" /></label>
-        <label>
-          <span class="trek-label">Type</span>
-          <select class="trek-select" id="propertyType">
-            <option value="">Any</option>
-            <option value="entire_home">Entire home</option>
-            <option value="private_room">Private room</option>
-            <option value="shared_room">Shared room</option>
-            <option value="hotel_room">Hotel room</option>
-          </select>
-        </label>
-      </div>
-      <div class="trek-cluster">
-        <button class="trek-btn trek-btn--primary" type="submit" id="go">Search</button>
-        <label class="trek-cluster" style="gap:6px">
-          <span class="trek-label" style="margin:0">Sort</span>
-          <select class="trek-select" id="sort">
-            <option value="">Relevance</option>
-            <option value="price">Price</option>
-            <option value="rating">Rating</option>
-          </select>
-        </label>
-        <span class="trek-chip" id="count" hidden></span>
-      </div>
-    </form>
+    <div id="app" hidden>
+      <form id="search-form" class="searchbar" autocomplete="off">
+        <div class="segbar">
+          <div class="seg-slot seg-where">
+            <div class="seg">
+              <span class="seg-label" id="lbl-where">Where</span>
+              <input class="seg-input" id="location" name="location" required
+                     placeholder="Search destinations" aria-labelledby="lbl-where" aria-label="Where"
+                     role="combobox" aria-expanded="false" aria-autocomplete="list"
+                     aria-controls="suggest" autocomplete="off" />
+            </div>
+            <ul class="suggest" id="suggest" role="listbox" aria-label="Destination suggestions" hidden></ul>
+          </div>
 
-    <div id="status" class="trek-muted" role="status" aria-live="polite" style="min-height:20px"></div>
-    <div id="detail" hidden></div>
-    <div class="results" id="results"></div>
-    <div class="trek-cluster" style="justify-content:center">
-      <button class="trek-btn trek-btn--secondary" id="more" hidden>Load more</button>
+          <div class="seg-slot">
+            <button type="button" class="seg" id="checkin-btn" aria-expanded="false" aria-controls="dates-pop">
+              <span class="seg-label">Check in</span>
+              <span class="seg-value is-empty" id="checkin-value">Add date</span>
+            </button>
+          </div>
+          <div class="seg-slot">
+            <button type="button" class="seg" id="checkout-btn" aria-expanded="false" aria-controls="dates-pop">
+              <span class="seg-label">Check out</span>
+              <span class="seg-value is-empty" id="checkout-value">Add date</span>
+            </button>
+            <!-- Anchored to the check-out segment and pulled left, so a two-month grid
+                 stays inside the bar instead of hanging off the right edge. -->
+            <div class="pop pop-dates" id="dates-pop" role="dialog" aria-label="Choose dates" hidden>
+              <div class="cal-head">
+                <button type="button" class="cal-nav" id="cal-prev" aria-label="Previous month">&#8249;</button>
+                <div class="cal-title" id="cal-title" aria-live="polite"></div>
+                <button type="button" class="cal-nav" id="cal-next" aria-label="Next month">&#8250;</button>
+              </div>
+              <div class="cal-months" id="cal-months"></div>
+              <div class="pop-actions">
+                <button type="button" class="trek-btn trek-btn--ghost" id="dates-clear">Clear dates</button>
+                <button type="button" class="trek-btn trek-btn--ghost" data-close-pop="dates-pop">Done</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="seg-slot">
+            <button type="button" class="seg seg-who" id="who-btn" aria-expanded="false" aria-controls="who-pop">
+              <span class="seg-label">Who</span>
+              <span class="seg-value" id="who-value">2 guests</span>
+            </button>
+            <!-- Lives INSIDE the Who slot, which is the positioned ancestor, so it opens
+                 under Who. As a sibling of the bar it anchored to the bar's left edge
+                 and appeared under Where instead. -->
+            <div class="pop pop-right" id="who-pop" role="dialog" aria-label="Guests" hidden>
+          <div class="pop-row">
+            <div>
+              <div class="pop-row-label">Adults</div>
+              <div class="pop-row-hint">Ages 13 or above</div>
+            </div>
+            <div class="stepper">
+              <button type="button" data-step="adults" data-delta="-1" aria-label="Fewer adults">−</button>
+              <output id="adults-out">2</output>
+              <button type="button" data-step="adults" data-delta="1" aria-label="More adults">+</button>
+            </div>
+          </div>
+          <div class="pop-row">
+            <div>
+              <div class="pop-row-label">Children</div>
+              <div class="pop-row-hint">Ages 2–12</div>
+            </div>
+            <div class="stepper">
+              <button type="button" data-step="children" data-delta="-1" aria-label="Fewer children">−</button>
+              <output id="children-out">0</output>
+              <button type="button" data-step="children" data-delta="1" aria-label="More children">+</button>
+            </div>
+          </div>
+              <div class="pop-actions">
+                <span></span>
+                <button type="button" class="trek-btn trek-btn--ghost" data-close-pop="who-pop">Done</button>
+              </div>
+            </div>
+          </div>
+
+          <button class="search-go" type="submit" id="go">Search</button>
+        </div>
+
+        <div class="filters-row">
+          <div style="position:relative">
+            <button type="button" class="chip-btn" id="filters-btn" aria-expanded="false" aria-controls="filters-pop">
+              Filters <span class="chip-count" id="filters-count" hidden>0</span>
+            </button>
+            <div class="pop" id="filters-pop" role="dialog" aria-label="Filters" hidden>
+              <div class="pop-row">
+                <div class="pop-row-label">Price per night</div>
+                <div class="stepper">
+                  <input class="trek-input" type="number" id="minPrice" min="0" placeholder="min" aria-label="Minimum price per night" style="width:84px" />
+                  <span class="pop-row-hint">–</span>
+                  <input class="trek-input" type="number" id="maxPrice" min="0" placeholder="max" aria-label="Maximum price per night" style="width:84px" />
+                </div>
+              </div>
+              <div class="pop-row">
+                <div class="pop-row-label">Place type</div>
+                <select class="trek-select" id="propertyType" aria-label="Place type">
+                  <option value="">Any</option>
+                  <option value="entire_home">Entire home</option>
+                  <option value="private_room">Private room</option>
+                  <option value="shared_room">Shared room</option>
+                  <option value="hotel_room">Hotel room</option>
+                </select>
+              </div>
+              <div class="pop-actions">
+                <button type="button" class="trek-btn trek-btn--ghost" id="filters-clear">Clear</button>
+                <button type="button" class="trek-btn trek-btn--primary" id="filters-apply">Show stays</button>
+              </div>
+            </div>
+          </div>
+
+          <label class="trek-cluster" style="gap:6px">
+            <span class="trek-label" style="margin:0">Sort</span>
+            <select class="trek-select" id="sort">
+              <option value="">Relevance</option>
+              <option value="price">Price</option>
+              <option value="rating">Rating</option>
+            </select>
+          </label>
+          <label class="trek-cluster" style="gap:6px">
+            <span class="trek-label" style="margin:0">Travel by</span>
+            <select class="trek-select" id="commute-mode">
+              <option value="transit">Transit</option>
+              <option value="driving">Driving</option>
+              <option value="walking">Walking</option>
+              <option value="bicycling">Cycling</option>
+            </select>
+          </label>
+          <span class="trek-chip" id="count" hidden></span>
+        </div>
+      </form>
+
+      <input type="hidden" id="checkin" /><input type="hidden" id="checkout" />
+
+      <div id="status" class="trek-muted" role="status" aria-live="polite" style="min-height:20px"></div>
+      <div id="commute-status" class="trek-muted" role="status" aria-live="polite" hidden></div>
+      <div id="detail" hidden></div>
+      <div class="results" id="results"></div>
+      <div class="trek-cluster" style="justify-content:center">
+        <button class="trek-btn trek-btn--secondary" id="more" hidden>Load more</button>
+      </div>
     </div>
   </div>
 </div>
@@ -102,6 +434,10 @@
   var listings = [];
   var lastParams = null;
   var busy = false;
+  var commuteTimes = {};
+  var commuteRequest = 0;
+  var guests = { adults: 2, children: 0 };
+  var currentTheme = 'light';
 
   var $ = function (id) { return document.getElementById(id); };
   var esc = function (s) {
@@ -121,10 +457,10 @@
     if (state === 'unconfigured') {
       gate.innerHTML =
         '<div class="trek-glass trek-stack state" style="padding:16px">' +
-        '<div class="trek-title">Not set up yet</div>' +
-        '<p class="trek-muted">An administrator needs to connect this TREK instance to OpenBnB before anyone can search. ' +
-        'They can do it by running the plugin\'s <code>scripts/register-oauth-client.mjs</code> and pasting the result into ' +
-        'Admin &rarr; Plugins &rarr; Airbnb via OpenBnB.</p>' +
+        '<div class="trek-title">Almost ready</div>' +
+        '<p class="trek-muted">An administrator needs to link this TREK server to OpenBnB once. ' +
+        'In <strong>Admin &rarr; Plugins</strong>, open this plugin’s <strong>Settings</strong> and fill in the ' +
+        'client id and secret — everything else is already filled in.</p>' +
         '</div>';
       return;
     }
@@ -138,34 +474,403 @@
     $('to-settings').addEventListener('click', function () { trek.navigate('/settings'); });
   }
 
+  /* ------------------------------------------------------------------ popovers */
+
+  /** Only one popover open at a time, and a click anywhere else closes it. */
+  var POPS = {
+    'who-pop': ['who-btn'],
+    'filters-pop': ['filters-btn'],
+    'dates-pop': ['checkin-btn', 'checkout-btn'],
+  };
+
+  function closePops(except) {
+    Object.keys(POPS).forEach(function (id) {
+      if (id === except) return;
+      $(id).hidden = true;
+      POPS[id].forEach(function (b) { $(b).setAttribute('aria-expanded', 'false'); });
+    });
+  }
+
+  function togglePop(popId, btn) {
+    var pop = $(popId);
+    var open = pop.hidden;
+    closePops(open ? popId : null);
+    pop.hidden = !open;
+    btn.setAttribute('aria-expanded', String(open));
+  }
+
+  /* ----------------------------------------------------------------- calendar */
+
+  /**
+   * A two-month range picker. TREK's own CustomDateTimePicker is a React component in
+   * the host app and a sandboxed frame cannot import it, so this reproduces its visual
+   * language instead — narrow weekday initials, a 7-column grid, 32px round cells, the
+   * accent for the selection — and adds the range behaviour a stay needs.
+   */
+  var calMonth = null;          // first of the two months on screen
+  var picking = 'checkin';      // which end the next click sets
+  var DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+  function iso(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function parseIso(v) {
+    if (!v) return null;
+    var parts = String(v).split('-');
+    if (parts.length !== 3) return null;
+    var d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    return isNaN(d.getTime()) ? null : d;
+  }
+  function fmtShort(v) {
+    var d = parseIso(v);
+    if (!d) return null;
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+
+  function renderDateValues() {
+    var ci = $('checkin').value;
+    var co = $('checkout').value;
+    $('checkin-value').textContent = fmtShort(ci) || 'Add date';
+    $('checkin-value').classList.toggle('is-empty', !ci);
+    $('checkout-value').textContent = fmtShort(co) || 'Add date';
+    $('checkout-value').classList.toggle('is-empty', !co);
+  }
+
+  function monthGrid(base) {
+    var year = base.getFullYear();
+    var month = base.getMonth();
+    var first = new Date(year, month, 1);
+    var days = new Date(year, month + 1, 0).getDate();
+    var pad = first.getDay();
+    var ci = $('checkin').value;
+    var co = $('checkout').value;
+    var todayIso = iso(new Date());
+
+    var cells = DOW.map(function (d) { return '<div class="cal-dow">' + d + '</div>'; }).join('');
+    for (var i = 0; i < pad; i++) cells += '<div></div>';
+    for (var day = 1; day <= days; day++) {
+      var v = iso(new Date(year, month, day));
+      var isEnd = v === ci || v === co;
+      var inRange = ci && co && v > ci && v < co;
+      // Only the check-out end is bounded: picking a check-in resets the range, so an
+      // earlier date is a legitimate new start rather than an invalid choice.
+      var disabled = picking === 'checkout' && ci && v <= ci;
+      cells += '<button type="button" class="cal-day' +
+        (isEnd ? ' is-end' : '') + (inRange ? ' in-range' : '') +
+        (v === todayIso ? ' is-today' : '') + '"' +
+        ' data-date="' + v + '"' + (disabled ? ' disabled' : '') +
+        ' aria-label="' + esc(new Date(year, month, day).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })) + '"' +
+        (isEnd ? ' aria-pressed="true"' : '') + '>' + day + '</button>';
+    }
+    return '<div><div class="cal-month-name">' +
+      esc(base.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })) +
+      '</div><div class="cal-grid">' + cells + '</div></div>';
+  }
+
+  function renderCalendar() {
+    if (!calMonth) calMonth = new Date();
+    var next = new Date(calMonth.getFullYear(), calMonth.getMonth() + 1, 1);
+    $('cal-months').innerHTML = monthGrid(calMonth) + monthGrid(next);
+    $('cal-title').textContent = picking === 'checkin' ? 'Select your check-in date' : 'Select your check-out date';
+  }
+
+  function openDates(which) {
+    picking = which;
+    var anchor = parseIso($('checkin').value) || new Date();
+    calMonth = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+    var wasOpen = !$('dates-pop').hidden;
+    closePops('dates-pop');
+    hideSuggest();
+    // Clicking the other end while open should switch which end you are setting, not
+    // close the calendar.
+    $('dates-pop').hidden = wasOpen && picking === lastPicked ? true : false;
+    lastPicked = picking;
+    $('checkin-btn').setAttribute('aria-expanded', String(!$('dates-pop').hidden && picking === 'checkin'));
+    $('checkout-btn').setAttribute('aria-expanded', String(!$('dates-pop').hidden && picking === 'checkout'));
+    renderCalendar();
+  }
+  var lastPicked = null;
+
+  $('cal-prev').addEventListener('click', function () {
+    calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() - 1, 1);
+    renderCalendar();
+  });
+  $('cal-next').addEventListener('click', function () {
+    calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() + 1, 1);
+    renderCalendar();
+  });
+  $('dates-clear').addEventListener('click', function () {
+    $('checkin').value = '';
+    $('checkout').value = '';
+    picking = 'checkin';
+    renderDateValues();
+    renderCalendar();
+  });
+  $('cal-months').addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-date]');
+    if (!btn || btn.disabled) return;
+    var v = btn.getAttribute('data-date');
+    if (picking === 'checkin') {
+      $('checkin').value = v;
+      // A check-out that no longer follows the check-in is stale, not a preference.
+      if ($('checkout').value && $('checkout').value <= v) $('checkout').value = '';
+      picking = 'checkout';
+      lastPicked = 'checkout';
+    } else {
+      $('checkout').value = v;
+      picking = 'checkin';
+      lastPicked = 'checkin';
+      $('dates-pop').hidden = true;
+      $('checkin-btn').setAttribute('aria-expanded', 'false');
+      $('checkout-btn').setAttribute('aria-expanded', 'false');
+    }
+    renderDateValues();
+    renderCalendar();
+  });
+
+  $('who-btn').addEventListener('click', function () { togglePop('who-pop', $('who-btn')); });
+  $('filters-btn').addEventListener('click', function () { togglePop('filters-pop', $('filters-btn')); });
+  $('checkin-btn').addEventListener('click', function () { openDates('checkin'); });
+  $('checkout-btn').addEventListener('click', function () { openDates('checkout'); });
+
+  var POP_SELECTOR = '#who-pop, #who-btn, #filters-pop, #filters-btn, #dates-pop, #checkin-btn, #checkout-btn';
+
+  /**
+   * Decide "was this click inside a popover?" during the CAPTURE phase, while the target
+   * is still in the document. A handler that re-renders — the calendar replaces its whole
+   * month grid on every pick — detaches the target before the click bubbles up here, and
+   * `closest()` on a detached node finds nothing, so the outside-click rule fired and
+   * closed the calendar on the first date you clicked.
+   */
+  var clickWasInsidePop = false;
+  var clickWasInsideWhere = false;
+  document.addEventListener('click', function (e) {
+    var el = e.target;
+    clickWasInsidePop = !!(el && el.closest && el.closest(POP_SELECTOR));
+    clickWasInsideWhere = !!(el && el.closest && el.closest('.seg-where'));
+  }, true);
+
+  document.addEventListener('click', function () {
+    if (clickWasInsidePop) return;
+    closePops(null);
+    if (!clickWasInsideWhere) hideSuggest();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { closePops(null); hideSuggest(); }
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-close-pop]'), function (b) {
+    b.addEventListener('click', function () { closePops(null); });
+  });
+
+  /* -------------------------------------------------------------------- guests */
+
+  function guestSummary() {
+    var total = guests.adults + guests.children;
+    var label = total + (total === 1 ? ' guest' : ' guests');
+    if (guests.children > 0) {
+      label += ', ' + guests.children + (guests.children === 1 ? ' child' : ' children');
+    }
+    return label;
+  }
+
+  function renderGuests() {
+    $('adults-out').textContent = String(guests.adults);
+    $('children-out').textContent = String(guests.children);
+    $('who-value').textContent = guestSummary();
+    // At least one adult, always: a search for zero guests is not a thing.
+    Array.prototype.forEach.call(document.querySelectorAll('[data-step]'), function (b) {
+      var key = b.getAttribute('data-step');
+      var delta = Number(b.getAttribute('data-delta'));
+      var next = guests[key] + delta;
+      var min = key === 'adults' ? 1 : 0;
+      var max = key === 'adults' ? 16 : 15;
+      b.disabled = next < min || next > max;
+    });
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('[data-step]'), function (b) {
+    b.addEventListener('click', function () {
+      var key = b.getAttribute('data-step');
+      var delta = Number(b.getAttribute('data-delta'));
+      var min = key === 'adults' ? 1 : 0;
+      var max = key === 'adults' ? 16 : 15;
+      guests[key] = Math.min(max, Math.max(min, guests[key] + delta));
+      renderGuests();
+    });
+  });
+
+  /* ------------------------------------------------------------------- filters */
+
+  function activeFilterCount() {
+    var n = 0;
+    if ($('minPrice').value !== '') n++;
+    if ($('maxPrice').value !== '') n++;
+    if ($('propertyType').value) n++;
+    return n;
+  }
+
+  function renderFilterCount() {
+    var n = activeFilterCount();
+    $('filters-count').hidden = n === 0;
+    $('filters-count').textContent = String(n);
+  }
+
+  $('filters-clear').addEventListener('click', function () {
+    $('minPrice').value = '';
+    $('maxPrice').value = '';
+    $('propertyType').value = '';
+    renderFilterCount();
+  });
+  $('filters-apply').addEventListener('click', function () {
+    renderFilterCount();
+    closePops(null);
+    cursor = null;
+    runSearch(collectParams(), false);
+  });
+  ['minPrice', 'maxPrice', 'propertyType'].forEach(function (k) {
+    $(k).addEventListener('change', renderFilterCount);
+  });
+
+  /* -------------------------------------------------------------- autocomplete */
+
+  var suggestItems = [];
+  var suggestIndex = -1;
+  var suggestSeq = 0;
+  var suggestTimer = null;
+
+  function hideSuggest() {
+    $('suggest').hidden = true;
+    $('location').setAttribute('aria-expanded', 'false');
+    suggestIndex = -1;
+  }
+
+  function renderSuggest() {
+    var box = $('suggest');
+    if (!suggestItems.length) { hideSuggest(); return; }
+    box.innerHTML = suggestItems.map(function (s, i) {
+      return '<li role="option" id="sg-' + i + '" data-i="' + i + '" aria-selected="' + (i === suggestIndex) + '">' +
+        '<span class="suggest-main">' + esc(s.label) + '</span>' +
+        (s.sublabel ? '<span class="suggest-sub">' + esc(s.sublabel) + '</span>' : '') +
+      '</li>';
+    }).join('');
+    box.hidden = false;
+    $('location').setAttribute('aria-expanded', 'true');
+  }
+
+  function chooseSuggest(i) {
+    var s = suggestItems[i];
+    if (!s) return;
+    // The sublabel carries the country/region, and Airbnb searches better with it —
+    // "Shibuya" alone is ambiguous, "Shibuya City, Tokyo, Japan" is not.
+    $('location').value = s.sublabel && s.sublabel.indexOf(s.label) !== 0
+      ? s.label + ', ' + s.sublabel
+      : (s.sublabel || s.label);
+    hideSuggest();
+    suggestItems = [];
+  }
+
+  $('suggest').addEventListener('mousedown', function (e) {
+    // mousedown, not click: blurring the input first would hide the list.
+    var li = e.target.closest('[data-i]');
+    if (!li) return;
+    e.preventDefault();
+    chooseSuggest(Number(li.getAttribute('data-i')));
+  });
+
+  async function fetchSuggest(q) {
+    var seq = ++suggestSeq;
+    try {
+      var data = await trek.invoke('/places?q=' + encodeURIComponent(q));
+      // A slow reply for an earlier keystroke must never replace a newer list.
+      if (seq !== suggestSeq) return;
+      suggestItems = (data && data.suggestions) || [];
+      suggestIndex = -1;
+      renderSuggest();
+    } catch (_) {
+      // Typing a destination by hand always works; a dead typeahead is not an error
+      // worth interrupting the user for.
+      if (seq === suggestSeq) { suggestItems = []; hideSuggest(); }
+    }
+  }
+
+  $('location').addEventListener('input', function () {
+    var q = $('location').value.trim();
+    clearTimeout(suggestTimer);
+    if (q.length < 2) { suggestItems = []; hideSuggest(); return; }
+    suggestTimer = setTimeout(function () { fetchSuggest(q); }, 220);
+  });
+
+  $('location').addEventListener('keydown', function (e) {
+    if ($('suggest').hidden || !suggestItems.length) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      var dir = e.key === 'ArrowDown' ? 1 : -1;
+      suggestIndex = (suggestIndex + dir + suggestItems.length) % suggestItems.length;
+      renderSuggest();
+      $('location').setAttribute('aria-activedescendant', 'sg-' + suggestIndex);
+    } else if (e.key === 'Enter' && suggestIndex >= 0) {
+      e.preventDefault();
+      chooseSuggest(suggestIndex);
+    }
+  });
+
+  /* ------------------------------------------------------------------- results */
+
   function ratingText(l) {
     if (l.rating == null) return 'New';
-    return l.rating + ' ★' + (l.reviews != null ? ' (' + l.reviews + ')' : '');
+    return '★ ' + l.rating + (l.reviews != null ? ' (' + l.reviews + ')' : '');
+  }
+
+  function commuteHtml(id) {
+    var legs = commuteTimes[String(id)];
+    if (!Array.isArray(legs)) legs = [];
+    if (!legs.length) return '';
+    return legs.map(function (leg) {
+      var distance = leg.distance ? ' · ' + leg.distance : '';
+      return '<div class="commute-row">' +
+        '<span title="' + esc(leg.name) + '">To ' + esc(leg.name) + '</span>' +
+        '<strong>' + esc(leg.label) + esc(distance) + '</strong>' +
+      '</div>';
+    }).join('');
   }
 
   function cardHtml(l) {
-    // No photo: render no image block at all rather than a large empty box. The
-    // open-source OpenBnB server returns no imagery, so this is the common case.
-    var img = l.photos && l.photos.length
+    // No photo: a labelled placeholder box keeps the grid rhythm. Dropping the image
+    // entirely made rows of different heights, which read as broken rather than sparse.
+    var media = l.photos && l.photos.length
       ? '<img class="thumb" alt="" loading="lazy" data-photo="' + esc(l.photos[0]) + '" />'
-      : '';
+      : '<div class="thumb-empty">No photo</div>';
     return '' +
-      '<div class="trek-card card">' + img +
-        '<div class="card-body">' +
-          (l.badge ? '<span class="trek-chip trek-chip--accent">' + esc(l.badge) + '</span>' : '') +
-          '<div class="card-name">' + esc(l.name) + '</div>' +
-          '<div class="trek-muted" style="font-size:12px">' +
-            esc([l.subtitle, l.area].filter(Boolean).join(' · ')) + '</div>' +
-          '<div class="trek-cluster" style="justify-content:space-between">' +
-            '<span class="price">' + esc(l.priceLabel || '—') + '</span>' +
-            '<span class="trek-muted" style="font-size:12px">' + esc(ratingText(l)) + '</span>' +
-          '</div>' +
-          '<div class="card-foot">' +
-            '<button class="trek-btn trek-btn--primary" data-add="' + esc(l.id) + '">Add to trip</button>' +
-            '<button class="trek-btn trek-btn--ghost" data-details="' + esc(l.id) + '">Details</button>' +
-          '</div>' +
+      '<article class="card" data-details="' + esc(l.id) + '" tabindex="0" role="button" ' +
+        'aria-label="' + esc(l.name) + ' — view details">' +
+        '<div class="card-media">' + media +
+          (l.badge ? '<span class="card-badge">' + esc(l.badge) + '</span>' : '') +
+          '<button class="card-add" type="button" data-add="' + esc(l.id) + '" ' +
+            'title="Add to trip" aria-label="Add ' + esc(l.name) + ' to trip">+</button>' +
         '</div>' +
+        '<div class="card-line">' +
+          '<span class="card-name">' + esc(l.name) + '</span>' +
+          '<span class="card-rating">' + esc(ratingText(l)) + '</span>' +
+        '</div>' +
+        (l.subtitle || l.area
+          ? '<div class="card-sub">' + esc([l.subtitle, l.area].filter(Boolean).join(' · ')) + '</div>'
+          : '') +
+        '<div class="card-price"><span class="amount">' + esc(l.priceLabel || '—') + '</span></div>' +
+        '<div class="commute" data-commute="' + esc(l.id) + '"' +
+          (commuteTimes[String(l.id)] && commuteTimes[String(l.id)].length ? '' : ' hidden') + '>' +
+          commuteHtml(l.id) +
+        '</div>' +
+      '</article>';
+  }
+
+  function skeletonHtml(n) {
+    var one =
+      '<div class="card sk" aria-hidden="true">' +
+        '<div class="sk-box sk-media"></div>' +
+        '<div class="sk-box sk-line"></div>' +
+        '<div class="sk-box sk-line short"></div>' +
       '</div>';
+    return new Array(n + 1).join(one);
   }
 
   function sorted(items) {
@@ -194,9 +899,84 @@
     $('count').textContent = listings.length + (cursor ? '+' : '') + ' stays';
     $('more').hidden = !cursor;
     if (!listings.length) {
-      $('results').innerHTML = '<div class="trek-muted empty">No stays matched. Try widening the dates or the price range.</div>';
+      $('results').innerHTML =
+        '<div class="trek-muted empty" style="grid-column:1/-1">' +
+        '<div class="empty-title">No stays matched</div>' +
+        'Try widening the dates, raising the price range, or clearing a filter.</div>';
     }
     loadPhotos();
+  }
+
+  /** Update only the travel-time rows. Rebuilding the whole grid here would close
+   *  a listing detail if the matrix response arrived while somebody was reading it. */
+  function renderCommutes() {
+    document.querySelectorAll('[data-commute]').forEach(function (el) {
+      var html = commuteHtml(el.getAttribute('data-commute'));
+      el.innerHTML = html;
+      el.hidden = !html;
+    });
+  }
+
+  function setCommuteStatus(message) {
+    $('commute-status').textContent = message || '';
+    $('commute-status').hidden = !message;
+  }
+
+  function hasCoordinates(listing) {
+    if (!listing || listing.id == null || listing.lat == null || listing.lng == null) return false;
+    if (typeof listing.lat === 'string' && !listing.lat.trim()) return false;
+    if (typeof listing.lng === 'string' && !listing.lng.trim()) return false;
+    var lat = Number(listing.lat);
+    var lng = Number(listing.lng);
+    return Number.isFinite(lat) && Number.isFinite(lng)
+      && Math.abs(lat) <= 90 && Math.abs(lng) <= 180
+      && !(lat === 0 && lng === 0);
+  }
+
+  /** Ask once for the result set, rather than once per card. Responses are
+   *  sequenced so a slow result from an older search/mode cannot overwrite a new one. */
+  async function loadCommutes() {
+    var request = ++commuteRequest;
+    if (!tripId || !listings.length) {
+      commuteTimes = {};
+      renderCommutes();
+      setCommuteStatus('');
+      return;
+    }
+
+    var routable = listings.filter(hasCoordinates)
+      .map(function (l) { return { id: l.id, lat: l.lat, lng: l.lng }; });
+    if (!routable.length) {
+      commuteTimes = {};
+      renderCommutes();
+      setCommuteStatus('Travel times are unavailable because these stays have no coordinates.');
+      return;
+    }
+
+    setCommuteStatus('Measuring travel times to places on this trip…');
+    try {
+      var data = await trek.invoke('/commute', {
+        method: 'POST',
+        body: { tripId: Number(tripId), mode: $('commute-mode').value, listings: routable },
+      });
+      if (request !== commuteRequest) return;
+      commuteTimes = data && data.times && typeof data.times === 'object' ? data.times : {};
+      renderCommutes();
+      if (data && data.reason && /no places/i.test(data.reason)) {
+        setCommuteStatus('Add places to this trip to compare each stay’s travel time.');
+      } else if (data && data.reason) {
+        setCommuteStatus(data.reason);
+      } else if (routable.length > 20) {
+        setCommuteStatus('Travel times are shown for the first 20 stays.');
+      } else {
+        setCommuteStatus('');
+      }
+    } catch (err) {
+      if (request !== commuteRequest) return;
+      commuteTimes = {};
+      renderCommutes();
+      setCommuteStatus(err && err.message ? 'Travel times unavailable: ' + err.message : 'Travel times are unavailable right now.');
+    }
   }
 
   /** Data URIs already fetched this session, keyed by the original photo URL. */
@@ -224,10 +1004,43 @@
     });
   }
 
+  /**
+   * Fill the detail view's map box. Failure is silent by design — the box simply keeps
+   * its neutral background. A listing is still perfectly usable without a map, and an
+   * error banner for a decorative element would be noise.
+   */
+  async function loadMap() {
+    var box = $('detail-map');
+    if (!box) return;
+    try {
+      var q = '/map?lat=' + encodeURIComponent(box.getAttribute('data-lat')) +
+              '&lng=' + encodeURIComponent(box.getAttribute('data-lng')) +
+              '&theme=' + encodeURIComponent(currentTheme);
+      var m = await trek.invoke(q);
+      if (!m || m.unavailable || !Array.isArray(m.tiles)) {
+        box.innerHTML = '<div class="empty trek-muted" style="padding:16px">' +
+          esc((m && m.reason) || 'No map available.') + '</div>';
+        return;
+      }
+      var imgs = m.tiles.map(function (t) {
+        return t ? '<img alt="" src="' + t + '" />' : '<div style="width:256px;height:256px"></div>';
+      }).join('');
+      box.innerHTML =
+        '<div class="map-mosaic" style="grid-template-columns:repeat(' + m.grid + ',' + m.tileSize + 'px);' +
+          'left:calc(50% - ' + m.markerX + 'px); top:calc(50% - ' + m.markerY + 'px)">' + imgs + '</div>' +
+        '<div class="map-area" style="left:50%; top:50%"></div>' +
+        (m.attribution ? '<div class="map-attr">' + esc(m.attribution) + '</div>' : '');
+    } catch (_) {
+      box.innerHTML = '';
+    }
+  }
+
   function collectParams() {
     var p = { location: $('location').value.trim() };
     ['checkin', 'checkout'].forEach(function (k) { if ($(k).value) p[k] = $(k).value; });
-    ['adults', 'children', 'minPrice', 'maxPrice'].forEach(function (k) {
+    p.adults = guests.adults;
+    if (guests.children > 0) p.children = guests.children;
+    ['minPrice', 'maxPrice'].forEach(function (k) {
       if ($(k).value !== '') p[k] = Number($(k).value);
     });
     if ($('propertyType').value) p.propertyType = $('propertyType').value;
@@ -237,17 +1050,28 @@
 
   async function runSearch(params, append) {
     if (busy) return;
+    if (!params.location) {
+      trek.notify('warning', 'Type where you want to stay first.');
+      $('location').focus();
+      return;
+    }
     busy = true;
     $('go').disabled = true;
     $('more').disabled = true;
     setStatus(append ? 'Loading more…' : 'Searching Airbnb…');
+    if (!append) {
+      $('results').innerHTML = skeletonHtml(8);
+      $('count').hidden = true;
+    }
     try {
       var data = await trek.invoke('/search', { method: 'POST', body: params });
       lastParams = params;
       listings = append ? listings.concat(data.results || []) : (data.results || []);
       cursor = data.cursor || null;
+      commuteTimes = {};
       setStatus('');
       render();
+      loadCommutes();
     } catch (e) {
       // 403/401 mean the account link is missing or stale — send the user to fix it
       // rather than showing a dead error.
@@ -256,6 +1080,7 @@
         trek.notify('warning', e.message);
       } else {
         setStatus('');
+        if (!append) $('results').innerHTML = '';
         trek.notify('error', e.message || 'Search failed');
       }
     } finally {
@@ -267,6 +1092,8 @@
 
   $('search-form').addEventListener('submit', function (e) {
     e.preventDefault();
+    closePops(null);
+    hideSuggest();
     cursor = null;
     runSearch(collectParams(), false);
   });
@@ -278,6 +1105,7 @@
   });
 
   $('sort').addEventListener('change', render);
+  $('commute-mode').addEventListener('change', loadCommutes);
 
   var byId = function (id) {
     for (var i = 0; i < listings.length; i++) { if (String(listings[i].id) === String(id)) return listings[i]; }
@@ -318,6 +1146,11 @@
       '<div class="trek-muted" style="font-size:12px">' +
         esc([d.location, l.subtitle, l.area, l.priceLabel, ratingText(l)].filter(Boolean).join(' · ')) + '</div>' +
       photos +
+      (hasCoordinates(l)
+        ? '<div class="trek-sectionhead">Where you’ll be</div>' +
+          '<div class="map-box" id="detail-map" data-lat="' + esc(l.lat) + '" data-lng="' + esc(l.lng) + '"></div>' +
+          '<p class="map-note">Airbnb shows an approximate area until a booking is confirmed.</p>'
+        : '') +
       (d.description ? '<p class="detail-desc">' + esc(d.description) + '</p>' : '') +
       (d.highlights ? '<div class="trek-sectionhead">Highlights</div><p class="detail-desc">' + esc(d.highlights) + '</p>' : '') +
       amenitiesHtml(d.amenities) +
@@ -325,8 +1158,8 @@
       '</div>';
   }
 
-  /** The card's Details button that opened the current detail view, so Back can
-   *  put focus back where it came from instead of dropping it on <body>. */
+  /** The card that opened the current detail view, so Back can put focus back where
+   *  it came from instead of dropping it on <body>. */
   var returnFocusId = null;
 
   function showResults() {
@@ -355,7 +1188,7 @@
         var q = '/listing?id=' + encodeURIComponent(id);
         if ($('checkin').value) q += '&checkin=' + encodeURIComponent($('checkin').value);
         if ($('checkout').value) q += '&checkout=' + encodeURIComponent($('checkout').value);
-        if ($('adults').value) q += '&adults=' + encodeURIComponent($('adults').value);
+        q += '&adults=' + encodeURIComponent(String(guests.adults));
         detailCache[id] = await trek.invoke(q);
       }
       $('detail').innerHTML = detailHtml(l, detailCache[id]);
@@ -365,6 +1198,7 @@
       $('detail-back').focus();
       $('detail-open').addEventListener('click', function () { if (l.url) trek.openExternal(l.url); });
       loadPhotos();
+      loadMap();
     } catch (err) {
       if (err.code === 403 || err.code === 401) {
         showResults();
@@ -380,16 +1214,13 @@
     }
   }
 
-  async function onCardClick(e) {
-    var detailsBtn = e.target.closest('[data-details]');
-    if (detailsBtn) { openDetails(detailsBtn.getAttribute('data-details')); return; }
-
-    var addBtn = e.target.closest('[data-add]');
-    if (!addBtn) return;
-    var l = byId(addBtn.getAttribute('data-add'));
-    if (!l) return;
-    addBtn.disabled = true;
-    addBtn.textContent = 'Adding…';
+  async function addToTrip(btn, l) {
+    btn.disabled = true;
+    var restore = btn.textContent;
+    // The card's button is a 32px circle — only a glyph fits. The detail view's is a
+    // full-width button where a bare tick would read as a mystery.
+    var compact = btn.classList.contains('card-add');
+    btn.textContent = compact ? '…' : 'Adding…';
     try {
       var added = await trek.invoke('/add', {
         method: 'POST',
@@ -397,26 +1228,48 @@
           tripId: Number(tripId), listing: l,
           checkin: $('checkin').value || null,
           checkout: $('checkout').value || null,
-          adults: $('adults').value ? Number($('adults').value) : null,
+          adults: guests.adults,
         },
       });
-      addBtn.textContent = 'Added ✓';
+      btn.textContent = compact ? '✓' : 'Added ✓';
+      btn.classList.add('is-done');
       // Say which of the two things actually happened — a lodging block that spans
       // the nights is a materially different outcome from a pin on the map.
       trek.notify('success', added && added.accommodation
         ? l.name + ' added as lodging for those nights'
         : l.name + ' added to the trip');
     } catch (err) {
-      addBtn.disabled = false;
-      addBtn.textContent = 'Add to trip';
+      btn.disabled = false;
+      btn.textContent = restore;
       trek.notify('error', err.message || 'Could not add the stay');
     }
+  }
+
+  async function onCardClick(e) {
+    // Add sits ON the card, so it has to win before the card's own details handler.
+    var addBtn = e.target.closest('[data-add]');
+    if (addBtn) {
+      e.stopPropagation();
+      var toAdd = byId(addBtn.getAttribute('data-add'));
+      if (toAdd) await addToTrip(addBtn, toAdd);
+      return;
+    }
+    var card = e.target.closest('[data-details]');
+    if (card) openDetails(card.getAttribute('data-details'));
   }
 
   // One delegated handler serves both the grid and the detail panel, so the
   // detail view's "Add to trip" button behaves exactly like a card's.
   $('results').addEventListener('click', onCardClick);
   $('detail').addEventListener('click', onCardClick);
+  // The card is a role="button", so it must answer the keyboard like one.
+  $('results').addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    var card = e.target.closest('[data-details]');
+    if (!card || e.target.closest('[data-add]')) return;
+    e.preventDefault();
+    openDetails(card.getAttribute('data-details'));
+  });
 
   /** Restore the previous search so a tab switch does not throw the results away. */
   async function restore() {
@@ -428,10 +1281,16 @@
       cursor = last.cursor || null;
       lastParams = last.params || null;
       if (last.params) {
-        ['location', 'checkin', 'checkout', 'adults', 'children', 'minPrice', 'maxPrice', 'propertyType']
+        ['location', 'checkin', 'checkout', 'minPrice', 'maxPrice', 'propertyType']
           .forEach(function (k) { if (last.params[k] != null && $(k)) $(k).value = last.params[k]; });
+        if (last.params.adults != null) guests.adults = Math.max(1, Number(last.params.adults) || 1);
+        if (last.params.children != null) guests.children = Math.max(0, Number(last.params.children) || 0);
       }
+      renderGuests();
+      renderFilterCount();
+      renderDateValues();
       render();
+      loadCommutes();
       return true;
     } catch (_) { return false; }
   }
@@ -439,8 +1298,9 @@
   /** First run, nothing searched yet — say what to do instead of showing a void. */
   function renderIntro() {
     $('results').innerHTML =
-      '<div class="trek-muted empty">Search for stays near your destination. ' +
-      'The dates come from this trip, so you can just press Search.</div>';
+      '<div class="trek-muted empty" style="grid-column:1/-1">' +
+      '<div class="empty-title">Where to?</div>' +
+      'Your trip’s dates are already filled in — type a destination and press Search.</div>';
   }
 
   async function seedDefaults() {
@@ -450,10 +1310,14 @@
       if (d.checkin && !$('checkin').value) $('checkin').value = d.checkin;
       if (d.checkout && !$('checkout').value) $('checkout').value = d.checkout;
       if (d.location && !$('location').value) $('location').value = d.location;
+      renderDateValues();
     } catch (_) { /* the form still works unseeded */ }
   }
 
   async function boot() {
+    renderGuests();
+    renderFilterCount();
+    renderDateValues();
     try {
       var s = await trek.invoke('/status');
       if (!s.configured) return renderGate('unconfigured');
@@ -473,6 +1337,9 @@
   var started = false;
   trek.onContext(function (ctx) {
     tripId = ctx.tripId;
+    // The host re-posts the context when the appearance changes, so this tracks the
+    // traveller's light/dark choice and the next map matches it.
+    if (ctx.theme) currentTheme = ctx.theme;
     if (!started) { started = true; boot(); }
   });
 })();
