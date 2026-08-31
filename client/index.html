@@ -410,6 +410,13 @@
     } catch (_) { return false; }
   }
 
+  /** First run, nothing searched yet — say what to do instead of showing a void. */
+  function renderIntro() {
+    $('results').innerHTML =
+      '<div class="trek-muted empty">Search for stays near your destination. ' +
+      'The dates come from this trip, so you can just press Search.</div>';
+  }
+
   async function seedDefaults() {
     if (!tripId) return;
     try {
@@ -427,7 +434,10 @@
       if (!s.connected) return renderGate('disconnected');
       renderGate('ok');
       var restored = await restore();
-      if (!restored) await seedDefaults();
+      if (!restored) {
+        await seedDefaults();
+        renderIntro();
+      }
     } catch (e) {
       renderGate('unconfigured');
       trek.notify('error', e.message || 'Could not reach the plugin');

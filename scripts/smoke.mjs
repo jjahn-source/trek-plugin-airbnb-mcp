@@ -109,6 +109,65 @@ await page.waitForFunction(() => document.querySelector('#detail [data-add]')?.t
 const addCall = invoked.find((c) => c.sub === '/add');
 t('adds from the detail view', !!addCall && addCall.body.listing.id === '1' && addCall.body.tripId === 7);
 
+// --- second scenario: a connected user with no previous search ------------------
+{
+  const page2 = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  await page2.addInitScript(() => {
+    window.addEventListener('message', (ev) => {
+      const m = ev.data;
+      if (!m || typeof m.type !== 'string') return;
+      if (m.type === 'trek:ready' || m.type === 'trek:context:request') {
+        window.postMessage({
+          type: 'trek:context', tripId: '7', theme: 'light', locale: 'en', dir: 'ltr',
+          user: { name: 'Alex' }, formats: {}, appearance: {}, tokens: {},
+        }, '*');
+        return;
+      }
+      if (m.type === 'trek:invoke') {
+        const sub = String(m.sub || '').split('?')[0];
+        let data = {};
+        if (sub === '/status') data = { configured: true, connected: true };
+        else if (sub === '/last') data = {};                       // nothing cached yet
+        else if (sub === '/defaults') data = { checkin: '2026-10-10', checkout: '2026-10-14', location: 'Paris' };
+        window.postMessage({ type: 'trek:response', requestId: m.requestId, data }, '*');
+      }
+    });
+  });
+  await page2.goto('file://' + path.resolve(frame));
+  await page2.waitForSelector('#results .empty', { timeout: 10000 });
+  const introText = await page2.locator('#results').innerText();
+  t('first run shows guidance instead of a blank area', /just press Search/i.test(introText));
+  t('first run seeds the form from the trip', (await page2.locator('#location').inputValue()) === 'Paris'
+    && (await page2.locator('#checkin').inputValue()) === '2026-10-10');
+  await page2.close();
+}
+
+// --- third scenario: the admin has not configured OAuth -------------------------
+{
+  const page3 = await browser.newPage({ viewport: { width: 1280, height: 700 } });
+  await page3.addInitScript(() => {
+    window.addEventListener('message', (ev) => {
+      const m = ev.data;
+      if (!m || typeof m.type !== 'string') return;
+      if (m.type === 'trek:ready' || m.type === 'trek:context:request') {
+        window.postMessage({ type: 'trek:context', tripId: '7', theme: 'light', locale: 'en', dir: 'ltr', user: null, formats: {}, appearance: {}, tokens: {} }, '*');
+        return;
+      }
+      if (m.type === 'trek:invoke') {
+        const sub = String(m.sub || '').split('?')[0];
+        const data = sub === '/status' ? { configured: false, connected: false } : {};
+        window.postMessage({ type: 'trek:response', requestId: m.requestId, data }, '*');
+      }
+    });
+  });
+  await page3.goto('file://' + path.resolve(frame));
+  await page3.waitForSelector('#gate .trek-title', { timeout: 10000 });
+  const gateText = await page3.locator('#gate').innerText();
+  t('unconfigured instance explains what the admin must do', /administrator/i.test(gateText));
+  t('unconfigured instance hides the search form', await page3.locator('#app').isHidden());
+  await page3.close();
+}
+
 await browser.close();
 
 let failed = 0;
