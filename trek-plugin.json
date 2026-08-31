@@ -1,0 +1,87 @@
+{
+  "id": "airbnb-mcp",
+  "name": "Airbnb via OpenBnB",
+  "version": "1.0.0",
+  "apiVersion": 1,
+  "type": "trip-page",
+  "trek": ">=4.0.0 <5.0.0",
+  "author": "John Jahn",
+  "description": "Search Airbnb stays for your trip dates and add them to the trip. Each traveller signs in to their own free OpenBnB account - no scraping, no shared credentials.",
+  "icon": "BedDouble",
+  "license": "MIT",
+  "homepage": "https://github.com/jjahn-source/trek-plugin-airbnb-mcp",
+  "nativeModules": false,
+  "permissions": [
+    "db:own",
+    "db:meta",
+    "db:read:trips",
+    "db:write:places",
+    "oauth:client",
+    "http:outbound:mcp.openbnb.ai",
+    "http:outbound:*.muscache.com",
+    "hook:place-detail-provider"
+  ],
+  "egress": [
+    "mcp.openbnb.ai",
+    "*.muscache.com"
+  ],
+  "capabilities": {
+    "tripPage": {
+      "position": 3
+    }
+  },
+  "settings": [
+    {
+      "key": "oauth_authorize_url",
+      "label": "OAuth authorize URL",
+      "input_type": "text",
+      "required": true,
+      "scope": "instance",
+      "placeholder": "https://mcp.openbnb.ai/authorize",
+      "hint": "OpenBnB's authorize endpoint. Use the value printed by scripts/register-oauth-client.mjs."
+    },
+    {
+      "key": "oauth_token_url",
+      "label": "OAuth token URL",
+      "input_type": "text",
+      "required": true,
+      "scope": "instance",
+      "placeholder": "https://mcp.openbnb.ai/token",
+      "hint": "OpenBnB's token endpoint."
+    },
+    {
+      "key": "oauth_scopes",
+      "label": "OAuth scopes (space-separated)",
+      "input_type": "text",
+      "required": false,
+      "scope": "instance",
+      "hint": "Leave blank. OpenBnB issues a full-access token for the signed-in account."
+    },
+    {
+      "key": "oauth_client_id",
+      "label": "OAuth client id",
+      "input_type": "text",
+      "required": true,
+      "scope": "instance",
+      "hint": "From the one-off registration script. Unique to this TREK instance."
+    },
+    {
+      "key": "oauth_client_secret",
+      "label": "OAuth client secret",
+      "input_type": "text",
+      "required": true,
+      "secret": true,
+      "scope": "instance",
+      "hint": "From the same script. Stored encrypted; never leaves the host."
+    },
+    {
+      "key": "mcp_url",
+      "label": "OpenBnB MCP endpoint",
+      "input_type": "text",
+      "required": false,
+      "scope": "instance",
+      "placeholder": "https://mcp.openbnb.ai/mcp",
+      "hint": "Override only if you run a compatible MCP endpoint of your own. Defaults to the hosted OpenBnB server."
+    }
+  ]
+}

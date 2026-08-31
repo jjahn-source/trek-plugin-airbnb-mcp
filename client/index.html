@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Airbnb via OpenBnB</title>
+  <!-- trek:ui -->
+  <style>
+    body { margin: 0; }
+    .wrap { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+    .form-grid {
+      display: grid; gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+    .form-grid .wide { grid-column: 1 / -1; }
+    .results {
+      display: grid; gap: 12px;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    }
+    .card { display: flex; flex-direction: column; overflow: hidden; padding: 0; }
+    .thumb {
+      width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block;
+      background: var(--bg-hover, rgba(128,128,128,.12));
+    }
+    .card-body { padding: 12px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+    .card-name { font-weight: 600; line-height: 1.3; }
+    .card-foot { margin-top: auto; display: flex; gap: 8px; padding-top: 8px; }
+    .card-foot .trek-btn { flex: 1; }
+    .empty { padding: 32px 16px; text-align: center; }
+    .state { max-width: 560px; }
+    .price { font-weight: 600; }
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div id="gate"></div>
+
+  <div id="app" hidden>
+    <form id="search-form" class="trek-glass trek-stack" style="padding:14px">
+      <div class="form-grid">
+        <label class="wide">
+          <span class="trek-label">Where</span>
+          <input class="trek-input" id="location" name="location" required placeholder="Paris, France" autocomplete="off" />
+        </label>
+        <label><span class="trek-label">Check in</span><input class="trek-input" type="date" id="checkin" /></label>
+        <label><span class="trek-label">Check out</span><input class="trek-input" type="date" id="checkout" /></label>
+        <label><span class="trek-label">Adults</span><input class="trek-input" type="number" id="adults" min="1" max="16" value="2" /></label>
+        <label><span class="trek-label">Children</span><input class="trek-input" type="number" id="children" min="0" max="15" value="0" /></label>
+        <label><span class="trek-label">Min price</span><input class="trek-input" type="number" id="minPrice" min="0" placeholder="any" /></label>
+        <label><span class="trek-label">Max price</span><input class="trek-input" type="number" id="maxPrice" min="0" placeholder="any" /></label>
+        <label>
+          <span class="trek-label">Type</span>
+          <select class="trek-select" id="propertyType">
+            <option value="">Any</option>
+            <option value="entire_home">Entire home</option>
+            <option value="private_room">Private room</option>
+            <option value="shared_room">Shared room</option>
+            <option value="hotel_room">Hotel room</option>
+          </select>
+        </label>
+      </div>
+      <div class="trek-cluster">
+        <button class="trek-btn trek-btn--primary" type="submit" id="go">Search</button>
+        <label class="trek-cluster" style="gap:6px">
+          <span class="trek-label" style="margin:0">Sort</span>
+          <select class="trek-select" id="sort">
+            <option value="">Relevance</option>
+            <option value="price">Price</option>
+            <option value="rating">Rating</option>
+          </select>
+        </label>
+        <span class="trek-chip" id="count" hidden></span>
+      </div>
+    </form>
+
+    <div id="status" class="trek-muted" role="status" aria-live="polite" style="min-height:20px"></div>
+    <div class="results" id="results"></div>
+    <div class="trek-cluster" style="justify-content:center">
+      <button class="trek-btn trek-btn--secondary" id="more" hidden>Load more</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var tripId = null;
+  var cursor = null;
+  var listings = [];
+  var lastParams = null;
+  var busy = false;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  };
+
+  function setStatus(msg) { $('status').textContent = msg || ''; }
+
+  /** Render one of the pre-search states: unconfigured, or not yet connected. */
+  function renderGate(state) {
+    var gate = $('gate');
+    if (state === 'ok') { gate.innerHTML = ''; $('app').hidden = false; return; }
+    $('app').hidden = true;
+
+    if (state === 'unconfigured') {
+      gate.innerHTML =
+        '<div class="trek-glass trek-stack state" style="padding:16px">' +
+        '<div class="trek-title">Not set up yet</div>' +
+        '<p class="trek-muted">An administrator needs to connect this TREK instance to OpenBnB before anyone can search. ' +
+        'They can do it by running the plugin\'s <code>scripts/register-oauth-client.mjs</code> and pasting the result into ' +
+        'Admin &rarr; Plugins &rarr; Airbnb via OpenBnB.</p>' +
+        '</div>';
+      return;
+    }
+    gate.innerHTML =
+      '<div class="trek-glass trek-stack state" style="padding:16px">' +
+      '<div class="trek-title">Connect your OpenBnB account</div>' +
+      '<p class="trek-muted">Searches run against <strong>your own</strong> free OpenBnB account, so nothing is shared with ' +
+      'other travellers. Sign in with Google or an email address &mdash; it takes a moment and TREK never sees your password.</p>' +
+      '<div class="trek-cluster"><button class="trek-btn trek-btn--primary" id="to-settings">Open Settings &rarr; Plugins</button></div>' +
+      '</div>';
+    $('to-settings').addEventListener('click', function () { trek.navigate('/settings'); });
+  }
+
+  function ratingText(l) {
+    if (l.rating == null) return 'New';
+    return l.rating + ' ★' + (l.reviews != null ? ' (' + l.reviews + ')' : '');
+  }
+
+  function cardHtml(l, i) {
+    // No photo: render no image block at all rather than a large empty box. The
+    // open-source OpenBnB server returns no imagery, so this is the common case.
+    var img = l.photos && l.photos.length
+      ? '<img class="thumb" alt="" loading="lazy" data-photo="' + esc(l.photos[0]) + '" />'
+      : '';
+    return '' +
+      '<div class="trek-card card">' + img +
+        '<div class="card-body">' +
+          (l.badge ? '<span class="trek-chip trek-chip--accent">' + esc(l.badge) + '</span>' : '') +
+          '<div class="card-name">' + esc(l.name) + '</div>' +
+          '<div class="trek-muted" style="font-size:12px">' +
+            esc([l.subtitle, l.area].filter(Boolean).join(' · ')) + '</div>' +
+          '<div class="trek-cluster" style="justify-content:space-between">' +
+            '<span class="price">' + esc(l.priceLabel || '—') + '</span>' +
+            '<span class="trek-muted" style="font-size:12px">' + esc(ratingText(l)) + '</span>' +
+          '</div>' +
+          '<div class="card-foot">' +
+            '<button class="trek-btn trek-btn--primary" data-add="' + i + '">Add to trip</button>' +
+            '<button class="trek-btn trek-btn--ghost" data-open="' + i + '">Airbnb</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function sorted(items) {
+    var mode = $('sort').value;
+    var copy = items.slice();
+    if (mode === 'price') {
+      // Listings with no parseable price sink to the bottom rather than sorting as free.
+      copy.sort(function (a, b) {
+        if (a.priceAmount == null) return 1;
+        if (b.priceAmount == null) return -1;
+        return a.priceAmount - b.priceAmount;
+      });
+    } else if (mode === 'rating') {
+      copy.sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); });
+    }
+    return copy;
+  }
+
+  function render() {
+    var items = sorted(listings);
+    $('results').innerHTML = items.map(function (l) { return cardHtml(l, listings.indexOf(l)); }).join('');
+    $('count').hidden = !listings.length;
+    $('count').textContent = listings.length + (cursor ? '+' : '') + ' stays';
+    $('more').hidden = !cursor;
+    if (!listings.length) {
+      $('results').innerHTML = '<div class="trek-muted empty">No stays matched. Try widening the dates or the price range.</div>';
+    }
+    loadPhotos();
+  }
+
+  /**
+   * The frame's CSP forbids remote images, so each photo is fetched through the
+   * plugin's own proxy and swapped in as a data URI. Failures stay silent — a
+   * missing picture must never break the card.
+   */
+  function loadPhotos() {
+    var imgs = document.querySelectorAll('img[data-photo]');
+    Array.prototype.forEach.call(imgs, function (img) {
+      var url = img.getAttribute('data-photo');
+      img.removeAttribute('data-photo');
+      trek.invoke('/photo?url=' + encodeURIComponent(url))
+        .then(function (r) { if (r && r.dataUri) img.src = r.dataUri; })
+        .catch(function () { /* keep the neutral placeholder */ });
+    });
+  }
+
+  function collectParams() {
+    var p = { location: $('location').value.trim() };
+    ['checkin', 'checkout'].forEach(function (k) { if ($(k).value) p[k] = $(k).value; });
+    ['adults', 'children', 'minPrice', 'maxPrice'].forEach(function (k) {
+      if ($(k).value !== '') p[k] = Number($(k).value);
+    });
+    if ($('propertyType').value) p.propertyType = $('propertyType').value;
+    if (tripId) p.tripId = Number(tripId);
+    return p;
+  }
+
+  async function runSearch(params, append) {
+    if (busy) return;
+    busy = true;
+    $('go').disabled = true;
+    $('more').disabled = true;
+    setStatus(append ? 'Loading more…' : 'Searching Airbnb…');
+    try {
+      var data = await trek.invoke('/search', { method: 'POST', body: params });
+      lastParams = params;
+      listings = append ? listings.concat(data.results || []) : (data.results || []);
+      cursor = data.cursor || null;
+      setStatus('');
+      render();
+    } catch (e) {
+      // 403/401 mean the account link is missing or stale — send the user to fix it
+      // rather than showing a dead error.
+      if (e.code === 403 || e.code === 401) {
+        renderGate('disconnected');
+        trek.notify('warning', e.message);
+      } else {
+        setStatus('');
+        trek.notify('error', e.message || 'Search failed');
+      }
+    } finally {
+      busy = false;
+      $('go').disabled = false;
+      $('more').disabled = false;
+    }
+  }
+
+  $('search-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    cursor = null;
+    runSearch(collectParams(), false);
+  });
+
+  $('more').addEventListener('click', function () {
+    if (!cursor || !lastParams) return;
+    var next = Object.assign({}, lastParams, { cursor: cursor });
+    runSearch(next, true);
+  });
+
+  $('sort').addEventListener('change', render);
+
+  $('results').addEventListener('click', async function (e) {
+    var addBtn = e.target.closest('[data-add]');
+    var openBtn = e.target.closest('[data-open]');
+    if (openBtn) {
+      var l0 = listings[Number(openBtn.getAttribute('data-open'))];
+      if (l0 && l0.url) trek.openExternal(l0.url);
+      return;
+    }
+    if (!addBtn) return;
+    var l = listings[Number(addBtn.getAttribute('data-add'))];
+    if (!l) return;
+    addBtn.disabled = true;
+    addBtn.textContent = 'Adding…';
+    try {
+      await trek.invoke('/add', {
+        method: 'POST',
+        body: {
+          tripId: Number(tripId), listing: l,
+          checkin: $('checkin').value || null,
+          checkout: $('checkout').value || null,
+          adults: $('adults').value ? Number($('adults').value) : null,
+        },
+      });
+      addBtn.textContent = 'Added ✓';
+      trek.notify('success', l.name + ' added to the trip');
+    } catch (err) {
+      addBtn.disabled = false;
+      addBtn.textContent = 'Add to trip';
+      trek.notify('error', err.message || 'Could not add the stay');
+    }
+  });
+
+  /** Restore the previous search so a tab switch does not throw the results away. */
+  async function restore() {
+    if (!tripId) return false;
+    try {
+      var last = await trek.invoke('/last?tripId=' + encodeURIComponent(tripId));
+      if (!last || !last.results || !last.results.length) return false;
+      listings = last.results;
+      cursor = last.cursor || null;
+      lastParams = last.params || null;
+      if (last.params) {
+        ['location', 'checkin', 'checkout', 'adults', 'children', 'minPrice', 'maxPrice', 'propertyType']
+          .forEach(function (k) { if (last.params[k] != null && $(k)) $(k).value = last.params[k]; });
+      }
+      render();
+      return true;
+    } catch (_) { return false; }
+  }
+
+  async function seedDefaults() {
+    if (!tripId) return;
+    try {
+      var d = await trek.invoke('/defaults?tripId=' + encodeURIComponent(tripId));
+      if (d.checkin && !$('checkin').value) $('checkin').value = d.checkin;
+      if (d.checkout && !$('checkout').value) $('checkout').value = d.checkout;
+      if (d.location && !$('location').value) $('location').value = d.location;
+    } catch (_) { /* the form still works unseeded */ }
+  }
+
+  async function boot() {
+    try {
+      var s = await trek.invoke('/status');
+      if (!s.configured) return renderGate('unconfigured');
+      if (!s.connected) return renderGate('disconnected');
+      renderGate('ok');
+      var restored = await restore();
+      if (!restored) await seedDefaults();
+    } catch (e) {
+      renderGate('unconfigured');
+      trek.notify('error', e.message || 'Could not reach the plugin');
+    }
+  }
+
+  var started = false;
+  trek.onContext(function (ctx) {
+    tripId = ctx.tripId;
+    if (!started) { started = true; boot(); }
+  });
+})();
+</script>
+</body>
+</html>
