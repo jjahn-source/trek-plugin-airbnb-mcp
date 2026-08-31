@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    # A release tag is what the registry pins, so re-run the gates on one too.
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - run: npm ci
+
+      # Server-side: routes, MCP transport, session reuse and normalisation, all
+      # driven through the SDK's mock host so the permission model is exercised.
+      - name: Unit tests
+        run: npm test
+
+      # The half unit tests cannot reach: pack the plugin, load the real frame with
+      # the design kit inlined as it ships, and drive it over the host protocol.
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser smoke tests
+        run: npm run smoke
+
+      # Every registry gate that can be checked without a release existing.
+      - name: Registry gates
+        run: npx -y trek-plugin-sdk validate .
