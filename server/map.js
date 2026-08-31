@@ -13,6 +13,14 @@
  * the data has; the client draws a circle instead.
  */
 
+/**
+ * Built-in tile source. Every map setting is an OVERRIDE, never a requirement: on a TREK
+ * without an instance-settings form the config arrives empty, and a plugin that treated
+ * these as required would simply have no map there. Keyless OSM works everywhere.
+ */
+const DEFAULT_TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+const DEFAULT_ATTRIBUTION = '© OpenStreetMap contributors';
+
 const TILE = 256;
 const GRID = 3; // 3x3 tiles around the centre — enough context to recognise a neighbourhood
 const TILE_MAX_BYTES = 512 * 1024;
@@ -122,4 +130,4 @@ async function staticMap({ lat, lng, zoom = 14, template }) {
   };
 }
 
-module.exports = { staticMap, project, tileUrl, TILE, GRID };
+module.exports = { staticMap, project, tileUrl, TILE, GRID, DEFAULT_TILE_URL, DEFAULT_ATTRIBUTION };

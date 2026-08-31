@@ -388,7 +388,12 @@ await page.locator('[data-close-pop="dates-pop"]').click();
       }
       if (m.type === 'trek:invoke') {
         const sub = String(m.sub || '').split('?')[0];
-        const data = sub === '/status' ? { configured: false, connected: false } : {};
+        // Mirrors a STOCK TREK install: `default`s were never honoured and there is no
+        // settings form, so nothing is configured and every required key is missing.
+        const data = sub === '/status'
+          ? { configured: false, connected: false,
+              missing: ['oauth_authorize_url', 'oauth_token_url', 'oauth_client_id', 'oauth_client_secret'] }
+          : {};
         window.postMessage({ type: 'trek:response', requestId: m.requestId, data }, '*');
       }
     });
@@ -397,6 +402,12 @@ await page.locator('[data-close-pop="dates-pop"]').click();
   await page3.waitForSelector('#gate .trek-title', { timeout: 10000 });
   const gateText = await page3.locator('#gate').innerText();
   t('unconfigured instance explains what the admin must do', /administrator/i.test(gateText));
+  t('the gate names the exact settings that are still missing',
+    /oauth_client_id/.test(gateText) && /oauth_client_secret/.test(gateText), gateText.slice(0, 160));
+  // Described by capability, never by a version number: the release that adds a settings
+  // form does not exist yet, so naming one would send an operator hunting for it.
+  t('the gate covers TREK with no settings form, and promises no version that does not exist',
+    /Settings/.test(gateText) && /admin API/i.test(gateText) && !/4\.2/.test(gateText), gateText.slice(0, 200));
   t('unconfigured instance hides the search form', await page3.locator('#app').isHidden());
   await page3.close();
 }

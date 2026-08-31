@@ -3,7 +3,7 @@
 const { definePlugin } = require('trek-plugin-sdk');
 const { McpClient, McpError } = require('./mcp');
 const { normalizeSearch, normalizeListing, placeCandidates } = require('./normalize')
-const { staticMap } = require('./map');
+const { staticMap, DEFAULT_TILE_URL, DEFAULT_ATTRIBUTION } = require('./map');
 const commute = require('./commute');
 
 const DEFAULT_MCP_URL = 'https://mcp.openbnb.ai/mcp';
@@ -248,14 +248,18 @@ module.exports = definePlugin({
       auth: true,
       async handler(_req, ctx) {
         const cfg = ctx.config || {};
-        const configured = !!(cfg.oauth_authorize_url && cfg.oauth_token_url && cfg.oauth_client_id);
+        // Name the missing keys rather than just saying "not configured". A TREK without an
+        // instance-settings form cannot show the operator a form to compare against, so the
+        // list IS the instruction.
+        const REQUIRED = ['oauth_authorize_url', 'oauth_token_url', 'oauth_client_id', 'oauth_client_secret'];
+        const missing = REQUIRED.filter((k) => !String(cfg[k] || '').trim());
         let connected = false;
         try {
           connected = !!(await ctx.oauth.getAccessToken());
         } catch {
           connected = false;
         }
-        return reply(200, { configured, connected, endpoint: mcpUrl(ctx) });
+        return reply(200, { configured: missing.length === 0, missing, connected, endpoint: mcpUrl(ctx) });
       },
     },
 
@@ -524,15 +528,17 @@ module.exports = definePlugin({
         const zoom = Math.min(18, Math.max(3, Number(q.zoom) || 14));
         const cfg = ctx.config || {};
         const dark = String(q.theme || '') === 'dark';
-        const template = (dark ? cfg.map_tile_url_dark : cfg.map_tile_url) || cfg.map_tile_url;
-        if (!template) return reply(200, { unavailable: true, reason: 'No map tile source is configured.' });
+        // Fall back to the built-in source, so the map works on a TREK that has no way to
+        // fill in instance settings. The settings only ever narrow this, never enable it.
+        const template =
+          (dark ? cfg.map_tile_url_dark : cfg.map_tile_url) || cfg.map_tile_url || DEFAULT_TILE_URL;
 
         try {
           const map = await staticMap({ lat, lng, zoom, template });
           if (!map.tiles.some(Boolean)) {
             return reply(200, { unavailable: true, reason: 'The map service did not return any tiles.' });
           }
-          return reply(200, Object.assign({ attribution: cfg.map_attribution || '' }, map));
+          return reply(200, Object.assign({ attribution: cfg.map_attribution || DEFAULT_ATTRIBUTION }, map));
         } catch (err) {
           // A missing map must never take the listing down with it.
           ctx.log.info(`map: ${(err && err.message) || 'failed'}`);

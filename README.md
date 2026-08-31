@@ -70,15 +70,43 @@ script prints the redirect URI it registers — check it against your `APP_URL`.
 
 It registers a confidential client and prints a **client id** and **client secret**.
 
-### 2. Paste those two values into the plugin's settings (admin, once)
+### 2. Give the values to TREK (admin, once)
 
-In TREK, go to **Admin → Plugins → Airbnb Stays → Settings** and fill in
-`OAuth client id` and `OAuth client secret`. That is all you need to touch: the
-authorize, token and MCP endpoints are constants of the OpenBnB service and arrive
-already filled in. The secret is stored encrypted and never leaves the host.
+Four settings have to reach the server. Two of them — the authorize and token URLs — are
+constants of the OpenBnB service and this plugin ships them as manifest defaults, so on a
+TREK new enough to honour defaults they are already filled in and you only supply the two
+credentials.
 
-> Needs TREK 4.2 or newer for the settings form and the pre-filled endpoints. On an
-> older TREK the same four values still work, they just all have to be entered by hand.
+**If your TREK shows a Settings form** for this plugin under **Admin → Plugins → Airbnb
+Stays**, fill in `OAuth client id` and `OAuth client secret` there; everything else is
+pre-filled.
+
+**No TREK release has that form yet** — up to and including 4.1 there is no UI for a
+plugin's instance settings — so today this is the path you want. Send the same values to
+the admin API. Sign in to TREK as an admin, then from the browser console on
+your TREK tab (it reuses your session cookie):
+
+```js
+await fetch('/api/admin/plugins/airbnb-mcp/config', {
+  method: 'PUT',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    oauth_authorize_url: 'https://mcp.openbnb.ai/authorize',
+    oauth_token_url:     'https://mcp.openbnb.ai/token',
+    oauth_client_id:     'PASTE_CLIENT_ID',
+    oauth_client_secret: 'PASTE_CLIENT_SECRET',
+  }),
+}).then(r => r.json())
+```
+
+Then restart the plugin (**Admin → Plugins → ⋯ → Restart**) so it picks the values up. The
+secret is stored encrypted either way and never leaves the host.
+
+The plugin's own tab tells you which keys are still missing, so you can check your work
+there.
+
+> The map and the MCP endpoint need no configuration at all — they fall back to built-in
+> defaults, and their settings exist only to override them.
 
 ### 3. Each traveller connects their own account
 
@@ -106,8 +134,8 @@ searches. Until a user connects, the tab shows a prompt instead of a search form
 
 ```bash
 npm install
-npm test          # 97 unit tests: MCP transport, session reuse, normalisation, tile maths, every route
-npm run smoke     # 47 browser checks: packs the frame and drives the real UI
+npm test          # 102 unit tests: MCP transport, session reuse, normalisation, tile maths, every route
+npm run smoke     # 49 browser checks: packs the frame and drives the real UI
 npm run dev       # hot-reloaded local harness
 npm run validate  # the registry's own publish gates
 ```

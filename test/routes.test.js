@@ -85,13 +85,98 @@ test('/status reports configured-but-not-connected before the user links OpenBnB
   const h = host({ oauthAccessToken: null });
   const res = await h.run(plugin).route({ method: 'GET', path: '/status' });
   assert.equal(res.status, 200);
-  assert.deepEqual(body(res), { configured: true, connected: false, endpoint: 'https://mcp.openbnb.ai/mcp' });
+  assert.deepEqual(body(res), {
+    configured: true, missing: [], connected: false, endpoint: 'https://mcp.openbnb.ai/mcp',
+  });
 });
 
 test('/status reports not-configured when the admin has not filled the OAuth settings', async () => {
   const h = createMockHost({ grants: GRANTS, config: {}, actingUserId: 42, oauthAccessToken: null });
   const res = await h.run(plugin).route({ method: 'GET', path: '/status' });
   assert.equal(body(res).configured, false);
+});
+
+/**
+ * Stock-TREK behaviour. TREK 4.1 and older neither honour a settings-field `default` nor
+ * offer any UI for instance settings, so a plugin lands there with `config === {}`. What
+ * MUST still hold: it names exactly what it needs, and everything that can work without
+ * an operator does work. These are the cases a co-maintainer installing from the registry
+ * hits first.
+ */
+test('/status names the missing keys so an operator with no settings form knows what to send', async () => {
+  const h = createMockHost({ grants: GRANTS, config: {}, actingUserId: 42, oauthAccessToken: null });
+  const res = await h.run(plugin).route({ method: 'GET', path: '/status' });
+  assert.deepEqual(body(res).missing, [
+    'oauth_authorize_url', 'oauth_token_url', 'oauth_client_id', 'oauth_client_secret',
+  ]);
+});
+
+test('/status lists only what is actually still missing', async () => {
+  const h = createMockHost({
+    grants: GRANTS,
+    config: { oauth_authorize_url: 'https://mcp.openbnb.ai/authorize', oauth_token_url: 'https://mcp.openbnb.ai/token' },
+    actingUserId: 42,
+    oauthAccessToken: null,
+  });
+  const res = await h.run(plugin).route({ method: 'GET', path: '/status' });
+  assert.deepEqual(body(res).missing, ['oauth_client_id', 'oauth_client_secret']);
+});
+
+test('a blank-but-present setting counts as missing, not as configured', async () => {
+  const h = createMockHost({
+    grants: GRANTS,
+    config: { oauth_authorize_url: '   ', oauth_token_url: '', oauth_client_id: 'x', oauth_client_secret: 'y' },
+    actingUserId: 42,
+    oauthAccessToken: null,
+  });
+  const res = await h.run(plugin).route({ method: 'GET', path: '/status' });
+  assert.equal(body(res).configured, false);
+  assert.deepEqual(body(res).missing, ['oauth_authorize_url', 'oauth_token_url']);
+});
+
+test('/map works with NO map settings at all — the built-in tile source is a fallback, not a requirement', async (t) => {
+  const original = globalThis.fetch;
+  const asked = [];
+  globalThis.fetch = async (url) => {
+    asked.push(String(url));
+    return {
+      ok: true,
+      headers: { get: () => 'image/png' },
+      arrayBuffer: async () => new Uint8Array([137, 80, 78, 71]).buffer,
+    };
+  };
+  t.after(() => { globalThis.fetch = original; });
+
+  const h = createMockHost({ grants: GRANTS, config: {}, actingUserId: 42, oauthAccessToken: 'tok' });
+  const res = await h.run(plugin).route({ method: 'GET', path: '/map' }, { query: { lat: '48.8584', lng: '2.2945' } });
+  assert.equal(res.status, 200);
+  const out = body(res);
+  assert.ok(!out.unavailable, 'must not report unavailable without settings');
+  assert.equal(out.tiles.length, 9);
+  assert.ok(out.tiles.every((tile) => typeof tile === 'string' && tile.startsWith('data:image/png;base64,')));
+  assert.ok(asked.every((u) => u.startsWith('https://tile.openstreetmap.org/')), asked.join(','));
+  // Attribution is a legal requirement of the tile source, so it cannot depend on config.
+  assert.match(out.attribution, /OpenStreetMap/);
+});
+
+test('a configured tile source overrides the built-in one', async (t) => {
+  const original = globalThis.fetch;
+  const asked = [];
+  globalThis.fetch = async (url) => {
+    asked.push(String(url));
+    return { ok: true, headers: { get: () => 'image/png' }, arrayBuffer: async () => new ArrayBuffer(4) };
+  };
+  t.after(() => { globalThis.fetch = original; });
+
+  const h = createMockHost({
+    grants: GRANTS,
+    config: { map_tile_url: 'https://tiles.mine.internal/{z}/{x}/{y}.png', map_attribution: 'Mine' },
+    actingUserId: 42,
+    oauthAccessToken: 'tok',
+  });
+  const res = await h.run(plugin).route({ method: 'GET', path: '/map' }, { query: { lat: '0', lng: '0' } });
+  assert.equal(body(res).attribution, 'Mine');
+  assert.ok(asked.every((u) => u.startsWith('https://tiles.mine.internal/')), asked.join(','));
 });
 
 test('/defaults seeds the form from the trip dates', async () => {

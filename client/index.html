@@ -438,6 +438,7 @@
   var commuteRequest = 0;
   var guests = { adults: 2, children: 0 };
   var currentTheme = 'light';
+  var missingKeys = [];
 
   var $ = function (id) { return document.getElementById(id); };
   var esc = function (s) {
@@ -455,12 +456,23 @@
     $('app').hidden = true;
 
     if (state === 'unconfigured') {
+      // Two setup paths, described by CAPABILITY rather than by version: as of TREK 4.1
+      // there is no UI for a plugin's instance settings at all, and the release that adds
+      // one does not exist yet, so naming a version number here would send an operator
+      // looking for something that is not out. The admin API route works on every 4.x.
+      var missingHtml = missingKeys.length
+        ? '<p class="trek-muted">Still needed: ' +
+          missingKeys.map(function (k) { return '<code>' + esc(k) + '</code>'; }).join(', ') + '</p>'
+        : '';
       gate.innerHTML =
         '<div class="trek-glass trek-stack state" style="padding:16px">' +
         '<div class="trek-title">Almost ready</div>' +
-        '<p class="trek-muted">An administrator needs to link this TREK server to OpenBnB once. ' +
-        'In <strong>Admin &rarr; Plugins</strong>, open this plugin’s <strong>Settings</strong> and fill in the ' +
-        'client id and secret — everything else is already filled in.</p>' +
+        '<p class="trek-muted">An administrator links this TREK server to OpenBnB once. Run ' +
+        '<code>npm run register -- &lt;your TREK URL&gt;</code> in the plugin repo to get a client id and secret.</p>' +
+        missingHtml +
+        '<p class="trek-muted">If <strong>Admin &rarr; Plugins &rarr; Airbnb Stays</strong> offers a ' +
+        '<strong>Settings</strong> form, paste them there. If it does not — no TREK 4.1 or earlier has one — ' +
+        'send the same values to the admin API instead; the plugin’s README has the exact command.</p>' +
         '</div>';
       return;
     }
@@ -1320,6 +1332,7 @@
     renderDateValues();
     try {
       var s = await trek.invoke('/status');
+      missingKeys = Array.isArray(s.missing) ? s.missing : [];
       if (!s.configured) return renderGate('unconfigured');
       if (!s.connected) return renderGate('disconnected');
       renderGate('ok');
