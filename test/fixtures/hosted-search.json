@@ -2,105 +2,6 @@
   "searchUrl": "https://www.airbnb.com/s/Paris--France/homes?locale=en&currency=USD&checkin=2026-10-10&checkout=2026-10-14&adults=2&children=0&infants=0&pets=0",
   "searchResults": [
     {
-      "id": "662359199857733747",
-      "url": "https://www.airbnb.com/rooms/662359199857733747?check_in=2026-10-10&check_out=2026-10-14&adults=2",
-      "demandStayListing": {
-        "id": "RGVtYW5kU3RheUxpc3Rpbmc6NjYyMzU5MTk5ODU3NzMzNzQ3",
-        "description": {
-          "name": {
-            "localizedStringWithTranslationPreference": "Elegant Haussmann-style Room"
-          }
-        },
-        "location": {
-          "coordinate": {
-            "latitude": 48.8875,
-            "longitude": 2.3029
-          }
-        }
-      },
-      "badges": "Guest favourite",
-      "structuredContent": {
-        "mapSecondaryLine": "",
-        "primaryLine": "1 queen bed, 1 bathroom",
-        "secondaryLine": "Individual host"
-      },
-      "avgRatingA11yLabel": "4.88 out of 5 average rating,  177 reviews",
-      "listingParamOverrides": {
-        "categoryTag": "Tag:8678",
-        "photoId": "2512808151",
-        "relaxedAmenityIds": "",
-        "splitStaysLocationPrecisions": "",
-        "splitStaysLocationsAcpIds": ""
-      },
-      "structuredDisplayPrice": {
-        "primaryLine": {
-          "accessibilityLabel": "$608 USD total"
-        },
-        "explanationData": {
-          "title": "Price details",
-          "priceDetails": "4 nights x $135.40 USD: $541.58 USD, Taxes: $65.91 USD, Total: $607.49 USD"
-        }
-      },
-      "thumbnailUrl": "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-662359199857733747%2Foriginal%2F05c0f00d-efd1-40ec-b778-8205f615c5d1.jpeg",
-      "photos": [
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-662359199857733747%2Foriginal%2F05c0f00d-efd1-40ec-b778-8205f615c5d1.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-662359199857733747%2Foriginal%2F8d1359f4-7f22-4102-9c5e-44c5ff56a772.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-662359199857733747%2Foriginal%2F0e1bd1c5-eacb-450d-acf4-6c3a25e1a1ed.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-662359199857733747%2Foriginal%2F6981c79a-318e-4818-9d71-7830c9613c75.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-662359199857733747%2Foriginal%2F2509cb21-eb64-4c46-a403-692f99de2282.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-662359199857733747%2Foriginal%2F3e24485b-5d4d-419e-a44e-f45ed0ea5369.jpeg"
-      ]
-    },
-    {
-      "id": "650769860432583819",
-      "url": "https://www.airbnb.com/rooms/650769860432583819?check_in=2026-10-10&check_out=2026-10-14&adults=2",
-      "demandStayListing": {
-        "id": "RGVtYW5kU3RheUxpc3Rpbmc6NjUwNzY5ODYwNDMyNTgzODE5",
-        "description": {
-          "name": {
-            "localizedStringWithTranslationPreference": "Cozy apartment near the Eiffel Tower"
-          }
-        },
-        "location": {
-          "coordinate": {
-            "latitude": 48.848,
-            "longitude": 2.2963
-          }
-        }
-      },
-      "badges": "Guest favourite",
-      "structuredContent": {
-        "mapSecondaryLine": "",
-        "primaryLine": "1 bedroom, 1 double bed, 1 bathroom",
-        "secondaryLine": "Individual host"
-      },
-      "avgRatingA11yLabel": "4.94 out of 5 average rating,  65 reviews",
-      "listingParamOverrides": {
-        "photoId": "1432182612",
-        "relaxedAmenityIds": "",
-        "splitStaysLocationPrecisions": "",
-        "splitStaysLocationsAcpIds": ""
-      },
-      "structuredDisplayPrice": {
-        "primaryLine": {
-          "accessibilityLabel": "$827 USD total"
-        },
-        "explanationData": {
-          "title": "Price details",
-          "priceDetails": "4 nights x $183.73 USD: $734.90 USD, Taxes: $91.52 USD, Total: $826.42 USD"
-        }
-      },
-      "thumbnailUrl": "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2F990202c7-7468-4eff-8520-b942185d7171.jpg",
-      "photos": [
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2F990202c7-7468-4eff-8520-b942185d7171.jpg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2F5ee2ffd0-7cac-4a8f-a53b-58adfc1ba180.jpg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2F3afa178c-5e47-4b44-b26f-960f03b2d2ce.jpg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fc19b17c8-79c0-429c-8d42-41bebef5a286.jpg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2F5d8b9cbc-c203-42fa-969c-5ad27ed72b48.jpg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fdaa4bfd5-df2a-4f36-948e-68ffe0c13fb0.jpg"
-      ]
-    },
-    {
       "id": "735957503382296080",
       "url": "https://www.airbnb.com/rooms/735957503382296080?check_in=2026-10-10&check_out=2026-10-14&adults=2",
       "demandStayListing": {
@@ -150,55 +51,6 @@
       ]
     },
     {
-      "id": "1049080444305397236",
-      "url": "https://www.airbnb.com/rooms/1049080444305397236?check_in=2026-10-10&check_out=2026-10-14&adults=2",
-      "demandStayListing": {
-        "id": "RGVtYW5kU3RheUxpc3Rpbmc6MTA0OTA4MDQ0NDMwNTM5NzIzNg==",
-        "description": {
-          "name": {
-            "localizedStringWithTranslationPreference": "Port Royal, on the courtyard, beautiful 2-room furnished apartment"
-          }
-        },
-        "location": {
-          "coordinate": {
-            "latitude": 48.83854,
-            "longitude": 2.33667
-          }
-        }
-      },
-      "badges": "",
-      "structuredContent": {
-        "mapSecondaryLine": "",
-        "primaryLine": "1 bedroom, 2 beds, 1 bathroom",
-        "secondaryLine": "Individual host"
-      },
-      "avgRatingA11yLabel": "4.68 out of 5 average rating,  41 reviews",
-      "listingParamOverrides": {
-        "photoId": "1803418269",
-        "relaxedAmenityIds": "",
-        "splitStaysLocationPrecisions": "",
-        "splitStaysLocationsAcpIds": ""
-      },
-      "structuredDisplayPrice": {
-        "primaryLine": {
-          "accessibilityLabel": "$689 USD total"
-        },
-        "explanationData": {
-          "title": "Price details",
-          "priceDetails": "4 nights x $148.10 USD: $592.40 USD, Taxes: $96.26 USD, Total: $688.66 USD"
-        }
-      },
-      "thumbnailUrl": "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-1049080444305397236%2Foriginal%2Fafe2dcc1-e97c-4d4a-b76c-3c3baed84136.jpeg",
-      "photos": [
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-1049080444305397236%2Foriginal%2Fafe2dcc1-e97c-4d4a-b76c-3c3baed84136.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-1049080444305397236%2Foriginal%2F79eeb574-cb2a-47d9-84dc-acc83fc52069.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-1049080444305397236%2Foriginal%2Fd78a114a-da3c-4a57-8bb0-882e8628a7d6.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-1049080444305397236%2Foriginal%2F2527b698-817b-41e2-93d9-0e400922b1bf.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-1049080444305397236%2Foriginal%2F3253555a-e1cf-44b1-a3c5-68c9e623e7fe.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-1049080444305397236%2Foriginal%2F90b417b1-3365-4872-ae0b-315816ca88b9.jpeg"
-      ]
-    },
-    {
       "id": "1115871874010085189",
       "url": "https://www.airbnb.com/rooms/1115871874010085189?check_in=2026-10-10&check_out=2026-10-14&adults=2",
       "demandStayListing": {
@@ -245,6 +97,56 @@
         "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1115871874010085189%2Foriginal%2F01339a12-ebbb-4f3b-8bb8-836a3baac39a.jpeg",
         "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-U3RheVN1cHBseUxpc3Rpbmc6MTExNTg3MTg3NDAxMDA4NTE4OQ%253D%253D%2Foriginal%2Ff37281aa-c1f7-4ce6-bff4-9fd0809c21cc.png",
         "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1115871874010085189%2Foriginal%2F1887128f-072e-40b4-a8da-580475aa3b02.jpeg"
+      ]
+    },
+    {
+      "id": "662359199857733747",
+      "url": "https://www.airbnb.com/rooms/662359199857733747?check_in=2026-10-10&check_out=2026-10-14&adults=2",
+      "demandStayListing": {
+        "id": "RGVtYW5kU3RheUxpc3Rpbmc6NjYyMzU5MTk5ODU3NzMzNzQ3",
+        "description": {
+          "name": {
+            "localizedStringWithTranslationPreference": "Elegant Haussmann-style Room"
+          }
+        },
+        "location": {
+          "coordinate": {
+            "latitude": 48.8875,
+            "longitude": 2.3029
+          }
+        }
+      },
+      "badges": "Guest favourite",
+      "structuredContent": {
+        "mapSecondaryLine": "",
+        "primaryLine": "1 queen bed, 1 bathroom",
+        "secondaryLine": "Individual host"
+      },
+      "avgRatingA11yLabel": "4.88 out of 5 average rating,  177 reviews",
+      "listingParamOverrides": {
+        "categoryTag": "Tag:8678",
+        "photoId": "2512808151",
+        "relaxedAmenityIds": "",
+        "splitStaysLocationPrecisions": "",
+        "splitStaysLocationsAcpIds": ""
+      },
+      "structuredDisplayPrice": {
+        "primaryLine": {
+          "accessibilityLabel": "$608 USD total"
+        },
+        "explanationData": {
+          "title": "Price details",
+          "priceDetails": "4 nights x $135.40 USD: $541.58 USD, Taxes: $65.91 USD, Total: $607.49 USD"
+        }
+      },
+      "thumbnailUrl": "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-662359199857733747%2Foriginal%2F05c0f00d-efd1-40ec-b778-8205f615c5d1.jpeg",
+      "photos": [
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-662359199857733747%2Foriginal%2F05c0f00d-efd1-40ec-b778-8205f615c5d1.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-662359199857733747%2Foriginal%2F8d1359f4-7f22-4102-9c5e-44c5ff56a772.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-662359199857733747%2Foriginal%2F0e1bd1c5-eacb-450d-acf4-6c3a25e1a1ed.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-662359199857733747%2Foriginal%2F6981c79a-318e-4818-9d71-7830c9613c75.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-662359199857733747%2Foriginal%2F2509cb21-eb64-4c46-a403-692f99de2282.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-662359199857733747%2Foriginal%2F3e24485b-5d4d-419e-a44e-f45ed0ea5369.jpeg"
       ]
     },
     {
@@ -347,346 +249,199 @@
       ]
     },
     {
-      "id": "1407887763017752427",
-      "url": "https://www.airbnb.com/rooms/1407887763017752427?check_in=2026-10-10&check_out=2026-10-14&adults=2",
+      "id": "716501810055831799",
+      "url": "https://www.airbnb.com/rooms/716501810055831799?check_in=2026-10-10&check_out=2026-10-14&adults=2",
       "demandStayListing": {
-        "id": "RGVtYW5kU3RheUxpc3Rpbmc6MTQwNzg4Nzc2MzAxNzc1MjQyNw==",
+        "id": "RGVtYW5kU3RheUxpc3Rpbmc6NzE2NTAxODEwMDU1ODMxNzk5",
         "description": {
           "name": {
-            "localizedStringWithTranslationPreference": "Refurbished Studio – Near Metro (Line 13)"
+            "localizedStringWithTranslationPreference": "The Nest Timbaud 2 People Paris"
           }
         },
         "location": {
           "coordinate": {
-            "latitude": 48.90007,
-            "longitude": 2.30366
+            "latitude": 48.86806,
+            "longitude": 2.37462
+          }
+        }
+      },
+      "badges": "Superhost",
+      "structuredContent": {
+        "mapSecondaryLine": "",
+        "primaryLine": "1 bedroom, 1 double bed, 1 bathroom",
+        "secondaryLine": "Business host"
+      },
+      "avgRatingA11yLabel": "4.42 out of 5 average rating,  64 reviews",
+      "listingParamOverrides": {
+        "photoId": "1490362100",
+        "relaxedAmenityIds": "",
+        "splitStaysLocationPrecisions": "",
+        "splitStaysLocationsAcpIds": ""
+      },
+      "structuredDisplayPrice": {
+        "primaryLine": {
+          "accessibilityLabel": "$552 USD total, originally $703 USD"
+        },
+        "explanationData": {
+          "title": "Price details",
+          "priceDetails": "4 nights x $120.46 USD: $481.83 USD, Taxes: $69.82 USD, Total: $551.65 USD, "
+        }
+      },
+      "thumbnailUrl": "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-716501810055831799%2Foriginal%2F30a5ad58-3224-438e-9cd5-b2136e45864f.jpeg",
+      "photos": [
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-716501810055831799%2Foriginal%2F30a5ad58-3224-438e-9cd5-b2136e45864f.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-716501810055831799%2Foriginal%2Fe2bc0396-ec3a-48dd-bac3-366213bb175b.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-716501810055831799%2Foriginal%2F0600e6d8-241c-4ab6-8144-752f04f0d35c.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-716501810055831799%2Foriginal%2F8efb2ea4-2161-44cd-b88b-95d247397948.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-716501810055831799%2Foriginal%2F28e8aef6-a2aa-452d-989f-012bfd980967.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-716501810055831799%2Foriginal%2F801ee128-56e3-43b2-a1b3-6667c2415972.jpeg"
+      ]
+    },
+    {
+      "id": "1049080444305397236",
+      "url": "https://www.airbnb.com/rooms/1049080444305397236?check_in=2026-10-10&check_out=2026-10-14&adults=2",
+      "demandStayListing": {
+        "id": "RGVtYW5kU3RheUxpc3Rpbmc6MTA0OTA4MDQ0NDMwNTM5NzIzNg==",
+        "description": {
+          "name": {
+            "localizedStringWithTranslationPreference": "Port Royal, on the courtyard, beautiful 2-room furnished apartment"
+          }
+        },
+        "location": {
+          "coordinate": {
+            "latitude": 48.83854,
+            "longitude": 2.33667
           }
         }
       },
       "badges": "",
+      "structuredContent": {
+        "mapSecondaryLine": "",
+        "primaryLine": "1 bedroom, 2 beds, 1 bathroom",
+        "secondaryLine": "Individual host"
+      },
+      "avgRatingA11yLabel": "4.68 out of 5 average rating,  41 reviews",
+      "listingParamOverrides": {
+        "photoId": "1803418269",
+        "relaxedAmenityIds": "",
+        "splitStaysLocationPrecisions": "",
+        "splitStaysLocationsAcpIds": ""
+      },
+      "structuredDisplayPrice": {
+        "primaryLine": {
+          "accessibilityLabel": "$689 USD total"
+        },
+        "explanationData": {
+          "title": "Price details",
+          "priceDetails": "4 nights x $148.10 USD: $592.40 USD, Taxes: $96.26 USD, Total: $688.66 USD"
+        }
+      },
+      "thumbnailUrl": "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-1049080444305397236%2Foriginal%2Fafe2dcc1-e97c-4d4a-b76c-3c3baed84136.jpeg",
+      "photos": [
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-1049080444305397236%2Foriginal%2Fafe2dcc1-e97c-4d4a-b76c-3c3baed84136.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-1049080444305397236%2Foriginal%2F79eeb574-cb2a-47d9-84dc-acc83fc52069.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-1049080444305397236%2Foriginal%2Fd78a114a-da3c-4a57-8bb0-882e8628a7d6.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-1049080444305397236%2Foriginal%2F2527b698-817b-41e2-93d9-0e400922b1bf.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-1049080444305397236%2Foriginal%2F3253555a-e1cf-44b1-a3c5-68c9e623e7fe.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-1049080444305397236%2Foriginal%2F90b417b1-3365-4872-ae0b-315816ca88b9.jpeg"
+      ]
+    },
+    {
+      "id": "650769860432583819",
+      "url": "https://www.airbnb.com/rooms/650769860432583819?check_in=2026-10-10&check_out=2026-10-14&adults=2",
+      "demandStayListing": {
+        "id": "RGVtYW5kU3RheUxpc3Rpbmc6NjUwNzY5ODYwNDMyNTgzODE5",
+        "description": {
+          "name": {
+            "localizedStringWithTranslationPreference": "Cozy apartment near the Eiffel Tower"
+          }
+        },
+        "location": {
+          "coordinate": {
+            "latitude": 48.848,
+            "longitude": 2.2963
+          }
+        }
+      },
+      "badges": "Guest favourite",
       "structuredContent": {
         "mapSecondaryLine": "",
         "primaryLine": "1 bedroom, 1 double bed, 1 bathroom",
         "secondaryLine": "Individual host"
       },
-      "avgRatingA11yLabel": "4.68 out of 5 average rating,  44 reviews",
+      "avgRatingA11yLabel": "4.94 out of 5 average rating,  65 reviews",
       "listingParamOverrides": {
-        "photoId": "2160557773",
+        "photoId": "1432182612",
         "relaxedAmenityIds": "",
         "splitStaysLocationPrecisions": "",
         "splitStaysLocationsAcpIds": ""
       },
       "structuredDisplayPrice": {
         "primaryLine": {
-          "accessibilityLabel": "$594 USD total"
+          "accessibilityLabel": "$827 USD total"
         },
         "explanationData": {
           "title": "Price details",
-          "priceDetails": "4 nights x $133.34 USD: $533.36 USD, Taxes: $60.25 USD, Total: $593.61 USD"
+          "priceDetails": "4 nights x $183.73 USD: $734.90 USD, Taxes: $91.52 USD, Total: $826.42 USD"
         }
       },
-      "thumbnailUrl": "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-U3RheVN1cHBseUxpc3Rpbmc6MTQwNzg4Nzc2MzAxNzc1MjQyNw%3D%3D%2Foriginal%2Fcb0e7eda-76a4-4e39-9f0e-ba018b1285e6.jpeg",
+      "thumbnailUrl": "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2F990202c7-7468-4eff-8520-b942185d7171.jpg",
       "photos": [
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-U3RheVN1cHBseUxpc3Rpbmc6MTQwNzg4Nzc2MzAxNzc1MjQyNw%3D%3D%2Foriginal%2Fcb0e7eda-76a4-4e39-9f0e-ba018b1285e6.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-U3RheVN1cHBseUxpc3Rpbmc6MTQwNzg4Nzc2MzAxNzc1MjQyNw%3D%3D%2Foriginal%2Ff888bb2a-ad00-4614-8b34-a93f09aa3359.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-U3RheVN1cHBseUxpc3Rpbmc6MTQwNzg4Nzc2MzAxNzc1MjQyNw%3D%3D%2Foriginal%2Fbc796ef0-28f6-4c7e-bbd5-b2075f42c808.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-1407887763017752427%2Foriginal%2F19eb3652-dc0a-4814-b6ea-e514cc225925.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-1407887763017752427%2Foriginal%2F8b9c3689-2f0d-4dd9-93aa-ec6ed70ac0b4.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-1407887763017752427%2Foriginal%2F26bf5155-0fe4-42f6-a721-53b220d15b2c.jpeg"
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2F990202c7-7468-4eff-8520-b942185d7171.jpg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2F5ee2ffd0-7cac-4a8f-a53b-58adfc1ba180.jpg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2F3afa178c-5e47-4b44-b26f-960f03b2d2ce.jpg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fc19b17c8-79c0-429c-8d42-41bebef5a286.jpg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2F5d8b9cbc-c203-42fa-969c-5ad27ed72b48.jpg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fdaa4bfd5-df2a-4f36-948e-68ffe0c13fb0.jpg"
       ]
     },
     {
-      "id": "1733490849929894296",
-      "url": "https://www.airbnb.com/rooms/1733490849929894296?check_in=2026-10-10&check_out=2026-10-14&adults=2",
+      "id": "1384621638593929157",
+      "url": "https://www.airbnb.com/rooms/1384621638593929157?check_in=2026-10-10&check_out=2026-10-14&adults=2",
       "demandStayListing": {
-        "id": "RGVtYW5kU3RheUxpc3Rpbmc6MTczMzQ5MDg0OTkyOTg5NDI5Ng==",
+        "id": "RGVtYW5kU3RheUxpc3Rpbmc6MTM4NDYyMTYzODU5MzkyOTE1Nw==",
         "description": {
           "name": {
-            "localizedStringWithTranslationPreference": "Loft-style 3-bedroom apartment - Basilique Sacré-Cœur"
+            "localizedStringWithTranslationPreference": "A Romantic Studio with Services - Opera"
           }
         },
         "location": {
           "coordinate": {
-            "latitude": 48.88716,
-            "longitude": 2.34787
-          }
-        }
-      },
-      "badges": "",
-      "structuredContent": {
-        "mapSecondaryLine": "",
-        "primaryLine": "2 bedrooms, 1 bathroom",
-        "secondaryLine": "Business host"
-      },
-      "avgRatingA11yLabel": "New place to stay",
-      "listingParamOverrides": {
-        "photoId": "2733799265",
-        "relaxedAmenityIds": "",
-        "splitStaysLocationPrecisions": "",
-        "splitStaysLocationsAcpIds": ""
-      },
-      "structuredDisplayPrice": {
-        "primaryLine": {
-          "accessibilityLabel": "$935 USD total"
-        },
-        "explanationData": {
-          "title": "Price details",
-          "priceDetails": "4 nights x $203.99 USD: $815.94 USD, Taxes: $118.07 USD, Total: $934.01 USD"
-        }
-      },
-      "thumbnailUrl": "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1733490849929894296%2Foriginal%2F447fd51f-1012-47b9-80a3-6206fe880ccf.jpeg",
-      "photos": [
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1733490849929894296%2Foriginal%2F447fd51f-1012-47b9-80a3-6206fe880ccf.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1733490849929894296%2Foriginal%2F48cfe5b5-a700-4360-80f1-b5d1be9bfd5d.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1733490849929894296%2Foriginal%2F74a16b7a-d06d-4b1b-b702-4f014c627b67.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1733490849929894296%2Foriginal%2F22faae51-7f4c-492f-92d1-f3b8f524b794.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1733490849929894296%2Foriginal%2F5f8121ca-48e9-4dbf-9aef-b83f7c320098.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1733490849929894296%2Foriginal%2F416b7f99-77b0-4f20-ae63-fd27538794b1.jpeg"
-      ]
-    },
-    {
-      "id": "13351006",
-      "url": "https://www.airbnb.com/rooms/13351006?check_in=2026-10-10&check_out=2026-10-14&adults=2",
-      "demandStayListing": {
-        "id": "RGVtYW5kU3RheUxpc3Rpbmc6MTMzNTEwMDY=",
-        "description": {
-          "name": {
-            "localizedStringWithTranslationPreference": "Charming Studio w/ Terrace – Near Paris Metro 11"
-          }
-        },
-        "location": {
-          "coordinate": {
-            "latitude": 48.8759,
-            "longitude": 2.4543
+            "latitude": 48.877,
+            "longitude": 2.337
           }
         }
       },
       "badges": "Guest favourite",
       "structuredContent": {
         "mapSecondaryLine": "",
-        "primaryLine": "1 bedroom, 2 single beds, 1 bathroom",
+        "primaryLine": "1 king bed, 1 bathroom",
         "secondaryLine": "Business host"
       },
-      "avgRatingA11yLabel": "4.72 out of 5 average rating,  254 reviews",
+      "avgRatingA11yLabel": "4.87 out of 5 average rating,  75 reviews",
       "listingParamOverrides": {
-        "photoId": "969566505",
+        "photoId": "2127490492",
         "relaxedAmenityIds": "",
         "splitStaysLocationPrecisions": "",
         "splitStaysLocationsAcpIds": ""
       },
       "structuredDisplayPrice": {
         "primaryLine": {
-          "accessibilityLabel": "$354 USD total, originally $389 USD"
+          "accessibilityLabel": "$1,193 USD total, originally $1,313 USD"
         },
         "explanationData": {
           "title": "Price details",
-          "priceDetails": "4 nights x $78.51 USD: $314.05 USD, Taxes: $39.92 USD, Total: $353.97 USD, "
+          "priceDetails": "4 nights x $321.99 USD: $1,287.97 USD, Early booking discount: -$119.53 USD, Taxes: $24.10 USD, Total: $1,192.54 USD"
         }
       },
-      "thumbnailUrl": "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fde9b3616-9059-4d8e-b637-97f4f28907bf.jpg",
+      "thumbnailUrl": "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-U3RheVN1cHBseUxpc3Rpbmc6MTM4NDYyMTYzODU5MzkyOTE1Nw%3D%3D%2Foriginal%2Fa73be919-351a-4f0b-9d9b-ef7954ba91c7.jpeg",
       "photos": [
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fde9b3616-9059-4d8e-b637-97f4f28907bf.jpg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fd1a34bc7-0ba2-4661-943f-c56ca5f39de3.jpg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2F542f9cee-8ab6-49dc-9c90-b51eb16b7931.jpg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2F5629e53e-9af5-4bf4-af8a-d5de17372010.jpg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2F857925e4-494c-4ecd-8dd9-48572e92c5fc.jpg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Faa28d86f-0e47-40b8-b7fc-8b07b2db4e46.jpg"
-      ]
-    },
-    {
-      "id": "1490788673708206828",
-      "url": "https://www.airbnb.com/rooms/1490788673708206828?check_in=2026-10-10&check_out=2026-10-14&adults=2",
-      "demandStayListing": {
-        "id": "RGVtYW5kU3RheUxpc3Rpbmc6MTQ5MDc4ODY3MzcwODIwNjgyOA==",
-        "description": {
-          "name": {
-            "localizedStringWithTranslationPreference": "Cozy apartment - 1BR/2P - Grenelle/ Eiffel Tour"
-          }
-        },
-        "location": {
-          "coordinate": {
-            "latitude": 48.8467,
-            "longitude": 2.2958
-          }
-        }
-      },
-      "badges": "",
-      "structuredContent": {
-        "mapSecondaryLine": "",
-        "primaryLine": "1 double bed, 1 bathroom",
-        "secondaryLine": "Business host"
-      },
-      "avgRatingA11yLabel": "4.71 out of 5 average rating,  48 reviews",
-      "listingParamOverrides": {
-        "photoId": "2300978905",
-        "relaxedAmenityIds": "",
-        "splitStaysLocationPrecisions": "",
-        "splitStaysLocationsAcpIds": ""
-      },
-      "structuredDisplayPrice": {
-        "primaryLine": {
-          "accessibilityLabel": "$842 USD total"
-        },
-        "explanationData": {
-          "title": "Price details",
-          "priceDetails": "4 nights x $220.47 USD: $881.89 USD, Early booking discount: -$64.53 USD, Taxes: $24.10 USD, Total: $841.46 USD"
-        }
-      },
-      "thumbnailUrl": "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fprohost-api%2FHosting-1490788673708206828%2Foriginal%2Faf72a66c-f67d-4a3e-bb3d-f7ab8fdb47af.jpeg",
-      "photos": [
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fprohost-api%2FHosting-1490788673708206828%2Foriginal%2Faf72a66c-f67d-4a3e-bb3d-f7ab8fdb47af.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fprohost-api%2FHosting-1490788673708206828%2Foriginal%2Face3fde5-a82a-4945-a804-1b56cbd80f86.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fprohost-api%2FHosting-1490788673708206828%2Foriginal%2F6bce8e68-957c-43a6-bd8b-eb2cb943c8a5.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fprohost-api%2FHosting-1490788673708206828%2Foriginal%2F97bbf886-9c53-4062-88ce-784cb978c441.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fprohost-api%2FHosting-1490788673708206828%2Foriginal%2F8665d310-67fb-4032-ba22-1d698950953c.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fprohost-api%2FHosting-1490788673708206828%2Foriginal%2F731a7198-c4e7-4e98-b5da-de5538832d60.jpeg"
-      ]
-    },
-    {
-      "id": "1148477343358922053",
-      "url": "https://www.airbnb.com/rooms/1148477343358922053?check_in=2026-10-10&check_out=2026-10-14&adults=2",
-      "demandStayListing": {
-        "id": "RGVtYW5kU3RheUxpc3Rpbmc6MTE0ODQ3NzM0MzM1ODkyMjA1Mw==",
-        "description": {
-          "name": {
-            "localizedStringWithTranslationPreference": "Cozy apartment in the heart of Paris"
-          }
-        },
-        "location": {
-          "coordinate": {
-            "latitude": 48.88344,
-            "longitude": 2.34863
-          }
-        }
-      },
-      "badges": "",
-      "structuredContent": {
-        "mapSecondaryLine": "",
-        "primaryLine": "2 bedrooms, 2 beds, 1 bathroom",
-        "secondaryLine": "Business host"
-      },
-      "avgRatingA11yLabel": "4.71 out of 5 average rating,  103 reviews",
-      "listingParamOverrides": {
-        "photoId": "1898420100",
-        "relaxedAmenityIds": "",
-        "splitStaysLocationPrecisions": "",
-        "splitStaysLocationsAcpIds": ""
-      },
-      "structuredDisplayPrice": {
-        "primaryLine": {
-          "accessibilityLabel": "$991 USD total"
-        },
-        "explanationData": {
-          "title": "Price details",
-          "priceDetails": "4 nights x $219.37 USD: $877.46 USD, Taxes: $112.99 USD, Total: $990.45 USD"
-        }
-      },
-      "thumbnailUrl": "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1148477343358922053%2Foriginal%2F0bb41dec-0d29-46f2-86c3-52033043d6b2.jpeg",
-      "photos": [
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1148477343358922053%2Foriginal%2F0bb41dec-0d29-46f2-86c3-52033043d6b2.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1148477343358922053%2Foriginal%2F4324b5e0-f9f8-4014-8f1f-128599b17688.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1148477343358922053%2Foriginal%2F6b669ea6-64d1-4ca0-aa42-e12ba464d987.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1148477343358922053%2Foriginal%2Fe897be74-5b30-4739-8a78-7512e7f8eb10.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1148477343358922053%2Foriginal%2F60ba8851-ad78-4917-8839-c227c44a012a.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1148477343358922053%2Foriginal%2F44acaa70-f7a9-4071-bc34-af911f13b732.jpeg"
-      ]
-    },
-    {
-      "id": "939673953144967747",
-      "url": "https://www.airbnb.com/rooms/939673953144967747?check_in=2026-10-10&check_out=2026-10-14&adults=2",
-      "demandStayListing": {
-        "id": "RGVtYW5kU3RheUxpc3Rpbmc6OTM5NjczOTUzMTQ0OTY3NzQ3",
-        "description": {
-          "name": {
-            "localizedStringWithTranslationPreference": "Apartment near Père Lachaise"
-          }
-        },
-        "location": {
-          "coordinate": {
-            "latitude": 48.85953,
-            "longitude": 2.38565
-          }
-        }
-      },
-      "badges": "Guest favourite",
-      "structuredContent": {
-        "mapSecondaryLine": "",
-        "primaryLine": "1 bedroom, 1 bed, 1 bathroom",
-        "secondaryLine": "Individual host"
-      },
-      "avgRatingA11yLabel": "4.95 out of 5 average rating,  39 reviews",
-      "listingParamOverrides": {
-        "photoId": "1853995174",
-        "relaxedAmenityIds": "",
-        "splitStaysLocationPrecisions": "",
-        "splitStaysLocationsAcpIds": ""
-      },
-      "structuredDisplayPrice": {
-        "primaryLine": {
-          "accessibilityLabel": "$1,034 USD total"
-        },
-        "explanationData": {
-          "title": "Price details",
-          "priceDetails": "4 nights x $223.66 USD: $894.64 USD, Taxes: $138.60 USD, Total: $1,033.24 USD"
-        }
-      },
-      "thumbnailUrl": "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-939673953144967747%2Foriginal%2Fb4c1266e-59b2-473f-a8f7-5bb1e85af4cc.jpeg",
-      "photos": [
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-939673953144967747%2Foriginal%2Fb4c1266e-59b2-473f-a8f7-5bb1e85af4cc.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-939673953144967747%2Foriginal%2F5b500bab-f99d-4778-8985-6857b8d4ef86.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-939673953144967747%2Foriginal%2Fe1293cac-2e00-4e47-8a2e-89102e043c99.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-939673953144967747%2Foriginal%2F671989a6-c104-4d17-a72b-4aca99e19492.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-939673953144967747%2Foriginal%2F13882111-09ba-4698-8a22-8619ff1e5b76.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fmiso%2FHosting-939673953144967747%2Foriginal%2F45bff703-3e45-4d54-8aa4-969b5bfdb6d1.jpeg"
-      ]
-    },
-    {
-      "id": "858705241274104898",
-      "url": "https://www.airbnb.com/rooms/858705241274104898?check_in=2026-10-10&check_out=2026-10-14&adults=2",
-      "demandStayListing": {
-        "id": "RGVtYW5kU3RheUxpc3Rpbmc6ODU4NzA1MjQxMjc0MTA0ODk4",
-        "description": {
-          "name": {
-            "localizedStringWithTranslationPreference": "Elegant studio with balcony - 2P - Trocadéro/Passy"
-          }
-        },
-        "location": {
-          "coordinate": {
-            "latitude": 48.8611,
-            "longitude": 2.2778
-          }
-        }
-      },
-      "badges": "Guest favourite",
-      "structuredContent": {
-        "mapSecondaryLine": "",
-        "primaryLine": "1 double bed, 1 bathroom",
-        "secondaryLine": "Business host"
-      },
-      "avgRatingA11yLabel": "4.86 out of 5 average rating,  97 reviews",
-      "listingParamOverrides": {
-        "photoId": "1969892877",
-        "relaxedAmenityIds": "",
-        "splitStaysLocationPrecisions": "",
-        "splitStaysLocationsAcpIds": ""
-      },
-      "structuredDisplayPrice": {
-        "primaryLine": {
-          "accessibilityLabel": "$1,004 USD total"
-        },
-        "explanationData": {
-          "title": "Price details",
-          "priceDetails": "4 nights x $264.34 USD: $1,057.34 USD, Early booking discount: -$78.11 USD, Taxes: $24.10 USD, Total: $1,003.33 USD"
-        }
-      },
-      "thumbnailUrl": "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fprohost-api%2FHosting-858705241274104898%2Foriginal%2Fb386d365-aad9-4b1c-aa09-e9438ca0bfb0.jpeg",
-      "photos": [
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fprohost-api%2FHosting-858705241274104898%2Foriginal%2Fb386d365-aad9-4b1c-aa09-e9438ca0bfb0.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fprohost-api%2FHosting-858705241274104898%2Foriginal%2F255205cd-d568-49c3-b1a2-c9148d7a49f4.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fprohost-api%2FHosting-858705241274104898%2Foriginal%2F17d4e109-1300-4bc5-aada-b24f47f0e969.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fprohost-api%2FHosting-858705241274104898%2Foriginal%2Feaeb42c6-9c3f-4cf5-b151-d4b60f91893e.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fprohost-api%2FHosting-858705241274104898%2Foriginal%2F0973399a-69d9-4961-8678-70edc69c01cc.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fprohost-api%2FHosting-858705241274104898%2Foriginal%2F2657f855-d2fc-4cb9-80e4-6a09135c6c74.jpeg"
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-U3RheVN1cHBseUxpc3Rpbmc6MTM4NDYyMTYzODU5MzkyOTE1Nw%3D%3D%2Foriginal%2Fa73be919-351a-4f0b-9d9b-ef7954ba91c7.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-U3RheVN1cHBseUxpc3Rpbmc6MTM4NDYyMTYzODU5MzkyOTE1Nw%3D%3D%2Foriginal%2F853efbc2-22d4-462f-a8cf-e57cc3696b8e.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-U3RheVN1cHBseUxpc3Rpbmc6MTM4NDYyMTYzODU5MzkyOTE1Nw%3D%3D%2Foriginal%2F99b0f2e0-755f-4caa-b61e-12b794963e16.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-U3RheVN1cHBseUxpc3Rpbmc6MTM4NDYyMTYzODU5MzkyOTE1Nw%3D%3D%2Foriginal%2F4140089c-7d45-4d53-8936-a05586b4d09b.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-U3RheVN1cHBseUxpc3Rpbmc6MTM4NDYyMTYzODU5MzkyOTE1Nw%3D%3D%2Foriginal%2F169f97f9-81d3-4425-9940-d79153828fab.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-U3RheVN1cHBseUxpc3Rpbmc6MTM4NDYyMTYzODU5MzkyOTE1Nw%3D%3D%2Foriginal%2F74491544-0d17-47cf-b9fc-a6ef827adcd5.jpeg"
       ]
     },
     {
@@ -739,19 +494,68 @@
       ]
     },
     {
-      "id": "1486739539779167282",
-      "url": "https://www.airbnb.com/rooms/1486739539779167282?check_in=2026-10-10&check_out=2026-10-14&adults=2",
+      "id": "1148477343358922053",
+      "url": "https://www.airbnb.com/rooms/1148477343358922053?check_in=2026-10-10&check_out=2026-10-14&adults=2",
       "demandStayListing": {
-        "id": "RGVtYW5kU3RheUxpc3Rpbmc6MTQ4NjczOTUzOTc3OTE2NzI4Mg==",
+        "id": "RGVtYW5kU3RheUxpc3Rpbmc6MTE0ODQ3NzM0MzM1ODkyMjA1Mw==",
         "description": {
           "name": {
-            "localizedStringWithTranslationPreference": "Private room in my flat near Paris/Stade de France"
+            "localizedStringWithTranslationPreference": "Cozy apartment in the heart of Paris"
           }
         },
         "location": {
           "coordinate": {
-            "latitude": 48.942248574885504,
-            "longitude": 2.347741162284871
+            "latitude": 48.88344,
+            "longitude": 2.34863
+          }
+        }
+      },
+      "badges": "",
+      "structuredContent": {
+        "mapSecondaryLine": "",
+        "primaryLine": "2 bedrooms, 2 beds, 1 bathroom",
+        "secondaryLine": "Business host"
+      },
+      "avgRatingA11yLabel": "4.71 out of 5 average rating,  103 reviews",
+      "listingParamOverrides": {
+        "photoId": "1898420100",
+        "relaxedAmenityIds": "",
+        "splitStaysLocationPrecisions": "",
+        "splitStaysLocationsAcpIds": ""
+      },
+      "structuredDisplayPrice": {
+        "primaryLine": {
+          "accessibilityLabel": "$991 USD total"
+        },
+        "explanationData": {
+          "title": "Price details",
+          "priceDetails": "4 nights x $219.37 USD: $877.46 USD, Taxes: $112.99 USD, Total: $990.45 USD"
+        }
+      },
+      "thumbnailUrl": "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1148477343358922053%2Foriginal%2F0bb41dec-0d29-46f2-86c3-52033043d6b2.jpeg",
+      "photos": [
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1148477343358922053%2Foriginal%2F0bb41dec-0d29-46f2-86c3-52033043d6b2.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1148477343358922053%2Foriginal%2F4324b5e0-f9f8-4014-8f1f-128599b17688.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1148477343358922053%2Foriginal%2F6b669ea6-64d1-4ca0-aa42-e12ba464d987.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1148477343358922053%2Foriginal%2Fe897be74-5b30-4739-8a78-7512e7f8eb10.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1148477343358922053%2Foriginal%2F60ba8851-ad78-4917-8839-c227c44a012a.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1148477343358922053%2Foriginal%2F44acaa70-f7a9-4071-bc34-af911f13b732.jpeg"
+      ]
+    },
+    {
+      "id": "858705241274104898",
+      "url": "https://www.airbnb.com/rooms/858705241274104898?check_in=2026-10-10&check_out=2026-10-14&adults=2",
+      "demandStayListing": {
+        "id": "RGVtYW5kU3RheUxpc3Rpbmc6ODU4NzA1MjQxMjc0MTA0ODk4",
+        "description": {
+          "name": {
+            "localizedStringWithTranslationPreference": "Elegant studio with balcony - 2P - Trocadéro/Passy"
+          }
+        },
+        "location": {
+          "coordinate": {
+            "latitude": 48.8611,
+            "longitude": 2.2778
           }
         }
       },
@@ -759,49 +563,146 @@
       "structuredContent": {
         "mapSecondaryLine": "",
         "primaryLine": "1 double bed, 1 bathroom",
-        "secondaryLine": "Individual host"
+        "secondaryLine": "Business host"
       },
-      "avgRatingA11yLabel": "4.97 out of 5 average rating,  63 reviews",
+      "avgRatingA11yLabel": "4.86 out of 5 average rating,  97 reviews",
       "listingParamOverrides": {
-        "categoryTag": "Tag:8678",
-        "photoId": "2293845853",
+        "photoId": "1969892877",
         "relaxedAmenityIds": "",
         "splitStaysLocationPrecisions": "",
         "splitStaysLocationsAcpIds": ""
       },
       "structuredDisplayPrice": {
         "primaryLine": {
-          "accessibilityLabel": "$325 USD total"
+          "accessibilityLabel": "$1,004 USD total"
         },
         "explanationData": {
           "title": "Price details",
-          "priceDetails": "4 nights x $71.29 USD: $285.16 USD, Taxes: $39.17 USD, Total: $324.33 USD"
+          "priceDetails": "4 nights x $264.34 USD: $1,057.34 USD, Early booking discount: -$78.11 USD, Taxes: $24.10 USD, Total: $1,003.33 USD"
         }
       },
-      "thumbnailUrl": "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1082984767486443559%2Foriginal%2Fa932f8c9-b14f-4ce8-88e5-10c90a55f2b9.jpeg",
+      "thumbnailUrl": "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fprohost-api%2FHosting-858705241274104898%2Foriginal%2Fb386d365-aad9-4b1c-aa09-e9438ca0bfb0.jpeg",
       "photos": [
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1082984767486443559%2Foriginal%2Fa932f8c9-b14f-4ce8-88e5-10c90a55f2b9.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1082984767486443559%2Foriginal%2Fcfca5820-1d8a-467b-8da7-fd4e63f36cc0.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1082984767486443559%2Foriginal%2F7c5916e2-b341-42b2-8bd1-3caab4e377a3.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1082984767486443559%2Foriginal%2F30555734-12b0-4295-b1a6-805c3e4efbc3.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1082984767486443559%2Foriginal%2F339f4b11-390d-4c72-a64e-c96d347a29c0.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1082984767486443559%2Foriginal%2F267a30c2-ba0d-4018-b51a-da2c51dd8beb.jpeg"
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fprohost-api%2FHosting-858705241274104898%2Foriginal%2Fb386d365-aad9-4b1c-aa09-e9438ca0bfb0.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fprohost-api%2FHosting-858705241274104898%2Foriginal%2F255205cd-d568-49c3-b1a2-c9148d7a49f4.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fprohost-api%2FHosting-858705241274104898%2Foriginal%2F17d4e109-1300-4bc5-aada-b24f47f0e969.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fprohost-api%2FHosting-858705241274104898%2Foriginal%2Feaeb42c6-9c3f-4cf5-b151-d4b60f91893e.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fprohost-api%2FHosting-858705241274104898%2Foriginal%2F0973399a-69d9-4961-8678-70edc69c01cc.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fprohost-api%2FHosting-858705241274104898%2Foriginal%2F2657f855-d2fc-4cb9-80e4-6a09135c6c74.jpeg"
       ]
     },
     {
-      "id": "986926499951488954",
-      "url": "https://www.airbnb.com/rooms/986926499951488954?check_in=2026-10-10&check_out=2026-10-14&adults=2",
+      "id": "1911506",
+      "url": "https://www.airbnb.com/rooms/1911506?check_in=2026-10-10&check_out=2026-10-14&adults=2",
       "demandStayListing": {
-        "id": "RGVtYW5kU3RheUxpc3Rpbmc6OTg2OTI2NDk5OTUxNDg4OTU0",
+        "id": "RGVtYW5kU3RheUxpc3Rpbmc6MTkxMTUwNg==",
         "description": {
           "name": {
-            "localizedStringWithTranslationPreference": "Bright Apartment • A/C • Near Paris "
+            "localizedStringWithTranslationPreference": "Studio with terrace at Butte aux Cailles"
           }
         },
         "location": {
           "coordinate": {
-            "latitude": 48.9035,
-            "longitude": 2.3834
+            "latitude": 48.8274,
+            "longitude": 2.3508
+          }
+        }
+      },
+      "badges": "Guest favourite",
+      "structuredContent": {
+        "mapSecondaryLine": "",
+        "primaryLine": "1 sofa bed, 1 bathroom",
+        "secondaryLine": "Individual host"
+      },
+      "avgRatingA11yLabel": "4.93 out of 5 average rating,  60 reviews",
+      "listingParamOverrides": {
+        "photoId": "2094895569",
+        "relaxedAmenityIds": "",
+        "splitStaysLocationPrecisions": "",
+        "splitStaysLocationsAcpIds": ""
+      },
+      "structuredDisplayPrice": {
+        "primaryLine": {
+          "accessibilityLabel": "$626 USD total"
+        },
+        "explanationData": {
+          "title": "Price details",
+          "priceDetails": "4 nights x $134.43 USD: $537.72 USD, Taxes: $87.38 USD, Total: $625.10 USD"
+        }
+      },
+      "thumbnailUrl": "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-U3RheVN1cHBseUxpc3Rpbmc6MTkxMTUwNg%3D%3D%2Foriginal%2F15c24c23-eb72-49fd-851a-36d2a1123d03.jpeg",
+      "photos": [
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-U3RheVN1cHBseUxpc3Rpbmc6MTkxMTUwNg%3D%3D%2Foriginal%2F15c24c23-eb72-49fd-851a-36d2a1123d03.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2F296b2561-4918-40f2-b38a-5b01bd865aea.jpg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fdcec59cf-aa1b-4849-b980-3c0c3ba90c1b.jpg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-U3RheVN1cHBseUxpc3Rpbmc6MTkxMTUwNg%253D%253D%2Foriginal%2Fee9b7ae7-fec2-4a13-85c5-4323982b021f.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-U3RheVN1cHBseUxpc3Rpbmc6MTkxMTUwNg%253D%253D%2Foriginal%2Fa16689a6-282a-49da-9a7b-05cb6129c02d.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-U3RheVN1cHBseUxpc3Rpbmc6MTkxMTUwNg%253D%253D%2Foriginal%2F267130eb-a1c2-4cc4-ba24-63b889820ade.jpeg"
+      ]
+    },
+    {
+      "id": "1733490849929894296",
+      "url": "https://www.airbnb.com/rooms/1733490849929894296?check_in=2026-10-10&check_out=2026-10-14&adults=2",
+      "demandStayListing": {
+        "id": "RGVtYW5kU3RheUxpc3Rpbmc6MTczMzQ5MDg0OTkyOTg5NDI5Ng==",
+        "description": {
+          "name": {
+            "localizedStringWithTranslationPreference": "Loft-style 3-bedroom apartment - Basilique Sacré-Cœur"
+          }
+        },
+        "location": {
+          "coordinate": {
+            "latitude": 48.88716,
+            "longitude": 2.34787
+          }
+        }
+      },
+      "badges": "",
+      "structuredContent": {
+        "mapSecondaryLine": "",
+        "primaryLine": "2 bedrooms, 1 bathroom",
+        "secondaryLine": "Business host"
+      },
+      "avgRatingA11yLabel": "New place to stay",
+      "listingParamOverrides": {
+        "photoId": "2733799265",
+        "relaxedAmenityIds": "",
+        "splitStaysLocationPrecisions": "",
+        "splitStaysLocationsAcpIds": ""
+      },
+      "structuredDisplayPrice": {
+        "primaryLine": {
+          "accessibilityLabel": "$935 USD total"
+        },
+        "explanationData": {
+          "title": "Price details",
+          "priceDetails": "4 nights x $203.99 USD: $815.94 USD, Taxes: $118.07 USD, Total: $934.01 USD"
+        }
+      },
+      "thumbnailUrl": "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1733490849929894296%2Foriginal%2F447fd51f-1012-47b9-80a3-6206fe880ccf.jpeg",
+      "photos": [
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1733490849929894296%2Foriginal%2F447fd51f-1012-47b9-80a3-6206fe880ccf.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1733490849929894296%2Foriginal%2F48cfe5b5-a700-4360-80f1-b5d1be9bfd5d.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1733490849929894296%2Foriginal%2F74a16b7a-d06d-4b1b-b702-4f014c627b67.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1733490849929894296%2Foriginal%2F22faae51-7f4c-492f-92d1-f3b8f524b794.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1733490849929894296%2Foriginal%2F5f8121ca-48e9-4dbf-9aef-b83f7c320098.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1733490849929894296%2Foriginal%2F416b7f99-77b0-4f20-ae63-fd27538794b1.jpeg"
+      ]
+    },
+    {
+      "id": "1175448362462406537",
+      "url": "https://www.airbnb.com/rooms/1175448362462406537?check_in=2026-10-10&check_out=2026-10-14&adults=2",
+      "demandStayListing": {
+        "id": "RGVtYW5kU3RheUxpc3Rpbmc6MTE3NTQ0ODM2MjQ2MjQwNjUzNw==",
+        "description": {
+          "name": {
+            "localizedStringWithTranslationPreference": "Apartment on courtyard 100 m from the Arc de Triomphe"
+          }
+        },
+        "location": {
+          "coordinate": {
+            "latitude": 48.877,
+            "longitude": 2.2888
           }
         }
       },
@@ -811,79 +712,177 @@
         "primaryLine": "1 bedroom, 1 double bed, 1 bathroom",
         "secondaryLine": "Individual host"
       },
-      "avgRatingA11yLabel": "5.0 out of 5 average rating,  76 reviews",
+      "avgRatingA11yLabel": "4.87 out of 5 average rating,  112 reviews",
       "listingParamOverrides": {
-        "photoId": "2222498492",
+        "photoId": "1926446231",
         "relaxedAmenityIds": "",
         "splitStaysLocationPrecisions": "",
         "splitStaysLocationsAcpIds": ""
       },
       "structuredDisplayPrice": {
         "primaryLine": {
-          "accessibilityLabel": "$535 USD total, originally $592 USD"
+          "accessibilityLabel": "$895 USD total"
         },
         "explanationData": {
           "title": "Price details",
-          "priceDetails": "4 nights x $116.67 USD: $466.68 USD, Taxes: $68.30 USD, Total: $534.98 USD, "
+          "priceDetails": "4 nights x $194.66 USD: $778.64 USD, Taxes: $115.42 USD, Total: $894.06 USD"
         }
       },
-      "thumbnailUrl": "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-986926499951488954%2Foriginal%2F94874bf8-f033-439d-9e5e-be2e85d8d39b.jpeg",
+      "thumbnailUrl": "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1175448362462406537%2Foriginal%2Fe444c98f-1835-4a45-a4e4-26961289bfa3.jpeg",
       "photos": [
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-986926499951488954%2Foriginal%2F94874bf8-f033-439d-9e5e-be2e85d8d39b.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-986926499951488954%2Foriginal%2F4c62705e-d40c-42a2-a377-3cc40d4717e6.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-U3RheVN1cHBseUxpc3Rpbmc6OTg2OTI2NDk5OTUxNDg4OTU0%2Foriginal%2F8418f79b-040e-46ac-9b08-ef5f13f145c4.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-986926499951488954%2Foriginal%2Fa584f040-fde5-4968-8700-436d7da87d93.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-986926499951488954%2Foriginal%2F7a9386ea-c0ea-4634-aa02-792d39869b90.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-986926499951488954%2Foriginal%2F949f4de3-907c-4220-a59e-3794b1fdc45e.jpeg"
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1175448362462406537%2Foriginal%2Fe444c98f-1835-4a45-a4e4-26961289bfa3.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1175448362462406537%2Foriginal%2Fe04bc086-0f86-4eb0-82c4-24de149d71c9.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1175448362462406537%2Foriginal%2Fde67cfcd-22f8-461c-b37f-15e5f698aed0.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1175448362462406537%2Foriginal%2Fcb667eb8-72a0-4990-a6fa-7927563ffa78.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1175448362462406537%2Foriginal%2F4bd79e3b-2437-41d4-9af8-f257df21e28d.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1175448362462406537%2Foriginal%2Fb4d8c19f-f62b-407f-94f4-0d37d1a6ee3b.jpeg"
       ]
     },
     {
-      "id": "1125454192402583361",
-      "url": "https://www.airbnb.com/rooms/1125454192402583361?check_in=2026-10-10&check_out=2026-10-14&adults=2",
+      "id": "1710790217983093485",
+      "url": "https://www.airbnb.com/rooms/1710790217983093485?check_in=2026-10-10&check_out=2026-10-14&adults=2",
       "demandStayListing": {
-        "id": "RGVtYW5kU3RheUxpc3Rpbmc6MTEyNTQ1NDE5MjQwMjU4MzM2MQ==",
+        "id": "RGVtYW5kU3RheUxpc3Rpbmc6MTcxMDc5MDIxNzk4MzA5MzQ4NQ==",
         "description": {
           "name": {
-            "localizedStringWithTranslationPreference": "L'Atelier en Vue: Rooftop on the outskirts of Paris"
+            "localizedStringWithTranslationPreference": "New Cozy Studio with Garden View in Paris Center"
           }
         },
         "location": {
           "coordinate": {
-            "latitude": 48.8958,
-            "longitude": 2.4333
+            "latitude": 48.8223,
+            "longitude": 2.36588
           }
         }
       },
       "badges": "Superhost",
       "structuredContent": {
         "mapSecondaryLine": "",
-        "primaryLine": "1 bedroom, 1 queen bed, 1 bathroom",
-        "secondaryLine": "Business host"
+        "primaryLine": "2 beds, 1.5 bathrooms",
+        "secondaryLine": ""
       },
-      "avgRatingA11yLabel": "4.88 out of 5 average rating,  108 reviews",
+      "avgRatingA11yLabel": "5.0 out of 5 average rating,  4 reviews",
       "listingParamOverrides": {
-        "photoId": "2554727944",
+        "photoId": "2685991015",
         "relaxedAmenityIds": "",
         "splitStaysLocationPrecisions": "",
         "splitStaysLocationsAcpIds": ""
       },
       "structuredDisplayPrice": {
         "primaryLine": {
-          "accessibilityLabel": "$501 USD total"
+          "accessibilityLabel": "$706 USD total, originally $828 USD"
         },
         "explanationData": {
           "title": "Price details",
-          "priceDetails": "4 nights x $109.24 USD: $436.95 USD, Taxes: $63.28 USD, Total: $500.23 USD"
+          "priceDetails": "4 nights x $187.04 USD: $748.14 USD, Special offer: -$121.84 USD, Taxes: $79.17 USD, Total: $705.47 USD"
         }
       },
-      "thumbnailUrl": "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1125454192402583361%2Foriginal%2Ff8d03a59-cb7c-48d6-8fd0-01bcb0919cdf.jpeg",
+      "thumbnailUrl": "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1710790217983093485%2Foriginal%2Fcfc962cb-1be9-4a56-9088-976b2c12c3c2.png",
       "photos": [
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1125454192402583361%2Foriginal%2Ff8d03a59-cb7c-48d6-8fd0-01bcb0919cdf.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1125454192402583361%2Foriginal%2F8fd4eab3-6b29-445e-a842-0e22aba26754.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1125454192402583361%2Foriginal%2F8780140d-18a3-4f28-919c-a799699b07e7.jpeg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fairflow%2FHosting-1125454192402583361%2Foriginal%2Fd5901000-e66d-4208-bc3d-e2863d19dfa2.jpg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fairflow%2FHosting-1125454192402583361%2Foriginal%2Ff3be5d33-fcf5-4b42-a7b0-f84241bc47d5.jpg",
-        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1125454192402583361%2Foriginal%2Fc28aee74-c50a-48dc-9a45-e8cc2f83672e.jpeg"
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1710790217983093485%2Foriginal%2Fcfc962cb-1be9-4a56-9088-976b2c12c3c2.png",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1710790217983093485%2Foriginal%2Fc0ddc3df-7895-4e19-979b-75b50fb2d4b3.png",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1710790217983093485%2Foriginal%2Fb6bede1c-8644-46da-bdd9-2172b213fd16.png",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1710790217983093485%2Foriginal%2F3cc7a99c-f1a9-4680-b1a7-ba7fa7d71365.png",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1710790217983093485%2Foriginal%2Fc6161e0a-0201-4b4c-8d46-ee409b16a5c4.png",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1710790217983093485%2Foriginal%2Fc1488dc9-2edd-4958-937b-5a190fca19f4.png"
+      ]
+    },
+    {
+      "id": "1671069053767731407",
+      "url": "https://www.airbnb.com/rooms/1671069053767731407?check_in=2026-10-10&check_out=2026-10-14&adults=2",
+      "demandStayListing": {
+        "id": "RGVtYW5kU3RheUxpc3Rpbmc6MTY3MTA2OTA1Mzc2NzczMTQwNw==",
+        "description": {
+          "name": {
+            "localizedStringWithTranslationPreference": "Charming Studio 2P - Folies Bergère"
+          }
+        },
+        "location": {
+          "coordinate": {
+            "latitude": 48.87432,
+            "longitude": 2.34803
+          }
+        }
+      },
+      "badges": "",
+      "structuredContent": {
+        "mapSecondaryLine": "",
+        "primaryLine": "1 sofa bed, 1 bathroom",
+        "secondaryLine": "Business host"
+      },
+      "avgRatingA11yLabel": "5.0 out of 5 average rating,  8 reviews",
+      "listingParamOverrides": {
+        "photoId": "2606043811",
+        "relaxedAmenityIds": "",
+        "splitStaysLocationPrecisions": "",
+        "splitStaysLocationsAcpIds": ""
+      },
+      "structuredDisplayPrice": {
+        "primaryLine": {
+          "accessibilityLabel": "$735 USD total"
+        },
+        "explanationData": {
+          "title": "Price details",
+          "priceDetails": "4 nights x $191.45 USD: $765.79 USD, Early booking discount: -$55.23 USD, Taxes: $24.10 USD, Total: $734.66 USD"
+        }
+      },
+      "thumbnailUrl": "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1671069053767731407%2Foriginal%2Fb6acc951-5930-4421-b082-73ae04b68057.jpeg",
+      "photos": [
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1671069053767731407%2Foriginal%2Fb6acc951-5930-4421-b082-73ae04b68057.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1671069053767731407%2Foriginal%2F063f2fdb-3da9-4c97-b002-b9684f8b7afb.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1671069053767731407%2Foriginal%2F9fa5909f-b3b5-4cac-a5a1-bf1df8306b30.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1671069053767731407%2Foriginal%2Ff2137628-3d72-4d21-a935-689d08d5a4bd.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1671069053767731407%2Foriginal%2F1a027e91-05fa-4a97-94dc-3e75e7693ab6.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fhosting%2FHosting-1671069053767731407%2Foriginal%2Fd9900ad8-7e31-48f2-9412-a417d6310134.jpeg"
+      ]
+    },
+    {
+      "id": "1303627492078906967",
+      "url": "https://www.airbnb.com/rooms/1303627492078906967?check_in=2026-10-10&check_out=2026-10-14&adults=2",
+      "demandStayListing": {
+        "id": "RGVtYW5kU3RheUxpc3Rpbmc6MTMwMzYyNzQ5MjA3ODkwNjk2Nw==",
+        "description": {
+          "name": {
+            "localizedStringWithTranslationPreference": "GuestReady - Serene Comfort in the City of Light"
+          }
+        },
+        "location": {
+          "coordinate": {
+            "latitude": 48.89588,
+            "longitude": 2.33779
+          }
+        }
+      },
+      "badges": "",
+      "structuredContent": {
+        "mapSecondaryLine": "",
+        "primaryLine": "1 bedroom, 1 queen bed, 1 bathroom",
+        "secondaryLine": "Business host"
+      },
+      "avgRatingA11yLabel": "4.63 out of 5 average rating,  40 reviews",
+      "listingParamOverrides": {
+        "photoId": "2041684032",
+        "relaxedAmenityIds": "",
+        "splitStaysLocationPrecisions": "",
+        "splitStaysLocationsAcpIds": ""
+      },
+      "structuredDisplayPrice": {
+        "primaryLine": {
+          "accessibilityLabel": "$669 USD total"
+        },
+        "explanationData": {
+          "title": "Price details",
+          "priceDetails": "4 nights x $146.92 USD: $587.66 USD, Taxes: $81.19 USD, Total: $668.85 USD"
+        }
+      },
+      "thumbnailUrl": "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fprohost-api%2FHosting-1303627492078906967%2Foriginal%2F76bccc1c-b748-49a9-bf6e-fd24a0ff88cd.jpeg",
+      "photos": [
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fprohost-api%2FHosting-1303627492078906967%2Foriginal%2F76bccc1c-b748-49a9-bf6e-fd24a0ff88cd.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fprohost-api%2FHosting-1303627492078906967%2Foriginal%2Fd10e6f50-f1c2-4bfb-b36f-d53407ba7c9b.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fprohost-api%2FHosting-1303627492078906967%2Foriginal%2F95d1d695-6516-4623-9bc3-6d5bb0ca60af.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fprohost-api%2FHosting-1303627492078906967%2Foriginal%2Fdbdd2a8a-dc63-469d-9290-935a46dbaf63.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fprohost-api%2FHosting-1303627492078906967%2Foriginal%2F7e0bba35-d1cc-463b-a8e1-b3a72c4e1970.jpeg",
+        "https://mcp.openbnb.ai/image?url=https%3A%2F%2Fa0.muscache.com%2Fim%2Fpictures%2Fprohost-api%2FHosting-1303627492078906967%2Foriginal%2F6d7d9b8b-0b69-479d-9de8-2c57db766aca.jpeg"
       ]
     }
   ],

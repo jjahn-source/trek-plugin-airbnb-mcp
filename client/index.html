@@ -300,8 +300,11 @@
   }
 
   function detailHtml(l, d) {
-    var photos = (d.photos || []).length
-      ? '<div class="detail-photos">' + d.photos.map(function (u) {
+    // The listing payload carries no imagery; the search result that opened this
+    // view already has several, so use those rather than showing nothing.
+    var pics = (d.photos && d.photos.length ? d.photos : l.photos) || [];
+    var photos = pics.length
+      ? '<div class="detail-photos">' + pics.map(function (u) {
           return '<img alt="" loading="lazy" data-photo="' + esc(u) + '" />';
         }).join('') + '</div>'
       : '';
@@ -313,7 +316,7 @@
       '</div>' +
       '<div class="trek-title">' + esc(d.title || l.name) + '</div>' +
       '<div class="trek-muted" style="font-size:12px">' +
-        esc([l.subtitle, l.area, l.priceLabel, ratingText(l)].filter(Boolean).join(' · ')) + '</div>' +
+        esc([d.location, l.subtitle, l.area, l.priceLabel, ratingText(l)].filter(Boolean).join(' · ')) + '</div>' +
       photos +
       (d.description ? '<p class="detail-desc">' + esc(d.description) + '</p>' : '') +
       (d.highlights ? '<div class="trek-sectionhead">Highlights</div><p class="detail-desc">' + esc(d.highlights) + '</p>' : '') +

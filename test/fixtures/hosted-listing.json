@@ -1,0 +1,180 @@
+{
+  "listingUrl": "https://www.airbnb.com/rooms/735957503382296080?locale=en&currency=USD&check_in=2026-10-10&check_out=2026-10-14&adults=1&children=0&infants=0&pets=0",
+  "details": [
+    {
+      "id": "POLICIES_DEFAULT"
+    },
+    {
+      "id": "LOCATION_DEFAULT",
+      "lat": 48.8962,
+      "lng": 2.345,
+      "subtitle": "Paris, Île-de-France, France",
+      "title": "Paris"
+    },
+    {
+      "id": "HIGHLIGHTS_DEFAULT",
+      "highlights": [
+        {
+          "title": "Sylvain is a Superhost: Superhosts are experienced, highly rated hosts."
+        }
+      ]
+    },
+    {
+      "id": "DESCRIPTION_DEFAULT",
+      "htmlDescription": {
+        "htmlText": "Very comfortable and quiet 2-room apartment, decorated by an interior designer with balcony.<br /><br />Close to the Town Hall of the 18th Arrondissement, Montmartre and the Flea Market of Saint Ouen.<br />Metro, bus and Vélib' station nearby.<br /><br />New in 2025: an air conditioner with air conditioning<br /><br /><b>The space</b><br />Entrance, living room of 26 m² with open kitchen and central island allowing lunch or work, balcony overlooking Villa Ornano set back from the Boulevard. Bedroom of 13 m², bathroom with large shower, sink. Separate toilets.<br /><br />Ideal for 2 people. Possibility of accommodating 2 additional people with the sofa bed.<br /><br /><b>Guest access</b><br />Entire home<br /><br /><b>Other things to note</b><br />Located on the 5th floor without elevator<br /><br /><b>Registration details</b><br />7511806041206"
+      }
+    },
+    {
+      "id": "AMENITIES_DEFAULT",
+      "title": "What this place offers",
+      "seeAllAmenitiesGroups": [
+        {
+          "title": "Bathroom",
+          "amenities": [
+            {
+              "title": "Cleaning products"
+            },
+            {
+              "title": "Hot water"
+            }
+          ]
+        },
+        {
+          "title": "Bedroom and laundry",
+          "amenities": [
+            {
+              "title": "Free washer – In unit"
+            },
+            {
+              "title": "Free dryer – In unit"
+            },
+            {
+              "title": "Essentials (Towels, bed sheets, soap and toilet paper)"
+            },
+            {
+              "title": "Hangers"
+            },
+            {
+              "title": "Bed linen (Cotton linen)"
+            },
+            {
+              "title": "Extra pillows and blankets"
+            },
+            {
+              "title": "Iron"
+            },
+            {
+              "title": "Clothes storage: wardrobe and chest of drawers"
+            }
+          ]
+        },
+        {
+          "title": "Entertainment",
+          "amenities": [
+            {
+              "title": "HDTV with Netflix, cable/satellite TV"
+            },
+            {
+              "title": "Books and reading material"
+            }
+          ]
+        },
+        {
+          "title": "Heating and cooling",
+          "amenities": [
+            {
+              "title": "Portable air conditioning"
+            },
+            {
+              "title": "Portable fans"
+            },
+            {
+              "title": "Heating"
+            }
+          ]
+        },
+        {
+          "title": "Home safety",
+          "amenities": [
+            {
+              "title": "Smoke alarm"
+            }
+          ]
+        },
+        {
+          "title": "Internet and office",
+          "amenities": [
+            {
+              "title": "Wifi"
+            }
+          ]
+        },
+        {
+          "title": "Kitchen and dining",
+          "amenities": [
+            {
+              "title": "Kitchen (Space where guests can cook their own meals)"
+            },
+            {
+              "title": "Fridge"
+            },
+            {
+              "title": "Microwave"
+            },
+            {
+              "title": "Cooking basics (Pots and pans, oil, salt and pepper)"
+            },
+            {
+              "title": "Crockery and cutlery (Bowls, chopsticks, plates, cups, etc.)"
+            },
+            {
+              "title": "Induction cooker"
+            },
+            {
+              "title": "Stainless steel oven"
+            },
+            {
+              "title": "Kettle"
+            },
+            {
+              "title": "Coffee maker"
+            },
+            {
+              "title": "Wine glasses"
+            },
+            {
+              "title": "Toaster"
+            },
+            {
+              "title": "Baking sheet"
+            }
+          ]
+        },
+        {
+          "title": "Location features",
+          "amenities": [
+            {
+              "title": "Launderette nearby"
+            }
+          ]
+        },
+        {
+          "title": "Not included",
+          "amenities": [
+            {
+              "title": "Exterior security cameras on property"
+            },
+            {
+              "title": "Carbon monoxide alarm (This place may not have a carbon monoxide detector. Contact the host with any questions.)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TITLE_DEFAULT",
+      "title": "PARIS 18 - 2 room apartment near Montmartre"
+    }
+  ]
+}

@@ -232,8 +232,75 @@ function normalizeSearch(payload, currentCursor) {
   };
 }
 
+
 /**
- * `airbnb_listing_details` payload -> a flat detail record.
+ * Amenity groups. The hosted server returns an ARRAY of
+ * `{title, amenities:[{title}]}`; the open-source one an object keyed by group
+ * with a comma-joined string. Reading only the latter left amenities empty.
+ */
+function amenityGroups(raw) {
+  const out = {};
+  if (Array.isArray(raw)) {
+    for (const group of raw) {
+      if (!group || typeof group !== 'object') continue;
+      const name = typeof group.title === 'string' ? group.title.trim() : '';
+      const items = Array.isArray(group.amenities)
+        ? group.amenities
+            .map((a) => (a && typeof a.title === 'string' ? a.title.trim() : typeof a === 'string' ? a.trim() : ''))
+            .filter(Boolean)
+        : [];
+      if (name && items.length) out[name] = items.join(', ');
+    }
+    return out;
+  }
+  if (raw && typeof raw === 'object') {
+    for (const [name, value] of Object.entries(raw)) {
+      if (typeof value === 'string' && value.trim()) out[name] = value.trim();
+    }
+  }
+  return out;
+}
+
+/**
+ * The description arrives as HTML (`{htmlText}` with `<br />` breaks). The frame
+ * escapes what it renders and relies on white-space:pre-wrap, so the markup has to
+ * become real line breaks here or it shows up literally as "<br />".
+ */
+function htmlToText(value) {
+  const html =
+    typeof value === 'string'
+      ? value
+      : value && typeof value === 'object' && typeof value.htmlText === 'string'
+        ? value.htmlText
+        : null;
+  if (!html) return null;
+  const text = html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  return text || null;
+}
+
+/** Highlights: an array of `{title}` on the hosted server, a string elsewhere. */
+function highlightsOf(value) {
+  if (typeof value === 'string') return value.trim() || null;
+  if (!Array.isArray(value)) return null;
+  const items = value
+    .map((h) => (h && typeof h === 'object' && typeof h.title === 'string' ? h.title.trim() : typeof h === 'string' ? h.trim() : ''))
+    .filter(Boolean);
+  return items.length ? items.join('\n') : null;
+}
+
+/**
+ * `airbnb_listing` / `airbnb_listing_details` payload -> a flat detail record.
  * The details tool returns a `details` array of page sections whose ids differ by
  * listing, so amenities/rules are gathered by scanning rather than by index.
  */
@@ -243,28 +310,32 @@ function normalizeListing(id, payload) {
 
   const sections = Array.isArray(payload.details) ? payload.details : [];
   const byId = {};
-  for (const s of sections) {
-    if (s && typeof s === 'object' && typeof s.id === 'string') byId[s.id] = s;
+  for (const section of sections) {
+    if (section && typeof section === 'object' && typeof section.id === 'string') byId[section.id] = section;
   }
 
-  const amenities = {};
-  const groups = payload.seeAllAmenitiesGroups || byId.AMENITIES_DEFAULT?.seeAllAmenitiesGroups;
-  if (groups && typeof groups === 'object') {
-    for (const [group, value] of Object.entries(groups)) {
-      if (typeof value === 'string' && value.trim()) amenities[group] = value.trim();
-    }
-  }
-
+  const location = byId.LOCATION_DEFAULT || {};
   const coords = findCoords(payload);
+
   return {
     id: String(id),
-    url: typeof payload.url === 'string' ? payload.url : `${AIRBNB_ROOM}${id}`,
-    title: findString(byId.TITLE_DEFAULT || {}, ['title', 'body']) || findString(payload, ['title']),
-    description:
-      findString(byId.DESCRIPTION_DEFAULT || {}, ['htmlDescription', 'body', 'text']) || null,
-    highlights: findString(byId.HIGHLIGHTS_DEFAULT || {}, ['body', 'highlights']) || null,
-    houseRules: findString(byId.POLICIES_DEFAULT || {}, ['houseRules', 'body']) || null,
-    amenities,
+    // The hosted server calls this `listingUrl`, and it carries the dates and guest
+    // count — worth keeping over a URL rebuilt from the id alone.
+    url:
+      (typeof payload.listingUrl === 'string' && payload.listingUrl) ||
+      (typeof payload.url === 'string' && payload.url) ||
+      `${AIRBNB_ROOM}${id}`,
+    title: textOf(byId.TITLE_DEFAULT && byId.TITLE_DEFAULT.title) || findString(payload, ['title']),
+    location: textOf(location.subtitle) || textOf(location.title) || null,
+    description: htmlToText(byId.DESCRIPTION_DEFAULT && byId.DESCRIPTION_DEFAULT.htmlDescription),
+    highlights: highlightsOf(byId.HIGHLIGHTS_DEFAULT && byId.HIGHLIGHTS_DEFAULT.highlights),
+    houseRules:
+      textOf(byId.POLICIES_DEFAULT && byId.POLICIES_DEFAULT.houseRules) ||
+      highlightsOf(byId.POLICIES_DEFAULT && byId.POLICIES_DEFAULT.houseRules) ||
+      null,
+    amenities: amenityGroups(
+      payload.seeAllAmenitiesGroups || (byId.AMENITIES_DEFAULT && byId.AMENITIES_DEFAULT.seeAllAmenitiesGroups),
+    ),
     lat: coords ? coords.lat : null,
     lng: coords ? coords.lng : null,
     photos: photosOf(payload).slice(0, 8),
@@ -276,6 +347,9 @@ module.exports = {
   normalizeListing,
   nextCursor,
   textOf,
+  amenityGroups,
+  htmlToText,
+  highlightsOf,
   photosOf,
   normalizeResult,
   parseRating,
