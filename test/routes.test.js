@@ -211,17 +211,20 @@ function mutableMcp(t) {
   const state = {
     inits: 0,
     toolCalls: 0,
+    deletes: 0,
     /** (callIndex) => { payload } | { isError, payload } | { httpStatus } */
     onTool: () => ({ payload: SEARCH_PAYLOAD }),
   };
   globalThis.fetch = async (url, init) => {
-    const b = JSON.parse(init.body);
     const json = (status, obj) => ({
       ok: status >= 200 && status < 300,
       status,
-      headers: { get: (k) => (k.toLowerCase() === 'content-type' ? 'application/json' : null) },
+      headers: { get: (k) => (k.toLowerCase() === 'content-type' ? 'application/json' : k.toLowerCase() === 'mcp-session-id' ? 'sess-1' : null) },
       text: async () => JSON.stringify(obj),
     });
+    // Session termination carries no body.
+    if (init.method === 'DELETE') { state.deletes++; return json(200, {}); }
+    const b = JSON.parse(init.body);
     if (b.method === 'initialize') { state.inits++; return json(200, { id: b.id, result: {} }); }
     if (b.method === 'notifications/initialized') return json(202, {});
     state.toolCalls++;
@@ -460,4 +463,22 @@ test('/last degrades to an empty object when the stored row is unparseable', asy
   const res = await h.run(plugin).route({ method: 'GET', path: '/last' }, { query: { tripId: '7' } });
   assert.equal(res.status, 200);
   assert.deepEqual(body(res), {}, 'a corrupt row must not break the tab');
+});
+
+test('replacing a stale session hands the old one back instead of abandoning it', async (t) => {
+  const mcp = mutableMcp(t);
+  const driver = host({ oauthAccessToken: 'evict-token' }).run(plugin);
+
+  // Call 1 primes the cache; call 2 fails the way an expired session does, which
+  // evicts the cached client — and eviction should terminate its MCP session.
+  mcp.onTool = (n) => (n === 2 ? { httpStatus: 404 } : { payload: SEARCH_PAYLOAD });
+
+  await driver.route({ method: 'POST', path: '/search' }, { body: { location: 'Paris' } });
+  assert.equal(mcp.deletes, 0, 'a healthy session is kept, not torn down');
+
+  await driver.route({ method: 'POST', path: '/search' }, { body: { location: 'Nice' } });
+  // The DELETE is fire-and-forget, so let the microtask queue drain.
+  await new Promise((r) => setTimeout(r, 20));
+  assert.equal(mcp.deletes, 1, 'the replaced session was terminated');
+  assert.equal(mcp.inits, 2, 'and a fresh one took its place');
 });

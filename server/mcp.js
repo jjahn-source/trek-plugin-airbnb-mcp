@@ -104,6 +104,34 @@ class McpClient {
     return msg.result;
   }
 
+  /**
+   * Terminate the session (MCP Streamable HTTP: DELETE with the session id).
+   *
+   * Without this, every evicted client abandons a live session for the server to
+   * expire on its own — impolite to a shared hosted service and, over a long-lived
+   * plugin process, a steady leak of them. Best-effort by design: a server that
+   * does not support termination answers 405, and a failure here must never affect
+   * the caller, which has already moved on to a new session.
+   */
+  async close() {
+    if (!this.sessionId) return;
+    const sessionId = this.sessionId;
+    this.sessionId = null;
+    try {
+      await this.fetch(this.url, {
+        method: 'DELETE',
+        headers: {
+          authorization: `Bearer ${this.token}`,
+          'mcp-session-id': sessionId,
+          'mcp-protocol-version': PROTOCOL_VERSION,
+        },
+        signal: AbortSignal.timeout(this.timeoutMs),
+      });
+    } catch {
+      /* the session will expire on its own */
+    }
+  }
+
   async connect() {
     const result = await this.send('initialize', {
       protocolVersion: PROTOCOL_VERSION,

@@ -104,3 +104,39 @@ test('extractToolPayload turns isError into a throw carrying the message', () =>
 test('extractToolPayload returns non-JSON text rather than guessing', () => {
   assert.deepEqual(extractToolPayload({ content: [{ type: 'text', text: 'plain words' }] }), { text: 'plain words' });
 });
+
+test('close() terminates the session with a DELETE carrying the session id', async () => {
+  const fetchImpl = stubFetch([
+    { status: 200, headers: { ...JSON_CT, 'mcp-session-id': 'sess-9' }, body: '{"id":1,"result":{}}' },
+    { status: 202, headers: {}, body: '' },
+    { status: 200, headers: {}, body: '' },
+  ]);
+  const c = new McpClient({ url: 'https://mcp.test/mcp', token: 'tok', fetchImpl });
+  await c.connect();
+  await c.close();
+
+  const del = fetchImpl.calls[2];
+  assert.equal(del.init.method, 'DELETE');
+  assert.equal(del.init.headers['mcp-session-id'], 'sess-9');
+  assert.equal(del.init.headers.authorization, 'Bearer tok');
+  assert.equal(c.sessionId, null, 'the client forgets the session it gave back');
+});
+
+test('close() is a no-op when no session was ever established', async () => {
+  const fetchImpl = stubFetch([]);
+  const c = new McpClient({ url: 'https://mcp.test/mcp', token: 't', fetchImpl });
+  await c.close();
+  assert.equal(fetchImpl.calls.length, 0);
+});
+
+test('close() never throws, even when the server refuses termination', async () => {
+  const fetchImpl = stubFetch([
+    { status: 200, headers: { ...JSON_CT, 'mcp-session-id': 's' }, body: '{"id":1,"result":{}}' },
+    { status: 202, headers: {}, body: '' },
+  ]);
+  const c = new McpClient({ url: 'https://mcp.test/mcp', token: 't', fetchImpl });
+  await c.connect();
+  // No response queued, so the stub throws — a server that answers 405, or none at all.
+  await c.close();
+  assert.equal(c.sessionId, null);
+});

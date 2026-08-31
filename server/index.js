@@ -42,8 +42,17 @@ const clientCache = new Map();
 const CLIENT_TTL_MS = 10 * 60 * 1000;
 const CLIENT_CACHE_MAX = 50;
 
+/** Drop a cached client and hand its MCP session back to the server. */
+function evict(key) {
+  const entry = clientCache.get(key);
+  if (!entry) return;
+  clientCache.delete(key);
+  // Fire-and-forget: the caller is already building a replacement.
+  Promise.resolve(entry.client.close()).catch(() => {});
+}
+
 function cacheClient(key, client) {
-  if (clientCache.size >= CLIENT_CACHE_MAX) clientCache.delete(clientCache.keys().next().value);
+  if (clientCache.size >= CLIENT_CACHE_MAX) evict(clientCache.keys().next().value);
   clientCache.set(key, { client, createdAt: Date.now() });
 }
 
@@ -63,12 +72,12 @@ async function callTool(ctx, name, args) {
 
   if (entry) {
     if (Date.now() - entry.createdAt > CLIENT_TTL_MS) {
-      clientCache.delete(key);
+      evict(key);
     } else {
       try {
         return await entry.client.callTool(name, args);
       } catch (err) {
-        clientCache.delete(key);
+        evict(key);
         // A bad token or a real tool failure (robots.txt, unknown listing) will
         // fail again identically — only a dropped SESSION is worth retrying, and
         // retrying a tool error would hit Airbnb twice for nothing.

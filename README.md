@@ -95,7 +95,7 @@ searches. Until a user connects, the tab shows a prompt instead of a search form
 
 ```bash
 npm install
-npm test          # 51 unit tests: MCP transport, session reuse, normalisation, every route
+npm test          # 55 unit tests: MCP transport, session reuse, normalisation, every route
 npm run smoke     # 17 browser checks: packs the frame and drives the real UI
 npm run dev       # hot-reloaded local harness
 npm run validate  # the registry's own publish gates
@@ -110,6 +110,8 @@ first-run and not-yet-configured states.
 
 `server/mcp.js` is a dependency-free Streamable-HTTP MCP client (a TREK plugin ships as
 a flat bundle with no install step, so the official SDK is not worth its weight here).
+It reuses one session per access token, re-handshakes a dropped one exactly once, and
+terminates sessions it replaces rather than leaving them for the server to expire.
 `server/normalize.js` flattens OpenBnB payloads into what the UI renders — it searches
 for the fields it wants rather than indexing fixed paths, because the hosted endpoint
 is a superset of the open-source server and both reshape whatever Airbnb's page
