@@ -21,7 +21,10 @@ if (!frame) {
 
 const RESULTS = [
   { id: '1', url: 'https://www.airbnb.com/rooms/1', name: 'Sunlit loft above Rue des Rosiers', subtitle: 'Entire rental unit', area: 'Le Marais · 2 beds', badge: 'Guest favourite', priceLabel: '$1,240 for 4 nights', priceAmount: 1240, rating: 4.92, reviews: 148, photos: ['https://a0.muscache.com/im/pictures/one.jpg'] },
-  { id: '2', url: 'https://www.airbnb.com/rooms/2', name: 'Quiet studio by Canal Saint-Martin', subtitle: 'Entire rental unit', area: '10th arr. · 1 bed', badge: null, priceLabel: '$860 for 4 nights', priceAmount: 860, rating: 4.78, reviews: 92, photos: [] },
+  // Taken from real captured data: apostrophes, en-dashes and an ampersand are what
+  // Airbnb listing names actually contain, and they are exactly what a double-escaping
+  // bug turns into "&#39;" on screen.
+  { id: '2', url: 'https://www.airbnb.com/rooms/2', name: "Paris 10th – Gare de l'Est & Gare du Nord", subtitle: 'Entire rental unit', area: '10th arr. · 1 bed', badge: null, priceLabel: '$860 for 4 nights', priceAmount: 860, rating: 4.78, reviews: 92, photos: [] },
 ];
 
 const LISTING = {
@@ -93,6 +96,11 @@ await page.waitForTimeout(300);
 const photoCallsAfter = invoked.filter((c) => c.sub.startsWith('/photo')).length;
 t('reuses the cached photo across a re-render', photoCallsAfter === photoCallsBefore);
 t('the photo survives the re-render', await page.locator('.thumb').first().evaluate((e) => e.src.startsWith('data:')));
+
+// 1c. real-world characters survive escaping without turning into entities
+const gridText = await page.locator('#results').innerText();
+t('renders apostrophes, dashes and ampersands as themselves',
+  gridText.includes("Gare de l'Est & Gare du Nord") && !/&#39;|&amp;|&quot;/.test(gridText));
 
 // 2. Details opens the listing view
 await page.locator('[data-details="1"]').click();

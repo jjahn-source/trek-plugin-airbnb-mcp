@@ -40,7 +40,7 @@ reconnect.
 
 ## Screenshots
 
-![The Airbnb tab showing search results for a trip](./docs/screenshot.png)
+![The Airbnb tab showing real search results for a trip to Paris](./docs/screenshot.png)
 
 ## Setup
 
@@ -96,7 +96,7 @@ searches. Until a user connects, the tab shows a prompt instead of a search form
 ```bash
 npm install
 npm test          # 67 unit tests: MCP transport, session reuse, normalisation, every route
-npm run smoke     # 20 browser checks: packs the frame and drives the real UI
+npm run smoke     # 21 browser checks: packs the frame and drives the real UI
 npm run dev       # hot-reloaded local harness
 npm run validate  # the registry's own publish gates
 ```

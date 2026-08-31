@@ -8,7 +8,7 @@
  * documented protocol — no patching of the kit, so what is captured is the real UI.
  */
 import { chromium } from 'playwright';
-import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const frame = process.argv[2];
@@ -18,27 +18,32 @@ if (!frame) {
   process.exit(1);
 }
 
-const RESULTS = [
-  { id: '1', url: 'https://www.airbnb.com/rooms/1', name: 'Sunlit loft above Rue des Rosiers', subtitle: 'Entire rental unit', area: 'Le Marais · 2 beds', badge: 'Guest favourite', priceLabel: '$1,240 for 4 nights', priceAmount: 1240, rating: 4.92, reviews: 148, photos: [] },
-  { id: '2', url: 'https://www.airbnb.com/rooms/2', name: 'Quiet studio by Canal Saint-Martin', subtitle: 'Entire rental unit', area: '10th arr. · 1 bed', badge: null, priceLabel: '$860 for 4 nights', priceAmount: 860, rating: 4.78, reviews: 92, photos: [] },
-  { id: '3', url: 'https://www.airbnb.com/rooms/3', name: 'Haussmann apartment with balcony', subtitle: 'Entire home', area: '9th arr. · 3 beds', badge: 'Superhost', priceLabel: '$1,910 for 4 nights', priceAmount: 1910, rating: 4.99, reviews: 311, photos: [] },
-  { id: '4', url: 'https://www.airbnb.com/rooms/4', name: 'Artist’s atelier near Montmartre', subtitle: 'Entire loft', area: '18th arr. · 2 beds', badge: null, priceLabel: '$1,120 for 4 nights', priceAmount: 1120, rating: 4.65, reviews: 57, photos: [] },
-  { id: '5', url: 'https://www.airbnb.com/rooms/5', name: 'Room in a townhouse, Latin Quarter', subtitle: 'Private room', area: '5th arr. · 1 bed', badge: null, priceLabel: '$540 for 4 nights', priceAmount: 540, rating: null, reviews: null, photos: [] },
-  { id: '6', url: 'https://www.airbnb.com/rooms/6', name: 'Riverside flat facing Île de la Cité', subtitle: 'Entire rental unit', area: '4th arr. · 2 beds', badge: 'Guest favourite', priceLabel: '$1,680 for 4 nights', priceAmount: 1680, rating: 4.88, reviews: 204, photos: [] },
-  { id: '7', url: 'https://www.airbnb.com/rooms/7', name: 'Bright two-bed near Jardin du Luxembourg', subtitle: 'Entire home', area: '6th arr. · 2 beds', badge: 'Superhost', priceLabel: '$1,540 for 4 nights', priceAmount: 1540, rating: 4.94, reviews: 176, photos: [] },
-  { id: '8', url: 'https://www.airbnb.com/rooms/8', name: 'Attic hideaway on Rue Mouffetard', subtitle: 'Entire rental unit', area: '5th arr. · 1 bed', badge: null, priceLabel: '$720 for 4 nights', priceAmount: 720, rating: 4.55, reviews: 41, photos: [] },
-  { id: '9', url: 'https://www.airbnb.com/rooms/9', name: 'Design flat by Place des Vosges', subtitle: 'Entire rental unit', area: '3rd arr. · 2 beds', badge: 'Guest favourite', priceLabel: '$1,780 for 4 nights', priceAmount: 1780, rating: 4.9, reviews: 133, photos: [] },
-  { id: '10', url: 'https://www.airbnb.com/rooms/10', name: 'Courtyard studio, Bastille', subtitle: 'Entire rental unit', area: '11th arr. · 1 bed', badge: null, priceLabel: '$690 for 4 nights', priceAmount: 690, rating: 4.71, reviews: 88, photos: [] },
-  { id: '11', url: 'https://www.airbnb.com/rooms/11', name: 'Family apartment near Parc Monceau', subtitle: 'Entire home', area: '17th arr. · 3 beds', badge: null, priceLabel: '$1,460 for 4 nights', priceAmount: 1460, rating: 4.82, reviews: 64, photos: [] },
-  { id: '12', url: 'https://www.airbnb.com/rooms/12', name: 'Loft with mezzanine, Belleville', subtitle: 'Entire loft', area: '20th arr. · 2 beds', badge: null, priceLabel: '$980 for 4 nights', priceAmount: 980, rating: 4.6, reviews: 29, photos: [] },
-  { id: '13', url: 'https://www.airbnb.com/rooms/13', name: 'Classic pied-à-terre, Saint-Germain', subtitle: 'Entire rental unit', area: '6th arr. · 1 bed', badge: 'Superhost', priceLabel: '$1,320 for 4 nights', priceAmount: 1320, rating: 4.97, reviews: 251, photos: [] },
-  { id: '14', url: 'https://www.airbnb.com/rooms/14', name: 'Top-floor view over Père-Lachaise', subtitle: 'Entire rental unit', area: '20th arr. · 2 beds', badge: null, priceLabel: '$870 for 4 nights', priceAmount: 870, rating: 4.44, reviews: 37, photos: [] },
-  { id: '15', url: 'https://www.airbnb.com/rooms/15', name: 'Garden-level flat, Butte-aux-Cailles', subtitle: 'Entire home', area: '13th arr. · 2 beds', badge: null, priceLabel: '$1,050 for 4 nights', priceAmount: 1050, rating: 4.86, reviews: 119, photos: [] },
-];
+// Real listings, normalised from the captured hosted-endpoint response — so the
+// store card shows what the plugin actually renders, not a hand-written mock.
+const { normalizeSearch } = await import('../server/normalize.js').then((m) => m.default ?? m);
+const captured = JSON.parse(readFileSync(new URL('../test/fixtures/hosted-search.json', import.meta.url), 'utf8'));
+const RESULTS = normalizeSearch(captured, null).results;
+
+// Listing photos are public on the MCP host; inline them as data URIs so the page
+// needs no network at render time (and the frame's CSP would block remote images).
+const PHOTOS = {};
+await Promise.all(
+  RESULTS.flatMap((r) => r.photos.slice(0, 1)).map(async (url) => {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(20000) });
+      if (!res.ok) return;
+      const type = (res.headers.get('content-type') || 'image/jpeg').split(';')[0];
+      const buf = Buffer.from(await res.arrayBuffer());
+      PHOTOS[url] = `data:${type};base64,${buf.toString('base64')}`;
+    } catch { /* the card renders without it */ }
+  }),
+);
+console.log(`fetched ${Object.keys(PHOTOS).length}/${RESULTS.length} listing photos`);
 
 const FIXTURES = {
   '/status': { configured: true, connected: true, endpoint: 'https://mcp.openbnb.ai/mcp' },
   '/last': { params: { location: 'Paris, France', checkin: '2026-10-10', checkout: '2026-10-14', adults: 2 }, results: RESULTS, cursor: 'next' },
+  '/photos': PHOTOS,
 };
 
 const browser = await chromium.launch();
@@ -63,8 +68,13 @@ await page.addInitScript((fixtures) => {
       return;
     }
     if (m.type === 'trek:invoke') {
-      const sub = String(m.sub || '').split('?')[0];
-      const data = Object.prototype.hasOwnProperty.call(fixtures, sub) ? fixtures[sub] : {};
+      const raw = String(m.sub || '');
+      const sub = raw.split('?')[0];
+      let data = Object.prototype.hasOwnProperty.call(fixtures, sub) ? fixtures[sub] : {};
+      if (sub === '/photo') {
+        const url = decodeURIComponent((raw.split('url=')[1] || ''));
+        data = fixtures['/photos'][url] ? { dataUri: fixtures['/photos'][url] } : {};
+      }
       window.postMessage({ type: 'trek:response', requestId: m.requestId, data }, '*');
     }
   });
