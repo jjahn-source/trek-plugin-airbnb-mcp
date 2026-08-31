@@ -84,6 +84,30 @@ async function callTool(ctx, name, args) {
   return payload;
 }
 
+/**
+ * Turn an upstream failure into something a traveller can act on.
+ *
+ * The raw text is fine for the log but poor on screen: an AbortSignal timeout reads
+ * "The operation was aborted", and a robots.txt refusal names a file the user has
+ * never heard of. The original message is always logged; only the display copy changes.
+ */
+function friendlyError(message) {
+  const m = String(message || '');
+  if (/robots\.txt/i.test(m)) {
+    return 'That MCP server was blocked by Airbnb\u2019s robots.txt. The hosted OpenBnB endpoint handles this for you \u2014 check the "OpenBnB MCP endpoint" setting with your administrator.';
+  }
+  if (/abort|timed? ?out|timeout/i.test(m)) {
+    return 'OpenBnB took too long to answer. Try again, or narrow the search to fewer dates.';
+  }
+  if (/returned 429/.test(m)) {
+    return 'OpenBnB is rate-limiting this account right now. Wait a moment and try again.';
+  }
+  if (/returned 5\d\d/.test(m)) {
+    return 'OpenBnB is having trouble right now. Try again shortly.';
+  }
+  return m || 'The search failed.';
+}
+
 /** Map a thrown error onto an HTTP reply the client can act on. */
 function errorReply(err, ctx) {
   if (err instanceof McpError && err.code === 'NOT_CONNECTED') {
@@ -95,9 +119,9 @@ function errorReply(err, ctx) {
   if (err instanceof McpError && err.code === 'UNAUTHORIZED') {
     return reply(401, { error: 'Your OpenBnB session expired. Reconnect under Settings → Plugins.', reconnect: true });
   }
+  // Log the real message, show the actionable one.
   ctx.log.warn(`airbnb-mcp: ${err && err.message}`);
-  const msg = (err && err.message) || 'request failed';
-  return reply(502, { error: msg });
+  return reply(502, { error: friendlyError(err && err.message) });
 }
 
 function toInt(v, fallback = null) {
@@ -366,3 +390,6 @@ module.exports = definePlugin({
     },
   },
 });
+
+// Exposed for tests; the host only ever uses the default plugin export above.
+module.exports.friendlyError = friendlyError;

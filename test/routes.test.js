@@ -281,3 +281,32 @@ test('an expired token is reported, not retried against a fresh session', async 
   assert.equal(mcp.toolCalls, 2, 'a 401 must not be retried');
   assert.equal(mcp.inits, 1);
 });
+
+// --- error copy ---------------------------------------------------------------
+// The raw upstream text is right for the log and wrong for the screen.
+
+test('friendlyError rewrites the failures a traveller can actually act on', () => {
+  const { friendlyError } = plugin;
+
+  const robots = friendlyError("This path is disallowed by Airbnb's robots.txt to this User-agent.");
+  assert.match(robots, /robots\.txt/, 'still names the cause');
+  assert.match(robots, /OpenBnB MCP endpoint/, 'points at the setting that fixes it');
+
+  assert.match(friendlyError('The operation was aborted due to timeout'), /took too long/);
+  assert.match(friendlyError('OpenBnB MCP returned 429'), /rate-limiting/);
+  assert.match(friendlyError('OpenBnB MCP returned 503'), /trouble right now/);
+});
+
+test('friendlyError passes through anything it does not recognise', () => {
+  assert.equal(plugin.friendlyError('some upstream detail'), 'some upstream detail');
+  assert.equal(plugin.friendlyError(''), 'The search failed.');
+  assert.equal(plugin.friendlyError(undefined), 'The search failed.');
+});
+
+test('a search failure reaches the client as the friendly copy, not the raw text', async (t) => {
+  withMcp(t, { toolResult: { error: "This path is disallowed by Airbnb's robots.txt" } });
+  const h = host({ oauthAccessToken: 'friendly-token' });
+  const res = await h.run(plugin).route({ method: 'POST', path: '/search' }, { body: { location: 'Paris' } });
+  assert.equal(res.status, 502);
+  assert.match(body(res).error, /OpenBnB MCP endpoint/, 'the actionable copy, not the bare upstream string');
+});
