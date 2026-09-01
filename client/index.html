@@ -655,6 +655,11 @@
   /** Render one of the pre-search states: unconfigured, or not yet connected. */
   function renderGate(state) {
     var gate = $('gate');
+    // The lightbox lives OUTSIDE #app and marks the page behind it inert. A session
+    // that expires while someone is looking at photos would otherwise hide the app,
+    // draw the reconnect panel into a container that is still inert, and leave the
+    // carousel floating over it — a dead end with no way out but a reload.
+    if (!$('lb').hidden) lbClose();
     if (state === 'ok') { gate.innerHTML = ''; $('app').hidden = false; return; }
     $('app').hidden = true;
 
