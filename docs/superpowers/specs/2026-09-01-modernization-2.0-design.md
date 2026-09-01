@@ -115,7 +115,25 @@ Every booking decision is made on the total; the card shows only the nightly rat
 `normalize` already parses `priceAmount` out of the label. With both dates known the
 card gains a total, the detail view shows the arithmetic, and 2.2 has its number.
 
-### 2.4 Candidate stays on the trip map (`hook:map-marker-provider`)
+### 2.4 Candidate stays on the trip map (`hook:map-marker-provider`) — NOT BUILT
+
+**Abandoned during implementation, on privacy grounds.** Recorded here rather than
+quietly dropped, because the reasoning is the useful part.
+
+A hook receives `(tripId, ctx)`, and `ctx` carries no acting-user id — only
+`PluginRequest.user` does, and that exists on routes alone. `last_search` is keyed by
+(trip, user) precisely because a search is private to the person who ran it, so the
+hook has no way to ask for the right row.
+
+The only way to make it work is to key the cache by trip alone, which would show one
+traveller's search to every other member of the trip. That contradicts the sentence
+this plugin's own README leads with — "one person's account is never used for
+another's searches" — so the feature loses. If a future SDK exposes the acting user to
+hooks, this becomes possible as designed.
+
+Original design, for reference:
+
+
 
 `last_search` is already stored per (trip, user), so the trip map can show the stays
 under consideration next to the places already pinned — spatial comparison the
