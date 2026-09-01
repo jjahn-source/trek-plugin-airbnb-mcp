@@ -691,3 +691,84 @@ test('a concurrent first search does not abandon the session it loses to', async
   assert.equal(mcp.inits, 2, 'both callers legitimately handshook — that is the race');
   assert.equal(mcp.deletes, 1, 'the client that lost the cache slot was terminated, not leaked');
 });
+
+/* ------------------------------------------------------------- map style */
+
+/**
+ * Which host /map actually asked for tiles from, for a given instance config.
+ *
+ * Every case passes its OWN coordinates. Tiles are cached by URL for the life of the
+ * process, so two cases sharing a point would leave the second one asking for nothing
+ * and reading an empty list as "no tiles requested".
+ */
+async function tileHostFor(config, query = {}) {
+  const real = globalThis.fetch;
+  const asked = [];
+  globalThis.fetch = async (url) => {
+    asked.push(String(url));
+    return {
+      ok: true,
+      status: 200,
+      headers: { get: () => 'image/png' },
+      arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer,
+    };
+  };
+  try {
+    const h = host({ config, oauthAccessToken: 'tok' });
+    await h.run(plugin).route(
+      { method: 'GET', path: '/map' },
+      { query: { lat: '48.8584', lng: '2.2945', ...query } },
+    );
+    return asked.length ? new URL(asked[0]).hostname : null;
+  } finally {
+    globalThis.fetch = real;
+  }
+}
+
+test('with nothing configured the map draws on Esri, matching TREK\'s own basemap', async () => {
+  const at = { lat: '51.5007', lng: '-0.1246' };
+  assert.equal(await tileHostFor({ ...OAUTH_CONFIG }, at), 'server.arcgisonline.com');
+});
+
+test('choosing OpenStreetMap switches the source without pasting a template', async () => {
+  const at = { lat: '40.7128', lng: '-74.0060' };
+  assert.equal(await tileHostFor({ ...OAUTH_CONFIG, map_style: 'osm' }, at), 'tile.openstreetmap.org');
+});
+
+test('Custom reads the tile fields', async () => {
+  const host_ = await tileHostFor({
+    ...OAUTH_CONFIG,
+    map_style: 'custom',
+    map_tile_url: 'https://tiles.internal.example/{z}/{x}/{y}.png',
+  }, { lat: '35.6762', lng: '139.6503' });
+  assert.equal(host_, 'tiles.internal.example');
+});
+
+/**
+ * The load-bearing rung of the ladder. An operator who pointed 1.x at their own tile
+ * server has no `map_style` at all after upgrading — and must not silently get Esri
+ * back, which would be this plugin quietly overriding a deliberate choice.
+ */
+test('a 1.x install with only map_tile_url set keeps its own tiles', async () => {
+  const host_ = await tileHostFor({
+    ...OAUTH_CONFIG,
+    map_tile_url: 'https://legacy.internal.example/{z}/{x}/{y}.png',
+  }, { lat: '-33.8688', lng: '151.2093' });
+  assert.equal(host_, 'legacy.internal.example');
+});
+
+test('a dark theme gets the dark Esri canvas, not the light one', async () => {
+  const asked = [];
+  const real = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    asked.push(String(url));
+    return { ok: true, status: 200, headers: { get: () => 'image/png' }, arrayBuffer: async () => new ArrayBuffer(3) };
+  };
+  try {
+    const h = host({ config: { ...OAUTH_CONFIG, map_style: 'esri' }, oauthAccessToken: 'tok' });
+    await h.run(plugin).route({ method: 'GET', path: '/map' }, { query: { lat: '0', lng: '0', theme: 'dark' } });
+  } finally {
+    globalThis.fetch = real;
+  }
+  assert.ok(asked[0].includes('World_Dark_Gray_Base'), asked[0]);
+});

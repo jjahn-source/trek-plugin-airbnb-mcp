@@ -39,6 +39,15 @@ const DEFAULT_ATTRIBUTION = 'Tiles © Esri — Esri, DeLorme, NAVTEQ';
 const OSM_ATTRIBUTION = '© OpenStreetMap contributors';
 
 /**
+ * OpenStreetMap's standard raster tiles, offered as a named "Map style" choice.
+ *
+ * Its host is already declared in the manifest's egress, so choosing it needs no
+ * Allowed-hosts step — which is the point of naming it in the dropdown rather than
+ * leaving an admin to paste this template and then wonder why nothing loads.
+ */
+const OSM_TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+
+/**
  * The credit owed by whichever tile source a map was actually drawn from.
  *
  * The source decides, not the call site. An operator who points `map_tile_url` at OSM
@@ -113,9 +122,10 @@ const TILE_UA = 'TREK-airbnb-stays-plugin/1.6 (+https://github.com/jjahn-source/
  * Shared with /photo in index.js, which embeds CDN bytes the same way and is reachable
  * by the same trick. The frame escapes the URI as well — this is the half that holds
  * even if a future caller forgets to.
+ *
+ * Raster only: SVG is a document format that happens to draw, and no tile or listing
+ * photo has ever needed it.
  */
-/** Raster only. SVG is a document format that happens to draw, and no tile or listing
- *  photo has ever needed it. */
 function imageContentType(raw) {
   const type = String(raw || '').split(';')[0].trim().toLowerCase();
   return /^image\/(png|jpeg|jpg|webp|gif|avif)$/.test(type) ? type : null;
@@ -186,5 +196,5 @@ async function staticMap({ lat, lng, zoom = 14, template }) {
 
 module.exports = {
   staticMap, project, tileUrl, TILE, GRID, imageContentType,
-  DEFAULT_TILE_URL, DEFAULT_TILE_URL_DARK, DEFAULT_ATTRIBUTION, OSM_ATTRIBUTION, attributionFor,
+  DEFAULT_TILE_URL, DEFAULT_TILE_URL_DARK, DEFAULT_ATTRIBUTION, OSM_ATTRIBUTION, OSM_TILE_URL, attributionFor,
 };

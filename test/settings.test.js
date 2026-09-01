@@ -94,7 +94,14 @@ test('a "default" is a bonus, never the thing that makes a field usable', () => 
   // field must still be usable with the value absent: a placeholder to show what to type,
   // and, for anything optional, a code-side fallback so blank means "use the built-in".
   for (const s of manifest.settings) {
-    if (!s.secret) {
+    // A select carries its own value hints: the options ARE the legal values, so a
+    // placeholder would advertise a fourth choice that does not exist.
+    if (s.input_type === 'select') {
+      assert.ok(Array.isArray(s.options) && s.options.length, `${s.key} is a select with no options`);
+      for (const o of s.options) {
+        assert.ok(o && o.value !== undefined && o.label, `${s.key} has an option missing a value or label`);
+      }
+    } else if (!s.secret) {
       assert.ok(s.placeholder, `${s.key} needs a placeholder — the only value hint an empty field gets`);
     }
     if (s.default !== undefined) {
@@ -223,4 +230,82 @@ test('test_connection never falls back to search copy when the endpoint is unrea
   assert.equal(res.ok, false);
   assert.match(res.message, /Could not reach/);
   assert.doesNotMatch(res.message, /search failed/i);
+});
+
+/* ------------------------------------------------------ register_client */
+
+/**
+ * The button that replaced "clone the repo and run a CLI".
+ *
+ * Setup used to be unreachable for the admin most likely to have it: someone who
+ * installed this from the registry has no checkout to run `npm run register` in. The
+ * same registration now happens from the settings page, one button away from the
+ * fields the values go into.
+ */
+function withRegistrationServer(t, { meta, registration } = {}) {
+  const original = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url: String(url), method: (init && init.method) || 'GET' });
+    const json = (status, obj) => ({
+      ok: status >= 200 && status < 300,
+      status,
+      text: async () => JSON.stringify(obj),
+    });
+    if (String(url).includes('/.well-known/oauth-authorization-server')) {
+      return json(200, meta || {
+        authorization_endpoint: 'https://mcp.openbnb.ai/authorize',
+        token_endpoint: 'https://mcp.openbnb.ai/token',
+        registration_endpoint: 'https://mcp.openbnb.ai/register',
+      });
+    }
+    return json(201, registration || { client_id: 'cid-abc', client_secret: 'sec-xyz' });
+  };
+  t.after(() => { globalThis.fetch = original; });
+  return calls;
+}
+
+test('register_client asks for the TREK URL first rather than guessing one', async () => {
+  const h = host({ config: { ...OAUTH_CONFIG, trek_url: '' } });
+  const res = await h.run(plugin).action('register_client');
+  assert.equal(res.ok, false);
+  assert.match(res.message, /This TREK server's URL/);
+});
+
+test('register_client returns the id and secret an admin has to paste', async (t) => {
+  withRegistrationServer(t);
+  const h = host({ config: { ...OAUTH_CONFIG, trek_url: 'https://trek.example.com' } });
+  const res = await h.run(plugin).action('register_client');
+  assert.equal(res.ok, true);
+  assert.match(res.message, /cid-abc/);
+  assert.match(res.message, /sec-xyz/);
+});
+
+/**
+ * The message is bounded host-side by an amount the SDK does not specify, and the
+ * secret is the one value that cannot be recovered from anywhere else on the page —
+ * the two URLs are already sitting in their fields as placeholder text. So the secret
+ * has to appear early enough to survive a trim.
+ */
+test('register_client puts the credentials before the prose', async (t) => {
+  withRegistrationServer(t);
+  const h = host({ config: { ...OAUTH_CONFIG, trek_url: 'https://trek.example.com' } });
+  const res = await h.run(plugin).action('register_client');
+  assert.ok(res.message.indexOf('sec-xyz') < 140, `secret at ${res.message.indexOf('sec-xyz')}: ${res.message}`);
+});
+
+test('register_client reports a refusal instead of throwing at the admin', async (t) => {
+  withRegistrationServer(t, { registration: { client_id: 'public-only' } });
+  const h = host({ config: { ...OAUTH_CONFIG, trek_url: 'https://trek.example.com' } });
+  const res = await h.run(plugin).action('register_client');
+  assert.equal(res.ok, false);
+  assert.match(res.message, /secret/i);
+});
+
+test('register_client refuses a TREK URL that could never receive the redirect', async (t) => {
+  withRegistrationServer(t);
+  const h = host({ config: { ...OAUTH_CONFIG, trek_url: 'http://trek.example.com' } });
+  const res = await h.run(plugin).action('register_client');
+  assert.equal(res.ok, false);
+  assert.match(res.message, /https/i);
 });

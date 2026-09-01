@@ -1,19 +1,25 @@
 #!/usr/bin/env node
 /**
- * One-off: register this TREK instance as an OAuth client of the OpenBnB MCP server.
+ * Register this TREK instance as an OAuth client of the OpenBnB MCP server, from a
+ * terminal.
  *
- * OpenBnB implements RFC 7591 Dynamic Client Registration, so no account, no
- * dashboard and no support ticket is needed — the endpoint mints a client id and
- * secret for the redirect URI you give it. TREK's OAuth broker requires a
- * confidential client (it always sends a client_secret), so we register with
- * `client_secret_post` rather than a public PKCE client.
+ * Most admins should not need this: the plugin's own settings page has a **Register
+ * with OpenBnB** button that does exactly the same thing, and someone who installed
+ * this from the registry has no repo to run a script in. This is the scripted path —
+ * for provisioning, CI, or an operator who would rather watch it happen in a shell.
+ *
+ * Both paths call the SAME module, deliberately. OAuth compares redirect URIs exactly,
+ * so two derivations differing by a trailing slash or a dropped subpath would not fail
+ * here — they would fail months later, as a sign-in that never completes.
  *
  * Usage:
- *   node scripts/register-oauth-client.mjs https://trek.example.com
+ *   node scripts/register-oauth-client.mjs https://trek.example.com [issuer]
  */
 
-const PLUGIN_ID = 'airbnb-mcp';
-const DEFAULT_ISSUER = 'https://mcp.openbnb.ai';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+const { registerClient, redirectUriFor, DEFAULT_ISSUER } = require('../server/register.js');
 
 function die(msg) {
   console.error(`\n  Error: ${msg}\n`);
@@ -36,86 +42,42 @@ if (!appUrl || appUrl === '--help' || appUrl === '-h') {
   your users reach TREK on, INCLUDING any path if TREK is hosted under one
   (https://example.com/trek). The redirect URI is derived from it and OpenBnB
   only redirects to the URI registered here, so a mismatch breaks sign-in.
+
+  You do not need this script at all if you can reach the plugin's settings page:
+  Admin -> Plugins -> Airbnb Stays -> Instance settings has a "Register with
+  OpenBnB" button that does the same thing.
 `);
   process.exit(appUrl ? 0 : 1);
 }
 
-let base;
+// Fail on a bad URL before touching the network, and print the URI about to be
+// registered so the operator can check it against their APP_URL while it still
+// costs nothing to get wrong.
+let redirectUri;
 try {
-  base = new URL(appUrl);
-} catch {
-  die(`"${appUrl}" is not a valid URL.`);
-}
-if (base.protocol !== 'https:' && base.hostname !== 'localhost' && base.hostname !== '127.0.0.1') {
-  die('TREK must be reachable over https (or be localhost) for the OAuth redirect to work.');
-}
-
-// TREK builds the redirect as `${getAppUrl()}/api/plugin-oauth/<id>/callback`, and
-// getAppUrl() is APP_URL with trailing slashes stripped — PATH INCLUDED. Using the
-// origin here would silently drop a subpath (https://example.com/trek), and OAuth
-// compares redirect URIs exactly, so the mismatch would only surface as a failed
-// sign-in much later. Mirror getAppUrl() precisely instead.
-const appBase = appUrl.replace(/\/+$/, '');
-const redirectUri = `${appBase}/api/plugin-oauth/${PLUGIN_ID}/callback`;
-
-// Discover the endpoints rather than hardcoding them, so a moved endpoint or a
-// self-hosted compatible server keeps working.
-const discoveryUrl = `${issuer}/.well-known/oauth-authorization-server`;
-console.log(`\n  Discovering ${discoveryUrl} ...`);
-
-let meta;
-try {
-  const res = await fetch(discoveryUrl, { signal: AbortSignal.timeout(20000) });
-  if (!res.ok) die(`discovery returned ${res.status}`);
-  meta = await res.json();
+  redirectUri = redirectUriFor(appUrl);
 } catch (err) {
-  die(`could not reach the authorization server: ${err.message}`);
+  die(err.message);
 }
 
-if (!meta.registration_endpoint) {
-  die('this server does not advertise a registration endpoint — register a client by hand.');
-}
-const registrationUrl = new URL(meta.registration_endpoint, `${issuer}/`).toString();
+console.log(`\n  Registering redirect URI:\n    ${redirectUri}\n`);
 
-console.log(`  Registering redirect URI:\n    ${redirectUri}\n`);
-
-let client;
+let out;
 try {
-  const res = await fetch(registrationUrl, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      client_name: `TREK (${base.hostname})`,
-      redirect_uris: [redirectUri],
-      grant_types: ['authorization_code', 'refresh_token'],
-      response_types: ['code'],
-      token_endpoint_auth_method: 'client_secret_post',
-    }),
-    signal: AbortSignal.timeout(20000),
-  });
-  const text = await res.text();
-  if (res.status !== 200 && res.status !== 201) die(`registration returned ${res.status}: ${text.slice(0, 400)}`);
-  client = JSON.parse(text);
+  out = await registerClient({ appUrl, issuer });
 } catch (err) {
-  die(`registration failed: ${err.message}`);
-}
-
-if (!client.client_secret) {
-  die(
-    'the server issued a PUBLIC client with no secret. TREK\'s OAuth broker requires a ' +
-      'confidential client — re-run against a server that supports client_secret_post.',
-  );
+  die(err.message);
 }
 
 console.log(`  Registered.
 
-  Paste these into TREK → Admin → Plugins → Airbnb Stays → ⋯ → Instance settings
+  Paste these into TREK -> Admin -> Plugins -> Airbnb Stays -> Instance settings
   (on an older TREK with no such menu, send them to the admin API — see the README):
 
-    OAuth authorize URL   ${meta.authorization_endpoint}
-    OAuth token URL       ${meta.token_endpoint}
-    OAuth client id       ${client.client_id}
-    OAuth client secret   ${client.client_secret}
+    OAuth authorize URL   ${out.authorizeUrl}
+    OAuth token URL       ${out.tokenUrl}
+    OAuth client id       ${out.clientId}
+    OAuth client secret   ${out.clientSecret}
 
   The form shows the two URLs as greyed-out placeholder text. That is a hint, not a
   value — type them in, or the fields save empty.

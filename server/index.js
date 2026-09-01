@@ -3,8 +3,11 @@
 const { definePlugin } = require('trek-plugin-sdk');
 const { McpClient, McpError } = require('./mcp');
 const { normalizeSearch, normalizeListing, placeCandidates } = require('./normalize')
-const { staticMap, DEFAULT_TILE_URL, DEFAULT_TILE_URL_DARK, attributionFor, imageContentType } = require('./map');
+const {
+  staticMap, DEFAULT_TILE_URL, DEFAULT_TILE_URL_DARK, OSM_TILE_URL, attributionFor, imageContentType,
+} = require('./map');
 const commute = require('./commute');
+const { registerClient } = require('./register');
 
 const DEFAULT_MCP_URL = 'https://mcp.openbnb.ai/mcp';
 const PHOTO_MAX_BYTES = 3 * 1024 * 1024;
@@ -58,6 +61,34 @@ const REQUIRED_SETTINGS = [
   { key: 'oauth_client_id', label: 'OAuth client id' },
   { key: 'oauth_client_secret', label: 'OAuth client secret' },
 ];
+
+/**
+ * Which tile template to draw on, from the instance settings.
+ *
+ * "Map style" replaced three free-text fields that asked an admin to paste {z}/{x}/{y}
+ * templates, so the resolution has to answer for installs configured under either
+ * shape. In order:
+ *
+ *   1. An explicit `map_style` wins — the admin chose from the list.
+ *   2. Otherwise a set `map_tile_url` is honoured as if Custom had been chosen. This
+ *      is the load-bearing rung: an operator who pointed 1.x at their own tile server
+ *      must not silently get Esri back after upgrading.
+ *   3. Otherwise Esri's grey canvas, which matches TREK's own basemap and needs no key.
+ *
+ * Dark has a real source of its own rather than falling through to the light one,
+ * which used to put a bright map inside a dark trip page.
+ */
+function tileTemplate(cfg, dark) {
+  const style = String(cfg.map_style || '').trim().toLowerCase();
+  const custom = (dark ? cfg.map_tile_url_dark : cfg.map_tile_url) || cfg.map_tile_url || '';
+
+  if (style === 'custom') return custom || (dark ? DEFAULT_TILE_URL_DARK : DEFAULT_TILE_URL);
+  if (style === 'osm') return OSM_TILE_URL;
+  if (style === 'esri') return dark ? DEFAULT_TILE_URL_DARK : DEFAULT_TILE_URL;
+  // No style set: an install from before the dropdown existed.
+  if (custom) return custom;
+  return dark ? DEFAULT_TILE_URL_DARK : DEFAULT_TILE_URL;
+}
 
 /** The required settings still blank, in manifest order. */
 function missingSettings(ctx) {
@@ -585,14 +616,7 @@ module.exports = definePlugin({
         const zoom = Math.min(18, Math.max(3, Number(q.zoom) || 14));
         const cfg = ctx.config || {};
         const dark = String(q.theme || '') === 'dark';
-        // Fall back to the built-in source, so the map works on a TREK that has no way to
-        // fill in instance settings. The settings only ever narrow this, never enable it.
-        // Dark now has a real source of its own rather than falling through to the light
-        // one, which used to put a bright map inside a dark trip page.
-        const template =
-          (dark ? cfg.map_tile_url_dark : cfg.map_tile_url) ||
-          cfg.map_tile_url ||
-          (dark ? DEFAULT_TILE_URL_DARK : DEFAULT_TILE_URL);
+        const template = tileTemplate(cfg, dark);
 
         try {
           const map = await staticMap({ lat, lng, zoom, template });
@@ -666,6 +690,52 @@ module.exports = definePlugin({
    * form is still open in front of them fixes it in seconds instead.
    */
   actions: {
+    /**
+     * Register this TREK instance with OpenBnB, from the settings page.
+     *
+     * Setup used to require a repo checkout, a Node install and a CLI run before an
+     * admin could paste anything — and an admin who installed this from the registry
+     * has no repo to check out. The same registration runs here instead, one button
+     * away from the fields the values go into.
+     *
+     * It cannot finish the job: `ctx.config` is read-only and the host's broker reads
+     * the credentials straight out of the encrypted instance config, so the last step
+     * is still a paste. The message therefore leads with the two values that cannot be
+     * guessed and does NOT repeat the two constant URLs, which are already sitting in
+     * their fields as placeholders — an action message is bounded host-side, and the
+     * secret is the part that must survive the trim.
+     */
+    async register_client(ctx) {
+      const cfg = ctx.config || {};
+      const appUrl = String(cfg.trek_url || '').trim();
+      if (!appUrl) {
+        return {
+          ok: false,
+          message:
+            'Fill in "This TREK server\'s URL" above — the address your users reach TREK on — then press Save and run this again.',
+        };
+      }
+
+      try {
+        const out = await registerClient({ appUrl, mcpUrl: mcpUrl(ctx) });
+        ctx.log.info(`airbnb-mcp: registered OAuth client for ${out.redirectUri}`);
+        // The secret is returned and never stored: the host's encrypted config is its
+        // only home, and writing a copy into this plugin's own database would be a
+        // plaintext credential at rest that nothing later would clean up.
+        return {
+          ok: true,
+          message:
+            `Registered. Client id: ${out.clientId} — Client secret: ${out.clientSecret} — ` +
+            'paste both into the fields above and press Save. Type the two URLs shown as ' +
+            'grey placeholder text in as well; they are hints, not values.',
+        };
+      } catch (err) {
+        const detail = String((err && err.message) || 'registration failed');
+        ctx.log.warn(`airbnb-mcp: register_client failed — ${detail}`);
+        return { ok: false, message: detail };
+      }
+    },
+
     async test_connection(ctx) {
       const gaps = missingSettings(ctx);
       if (gaps.length) {

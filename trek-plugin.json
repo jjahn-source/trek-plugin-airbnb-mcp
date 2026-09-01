@@ -37,6 +37,15 @@
   },
   "settings": [
     {
+      "key": "trek_url",
+      "label": "This TREK server's URL",
+      "input_type": "text",
+      "required": false,
+      "scope": "instance",
+      "placeholder": "https://trek.example.com",
+      "hint": "Only needed for the \"Register with OpenBnB\" button below. Type the address your users reach TREK on, including any path it is hosted under, then Save — the button turns it into the OAuth redirect URI and registers this server for you."
+    },
+    {
       "key": "oauth_authorize_url",
       "label": "OAuth authorize URL",
       "input_type": "text",
@@ -63,7 +72,7 @@
       "required": true,
       "scope": "instance",
       "placeholder": "openbnb-xxxxxxxxxxxxxxxx",
-      "hint": "Run `npm run register -- <your TREK URL>` in the plugin repo once, then paste the client id it prints. Unique to this TREK instance."
+      "hint": "Press \"Register with OpenBnB\" below and paste the client id it prints. Unique to this TREK instance. (There is a CLI equivalent for scripted installs: `npm run register -- <your TREK URL>` in the plugin repo.)"
     },
     {
       "key": "oauth_client_secret",
@@ -72,7 +81,7 @@
       "required": true,
       "secret": true,
       "scope": "instance",
-      "hint": "From the same command. Stored encrypted; never leaves this server."
+      "hint": "From the same registration. Stored encrypted; never leaves this server."
     },
     {
       "key": "mcp_url",
@@ -85,37 +94,61 @@
       "default": "https://mcp.openbnb.ai/mcp"
     },
     {
+      "key": "map_style",
+      "label": "Map style",
+      "input_type": "select",
+      "required": false,
+      "scope": "instance",
+      "options": [
+        {
+          "value": "esri",
+          "label": "Esri grey canvas — matches TREK's basemap (default)"
+        },
+        {
+          "value": "osm",
+          "label": "OpenStreetMap"
+        },
+        {
+          "value": "custom",
+          "label": "Custom tile server (fill in the three fields below)"
+        }
+      ],
+      "hint": "Which basemap the \"Where you'll be\" map draws on. Leave unset for Esri's grey canvas, which needs no key and matches the basemap TREK draws its own maps on."
+    },
+    {
       "key": "map_tile_url",
-      "label": "Map tiles",
+      "label": "Custom map tiles",
       "input_type": "text",
       "required": false,
       "scope": "instance",
-      "placeholder": "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
-      "hint": "Optional. Leave blank for Esri's grey canvas, which needs no key and matches TREK's own basemap. Point it elsewhere and add that host under Allowed hosts.",
-      "default": "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+      "placeholder": "https://tile.example.com/{z}/{x}/{y}.png",
+      "hint": "Only read when Map style is Custom. Add the host under Allowed hosts too, or the tiles will not load."
     },
     {
       "key": "map_tile_url_dark",
-      "label": "Map tiles (dark theme)",
+      "label": "Custom map tiles (dark theme)",
       "input_type": "text",
       "required": false,
       "scope": "instance",
-      "placeholder": "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
-      "hint": "Optional. Leave blank for Esri's dark grey canvas, used automatically on a dark theme.",
-      "default": "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+      "placeholder": "https://tile.example.com/dark/{z}/{x}/{y}.png",
+      "hint": "Only read when Map style is Custom. Leave blank to reuse the light tiles above on a dark theme."
     },
     {
       "key": "map_attribution",
-      "label": "Map attribution",
+      "label": "Custom map attribution",
       "input_type": "text",
       "required": false,
       "scope": "instance",
-      "placeholder": "Tiles © Esri — Esri, DeLorme, NAVTEQ",
-      "hint": "Optional. Leave blank and the credit follows whichever tile source is in use. Set it if you point the tiles at a provider the plugin does not recognise.",
-      "default": "Tiles © Esri — Esri, DeLorme, NAVTEQ"
+      "placeholder": "Tiles © Example Maps",
+      "hint": "Leave blank and the credit follows whichever tile source is in use. Set it when you point the tiles at a provider the plugin does not recognise — publishing the wrong credit is a licensing problem, not a cosmetic one."
     }
   ],
   "actions": [
+    {
+      "key": "register_client",
+      "label": "Register with OpenBnB",
+      "hint": "Fill in \"This TREK server's URL\" above and Save first. This then registers this server with OpenBnB and prints the client id and secret to paste into the two fields above — no repo checkout, no terminal."
+    },
     {
       "key": "test_connection",
       "label": "Test connection",
