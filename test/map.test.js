@@ -133,3 +133,80 @@ test('the real image subtypes are still accepted', async () => {
     });
   }
 });
+
+/* --------------------------------------------------- bounded image fetching */
+
+/**
+ * The size cap has to bite BEFORE the bytes are in memory.
+ *
+ * `arrayBuffer()` reads the whole body first and checks the length afterwards, which
+ * bounds nothing: an allowed-but-compromised host can return hundreds of megabytes
+ * inside the timeout, and /map fans out to nine tiles at once, so one request
+ * multiplies it. The timeout limits time, never volume.
+ */
+test('a declared Content-Length over the cap is refused without reading the body', async () => {
+  let bodyRead = false;
+  await withFetch(async () => ({
+    ok: true,
+    status: 200,
+    headers: { get: (k) => (k.toLowerCase() === 'content-length' ? '99999999' : 'image/png') },
+    arrayBuffer: async () => { bodyRead = true; return new ArrayBuffer(8); },
+    body: null,
+  }), async () => {
+    const m = await staticMap({ lat: 0, lng: 0, zoom: 5, template: 'https://huge/{z}/{x}/{y}.png' });
+    assert.ok(m.tiles.every((t) => t === null), 'an oversized tile must not be embedded');
+  });
+  assert.equal(bodyRead, false, 'the body must not be buffered once the header disqualifies it');
+});
+
+test('a body that lies about its length is cut off mid-stream', async () => {
+  // No Content-Length, and a stream that keeps producing. Only an incremental cap
+  // stops this; a length pre-check alone does not.
+  const chunk = new Uint8Array(64 * 1024);
+  await withFetch(async () => ({
+    ok: true,
+    status: 200,
+    headers: { get: (k) => (k.toLowerCase() === 'content-length' ? null : 'image/png') },
+    body: {
+      getReader() {
+        let sent = 0;
+        return {
+          async read() {
+            sent += chunk.length;
+            // Far past TILE_MAX_BYTES; if the cap is not incremental this never ends.
+            if (sent > 64 * 1024 * 1024) return { done: true, value: undefined };
+            return { done: false, value: chunk };
+          },
+          cancel() {},
+        };
+      },
+    },
+  }), async () => {
+    const m = await staticMap({ lat: 0, lng: 0, zoom: 5, template: 'https://liar/{z}/{x}/{y}.png' });
+    assert.ok(m.tiles.every((t) => t === null), 'an over-long stream must not be embedded');
+  });
+});
+
+test('a normal image still comes back whole', async () => {
+  await withFetch(async () => ({
+    ok: true,
+    status: 200,
+    headers: { get: (k) => (k.toLowerCase() === 'content-length' ? '3' : 'image/png') },
+    body: {
+      getReader() {
+        let done = false;
+        return {
+          async read() {
+            if (done) return { done: true, value: undefined };
+            done = true;
+            return { done: false, value: new Uint8Array([1, 2, 3]) };
+          },
+          cancel() {},
+        };
+      },
+    },
+  }), async () => {
+    const m = await staticMap({ lat: 0, lng: 0, zoom: 5, template: 'https://streamed/{z}/{x}/{y}.png' });
+    assert.ok(m.tiles.some((t) => t && t.startsWith('data:image/png;base64,')));
+  });
+});

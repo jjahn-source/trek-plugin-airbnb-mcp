@@ -4,7 +4,7 @@ const { definePlugin } = require('trek-plugin-sdk');
 const { McpClient, McpError } = require('./mcp');
 const { normalizeSearch, normalizeListing, placeCandidates } = require('./normalize')
 const {
-  staticMap, DEFAULT_TILE_URL, DEFAULT_TILE_URL_DARK, OSM_TILE_URL, attributionFor, imageContentType,
+  staticMap, DEFAULT_TILE_URL, DEFAULT_TILE_URL_DARK, OSM_TILE_URL, attributionFor, fetchImageAsDataUri,
 } = require('./map');
 const commute = require('./commute');
 const { registerClient } = require('./register');
@@ -607,17 +607,19 @@ module.exports = definePlugin({
         const url = parsePhotoUrl(req.query && req.query.url, new URL(mcpUrl(ctx)).hostname);
         if (!url) return reply(400, { error: 'unsupported photo URL' });
         const key = url.toString();
-        if (photoCache.has(key)) return reply(200, { dataUri: photoCache.get(key) });
+        if (photoCache.has(key)) {
+          // Re-insert, so this is the LRU the comment above claims. A plain Map evicts
+          // the oldest INSERTED entry, discarding the photos a browsing session keeps
+          // returning to while untouched ones survive.
+          const hit = photoCache.get(key);
+          photoCache.delete(key);
+          photoCache.set(key, hit);
+          return reply(200, { dataUri: hit });
+        }
         try {
-          const res = await fetch(key, { signal: AbortSignal.timeout(10000) });
-          if (!res.ok) return reply(502, { error: `photo fetch failed (${res.status})` });
-          // Named subtypes, not an `image/` prefix: this string is concatenated into the
-          // data: URI the frame puts in an <img src>. See imageContentType in map.js.
-          const type = imageContentType(res.headers.get('content-type'));
-          if (!type) return reply(502, { error: 'not an image' });
-          const buf = Buffer.from(await res.arrayBuffer());
-          if (buf.length > PHOTO_MAX_BYTES) return reply(502, { error: 'image too large' });
-          const dataUri = `data:${type};base64,${buf.toString('base64')}`;
+          // Shared with the map tiles: same trust boundary, same subtype allow-list,
+          // same refusal to hold an unbounded body in memory.
+          const dataUri = await fetchImageAsDataUri(key, { maxBytes: PHOTO_MAX_BYTES, timeoutMs: 10000 });
           if (photoCache.size >= PHOTO_CACHE_MAX) photoCache.delete(photoCache.keys().next().value);
           photoCache.set(key, dataUri);
           return reply(200, { dataUri });

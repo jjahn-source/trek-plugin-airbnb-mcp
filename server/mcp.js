@@ -39,7 +39,7 @@ function parseBody(contentType, text) {
     if (!payload) continue;
     try {
       const msg = JSON.parse(payload);
-      if (msg && Object.prototype.hasOwnProperty.call(msg, 'id')) found = msg;
+      if (msg && Object.hasOwn(msg, 'id')) found = msg;
     } catch {
       /* a partial or non-JSON frame is not fatal — keep scanning */
     }

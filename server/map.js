@@ -131,15 +131,76 @@ function imageContentType(raw) {
   return /^image\/(png|jpeg|jpg|webp|gif|avif)$/.test(type) ? type : null;
 }
 
-async function fetchTile(url) {
-  if (tileCache.has(url)) return tileCache.get(url);
-  const res = await fetch(url, { headers: { 'User-Agent': TILE_UA }, signal: AbortSignal.timeout(8000) });
-  if (!res.ok) throw new Error(`tile ${res.status}`);
+/**
+ * Fetch a remote image and return it as a `data:` URI, refusing to hold more than
+ * `maxBytes` of it in memory at any point.
+ *
+ * The cap has to bite BEFORE the bytes land. `arrayBuffer()` reads the whole body and
+ * checks its length afterwards, which bounds nothing: a host that is allowed but
+ * compromised can return hundreds of megabytes inside the timeout, and a map request
+ * fans out to nine tiles at once, so one request multiplies it. A timeout limits time,
+ * never volume.
+ *
+ * So: refuse a declared Content-Length over the cap without reading anything, then
+ * read incrementally and stop the moment the running total passes it — because a body
+ * is free to lie about its length, or omit one.
+ *
+ * Shared by the map tiles and by /photo in index.js. Both embed third-party bytes into
+ * the frame the same way and are reachable by the same abuse; keeping one
+ * implementation is what stops a fix landing in only one of them.
+ */
+async function fetchImageAsDataUri(url, { maxBytes, headers, timeoutMs = 8000 } = {}) {
+  const res = await fetch(url, { headers, signal: AbortSignal.timeout(timeoutMs) });
+  if (!res.ok) throw new Error(`image ${res.status}`);
+
   const type = imageContentType(res.headers.get('content-type'));
-  if (!type) throw new Error('tile is not an image');
-  const buf = Buffer.from(await res.arrayBuffer());
-  if (buf.length > TILE_MAX_BYTES) throw new Error('tile too large');
-  const dataUri = `data:${type};base64,${buf.toString('base64')}`;
+  if (!type) throw new Error('not an image');
+
+  const declared = Number(res.headers.get('content-length'));
+  if (Number.isFinite(declared) && declared > maxBytes) throw new Error('image too large');
+
+  // A body-less response object (or a runtime without streams) still has to work;
+  // fall back to buffering, which is bounded by the declared length checked above.
+  if (!res.body || typeof res.body.getReader !== 'function') {
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length > maxBytes) throw new Error('image too large');
+    return `data:${type};base64,${buf.toString('base64')}`;
+  }
+
+  const reader = res.body.getReader();
+  const chunks = [];
+  let total = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+      total += value.length;
+      if (total > maxBytes) throw new Error('image too large');
+      chunks.push(Buffer.from(value));
+    }
+  } finally {
+    // Stop the transfer rather than letting a refused body run to completion.
+    try { await reader.cancel(); } catch { /* already closed */ }
+  }
+  return `data:${type};base64,${Buffer.concat(chunks).toString('base64')}`;
+}
+
+async function fetchTile(url) {
+  if (tileCache.has(url)) {
+    // Re-insert so the cache is the LRU its comment claims: a plain Map evicts the
+    // oldest INSERTED entry, which throws out the tiles a busy area keeps asking for
+    // while cold ones sit untouched.
+    const hit = tileCache.get(url);
+    tileCache.delete(url);
+    tileCache.set(url, hit);
+    return hit;
+  }
+  const dataUri = await fetchImageAsDataUri(url, {
+    maxBytes: TILE_MAX_BYTES,
+    headers: { 'User-Agent': TILE_UA },
+    timeoutMs: 8000,
+  });
   if (tileCache.size >= CACHE_MAX) tileCache.delete(tileCache.keys().next().value);
   tileCache.set(url, dataUri);
   return dataUri;
@@ -195,6 +256,6 @@ async function staticMap({ lat, lng, zoom = 14, template }) {
 }
 
 module.exports = {
-  staticMap, project, tileUrl, TILE, GRID, imageContentType,
+  staticMap, project, tileUrl, TILE, GRID, imageContentType, fetchImageAsDataUri,
   DEFAULT_TILE_URL, DEFAULT_TILE_URL_DARK, DEFAULT_ATTRIBUTION, OSM_ATTRIBUTION, OSM_TILE_URL, attributionFor,
 };

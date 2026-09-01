@@ -604,6 +604,54 @@
 
   function setStatus(msg) { $('status').textContent = msg || ''; }
 
+  /* --------------------------------------------------------- view preferences */
+
+  /**
+   * Sort and Travel-by are the traveller's own view of a result set, not part of the
+   * search, so the server-side restore cache does not carry them — and they reset on
+   * every tab switch. The bridge offers per-tab state scoped to the trip; use it.
+   *
+   * Reads are RACED against a timer and never awaited on their own. The session
+   * protocol is answered by the host, and a host that ignores it leaves the promise
+   * unresolved forever — which would hang boot on a preference nobody would miss.
+   * A preference is worth remembering, never worth a blank tab.
+   */
+  var VIEW_KEY = 'view-prefs';
+
+  function sessionGet(key) {
+    try {
+      return Promise.race([
+        trek.session.get(key, { scope: 'trip' }),
+        new Promise(function (resolve) { setTimeout(function () { resolve(undefined); }, 1200); }),
+      ]).catch(function () { return undefined; });
+    } catch (_) {
+      return Promise.resolve(undefined);
+    }
+  }
+
+  function saveViewPrefs() {
+    try {
+      // Fire-and-forget: the control has already moved on screen, and a refused write
+      // (quota, no trip context) must not surface as an error the traveller can act on.
+      Promise.resolve(trek.session.set(VIEW_KEY, {
+        sort: $('sort').value,
+        commuteMode: $('commute-mode').value,
+      }, { scope: 'trip' })).catch(function () {});
+    } catch (_) { /* no session bridge on this host */ }
+  }
+
+  async function loadViewPrefs() {
+    var prefs = await sessionGet(VIEW_KEY);
+    if (!prefs || typeof prefs !== 'object') return;
+    // Only accept a value the control actually offers — stored state is not a reason
+    // to put a <select> into a state it has no option for.
+    var has = function (sel, v) {
+      return !!v && Array.prototype.some.call($(sel).options, function (o) { return o.value === v; });
+    };
+    if (has('sort', prefs.sort)) $('sort').value = prefs.sort;
+    if (has('commute-mode', prefs.commuteMode)) $('commute-mode').value = prefs.commuteMode;
+  }
+
   /** Render one of the pre-search states: unconfigured, or not yet connected. */
   function renderGate(state) {
     var gate = $('gate');
@@ -1088,6 +1136,7 @@
     // entirely made rows of different heights, which read as broken rather than sparse.
     var pics = Array.isArray(l.photos) ? l.photos : [];
     var at = Math.max(0, Math.min(pics.length - 1, Number(cardPhotoIndex[String(l.id)]) || 0));
+    var dotAt = Math.min(at, 5);
     var media = pics.length
       ? '<img class="thumb" alt="Photo ' + (at + 1) + ' of ' + pics.length + ' for ' + esc(l.name) + '" ' +
           'loading="lazy" data-card-at="' + at + '" data-photo="' + esc(pics[at]) + '" />'
@@ -1097,8 +1146,12 @@
           'aria-label="Previous photo for ' + esc(l.name) + '"' + (at === 0 ? ' disabled' : '') + '>&#8249;</button>' +
         '<button class="card-photo-nav card-photo-next" type="button" data-photo-nav="1" ' +
           'aria-label="Next photo for ' + esc(l.name) + '"' + (at === pics.length - 1 ? ' disabled' : '') + '>&#8250;</button>' +
+        // Six dots at most, but they have to keep MEANING something past the sixth
+        // photo: rendering only the first six and then toggling by raw index left no
+        // dot current at all once the traveller stepped beyond them. Clamp the marked
+        // dot to the last one instead, so it reads as "at or past the end".
         '<div class="card-dots" aria-hidden="true">' + pics.slice(0, 6).map(function (_, i) {
-          return '<span class="card-dot' + (i === at ? ' is-current' : '') + '"></span>';
+          return '<span class="card-dot' + (i === dotAt ? ' is-current' : '') + '" data-dot="' + i + '"></span>';
         }).join('') + '</div>'
       : '';
     return '' +
@@ -1247,21 +1300,40 @@
     }
   }
 
-  /** Data URIs already fetched this session, keyed by the original photo URL. */
-  var photoCache = {};
+  /**
+   * Data URIs already fetched this session, keyed by the original photo URL.
+   *
+   * Bounded, unlike every server-side cache here, which it used not to be: each entry
+   * is a base64 image up to the proxy's 3 MB cap, and a long session across many
+   * searches grew this forever inside the frame. A Map keeps insertion order, so the
+   * oldest goes when the lid is reached — and a hit re-inserts, making it a real LRU
+   * rather than a queue that discards the photos being looked at.
+   */
+  var PHOTO_CACHE_MAX = 150;
+  var photoCache = new Map();
   var photoPending = {};
+
+  function cachePhoto(url, data) {
+    if (photoCache.size >= PHOTO_CACHE_MAX) photoCache.delete(photoCache.keys().next().value);
+    photoCache.set(url, data);
+  }
 
   /** Share an in-flight proxy request when the same photo appears in a card and its
    *  detail gallery at once. Apart from saving work, this prevents a slower, older
    *  request from replacing a photo after someone has already pressed Next. */
   function photoData(url) {
     if (!url) return Promise.resolve(null);
-    if (photoCache[url]) return Promise.resolve(photoCache[url]);
+    if (photoCache.has(url)) {
+      var hit = photoCache.get(url);
+      photoCache.delete(url);
+      photoCache.set(url, hit);   // most recently used
+      return Promise.resolve(hit);
+    }
     if (photoPending[url]) return photoPending[url];
     photoPending[url] = trek.invoke('/photo?url=' + encodeURIComponent(url))
       .then(function (r) {
         var data = r && r.dataUri ? r.dataUri : null;
-        if (data) photoCache[url] = data;
+        if (data) cachePhoto(url, data);
         return data;
       })
       .catch(function () { return null; })
@@ -1456,8 +1528,8 @@
     runSearch(next, true);
   });
 
-  $('sort').addEventListener('change', render);
-  $('commute-mode').addEventListener('change', loadCommutes);
+  $('sort').addEventListener('change', function () { saveViewPrefs(); render(); });
+  $('commute-mode').addEventListener('change', function () { saveViewPrefs(); loadCommutes(); });
 
   var byId = function (id) {
     for (var i = 0; i < listings.length; i++) { if (String(listings[i].id) === String(id)) return listings[i]; }
@@ -1485,8 +1557,10 @@
       var next = card.querySelector('.card-photo-next');
       if (prev) prev.disabled = nextAt === 0;
       if (next) next.disabled = nextAt === pics.length - 1;
-      Array.prototype.forEach.call(card.querySelectorAll('.card-dot'), function (dot, i) {
-        dot.classList.toggle('is-current', i === nextAt);
+      var dots = card.querySelectorAll('.card-dot');
+      var marked = Math.min(nextAt, dots.length - 1);
+      Array.prototype.forEach.call(dots, function (dot, i) {
+        dot.classList.toggle('is-current', i === marked);
       });
     }
 
@@ -1889,6 +1963,9 @@
       if (!s.configured) return renderGate('unconfigured');
       if (!s.connected) return renderGate('disconnected');
       renderGate('ok');
+      // Before restoring, so the restored grid is sorted and measured the way the
+      // traveller left it rather than snapping into place a moment later.
+      await loadViewPrefs();
       var restored = await restore();
       if (!restored) {
         await seedDefaults();

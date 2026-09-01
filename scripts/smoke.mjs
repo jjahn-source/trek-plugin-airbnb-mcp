@@ -68,6 +68,23 @@ await page.addInitScript(({ results: R, listing: L }) => {
       return;
     }
     if (m.type === 'trek:notify') { window.__lastNotify = m; return; }
+    // Per-tab view state. The real host persists these; standing in for it here is what
+    // keeps a session read from hanging on an unresolved promise.
+    if (m.type === 'trek:session:set') {
+      window.__session = window.__session || {};
+      window.__sessionScopes = window.__sessionScopes || {};
+      window.__sessionScopes[m.key] = m.scope;
+      window.__session[m.key] = m.value;
+      window.postMessage({ type: 'trek:response', requestId: m.requestId, data: undefined }, '*');
+      return;
+    }
+    if (m.type === 'trek:session:get') {
+      window.postMessage({
+        type: 'trek:response', requestId: m.requestId,
+        data: (window.__session || {})[m.key],
+      }, '*');
+      return;
+    }
     if (m.type === 'trek:invoke') {
       window.__record(m.sub, m.method || 'GET', m.body || null);
       const sub = String(m.sub || '').split('?')[0];
@@ -167,6 +184,20 @@ t('previous returns to the prior listing photo',
   await page.locator('[data-details="1"] img[data-card-at]').getAttribute('data-card-at') === '0');
 
 await page.selectOption('#commute-mode', 'walking');
+
+// Sort and Travel-by are the traveller's view of a result set, not part of the search,
+// so the server-side restore cache never carried them and they reset on every tab
+// switch. They now ride the bridge's per-tab, trip-scoped state.
+// Wait for the VALUE, not the key: an earlier sort change already wrote this key, so
+// waiting for its mere existence returns instantly and reads the previous mode.
+await page.waitForFunction(
+  () => (window.__session || {})['view-prefs']?.commuteMode === 'walking',
+  { timeout: 5000 },
+).catch(() => {});
+t('the travel mode is remembered for this trip', await page.evaluate(() => {
+  const v = (window.__session || {})['view-prefs'];
+  return !!v && v.commuteMode === 'walking' && window.__sessionScopes['view-prefs'] === 'trip';
+}), await page.evaluate(() => JSON.stringify((window.__session || {})['view-prefs'] ?? null)));
 await page.waitForFunction(() => document.querySelector('[data-commute="1"]')?.textContent.includes('22 min'));
 t('changing travel mode refreshes the card times', invoked.filter((c) => c.sub === '/commute').length === 2);
 

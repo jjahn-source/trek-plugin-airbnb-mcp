@@ -13,12 +13,19 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      # 24 is what this is developed and released on; 20 is the floor a TREK 4.x host
+      # may still be running, and it stays in the matrix so the floor is TESTED rather
+      # than merely claimed.
+      matrix:
+        node: ['24', '20']
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ matrix.node }}
           cache: npm
 
       - run: npm ci
@@ -30,12 +37,16 @@ jobs:
 
       # The half unit tests cannot reach: pack the plugin, load the real frame with
       # the design kit inlined as it ships, and drive it over the host protocol.
+      # The frame is the same bundle whatever Node built it, so drive the browser once.
       - name: Install Chromium
+        if: matrix.node == '24'
         run: npx playwright install --with-deps chromium
 
       - name: Browser smoke tests
+        if: matrix.node == '24'
         run: npm run smoke
 
       # Every registry gate that can be checked without a release existing.
       - name: Registry gates
+        if: matrix.node == '24'
         run: npx -y trek-plugin-sdk validate .
