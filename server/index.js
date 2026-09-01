@@ -92,7 +92,18 @@ function evict(key) {
 }
 
 function cacheClient(key, client) {
-  if (clientCache.size >= CLIENT_CACHE_MAX) evict(clientCache.keys().next().value);
+  // Two calls that both miss the empty cache both handshake, and only one can have the
+  // slot. Overwriting blindly would drop the loser's client while its MCP session is
+  // still open on OpenBnB's server — the very leak close() exists to prevent, reached
+  // by a race rather than by an eviction. A debounced /places typeahead overlapping a
+  // /search submit is the ordinary way to get here.
+  const existing = clientCache.get(key);
+  if (existing && existing.client !== client) {
+    // Fire-and-forget: the winner is already serving the caller.
+    Promise.resolve(existing.client.close()).catch(() => {});
+  } else if (!existing && clientCache.size >= CLIENT_CACHE_MAX) {
+    evict(clientCache.keys().next().value);
+  }
   clientCache.set(key, { client, createdAt: Date.now() });
 }
 

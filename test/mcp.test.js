@@ -145,3 +145,21 @@ test('close() never throws, even when the server refuses termination', async () 
   await c.close();
   assert.equal(c.sessionId, null);
 });
+
+/**
+ * A gateway in front of the MCP endpoint answers a 502 with an HTML error page and a
+ * non-SSE content type. The SSE branch already tolerates a frame that will not parse;
+ * the plain-JSON branch threw a bare SyntaxError, which is not an McpError — so it
+ * sailed past friendlyError() and put "Unexpected token '<'" on a traveller's screen.
+ */
+test('parseBody turns a non-JSON body into an McpError, not a raw SyntaxError', () => {
+  const html = '<!doctype html><html><body>502 Bad Gateway</body></html>';
+  assert.throws(
+    () => parseBody('text/html', html),
+    (err) => {
+      assert.ok(err instanceof McpError, `expected McpError, got ${err.name}`);
+      assert.doesNotMatch(err.message, /Unexpected token/, 'the parser error must not be the message');
+      return true;
+    },
+  );
+});

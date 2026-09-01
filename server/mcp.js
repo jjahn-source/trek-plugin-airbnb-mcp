@@ -19,7 +19,17 @@ const DEFAULT_TIMEOUT_MS = 20000;
  * the whole body and branch on content-type.
  */
 function parseBody(contentType, text) {
-  if (!contentType.includes('text/event-stream')) return JSON.parse(text);
+  if (!contentType.includes('text/event-stream')) {
+    // A gateway in front of the endpoint answers a 502 with an HTML error page and a
+    // non-SSE content type. A bare SyntaxError from here is not an McpError, so it
+    // slips past friendlyError() and reaches the traveller as "Unexpected token '<'".
+    // The SSE branch below already tolerates a frame that will not parse; so must this.
+    try {
+      return JSON.parse(text);
+    } catch {
+      throw new McpError('OpenBnB answered with something that was not JSON', 'RPC');
+    }
+  }
   // Take the LAST data: frame that parses as a JSON-RPC response — a stream may
   // interleave progress notifications ahead of the actual result.
   let found = null;

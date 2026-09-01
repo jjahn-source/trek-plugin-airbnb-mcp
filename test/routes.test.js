@@ -667,3 +667,27 @@ test('/photo still embeds a genuine image', async () => {
     globalThis.fetch = real;
   }
 });
+
+/**
+ * Two searches fired before either has finished both miss the empty cache, so both
+ * build a client and both handshake. Only one can occupy the cache key — and the loser
+ * used to be dropped on the floor with a live session still open on OpenBnB's server.
+ *
+ * That is the leak close() exists to prevent, arrived at from the other direction: a
+ * debounced /places typeahead racing a /search submit is the ordinary way to get here,
+ * not a pathological one.
+ */
+test('a concurrent first search does not abandon the session it loses to', async (t) => {
+  const mcp = mutableMcp(t);
+  const driver = host({ oauthAccessToken: 'race-token' }).run(plugin);
+
+  await Promise.all([
+    driver.route({ method: 'POST', path: '/search' }, { body: { location: 'Paris' } }),
+    driver.route({ method: 'POST', path: '/search' }, { body: { location: 'Lyon' } }),
+  ]);
+  // The DELETE is fire-and-forget, so let the microtask queue drain.
+  await new Promise((r) => setTimeout(r, 20));
+
+  assert.equal(mcp.inits, 2, 'both callers legitimately handshook — that is the race');
+  assert.equal(mcp.deletes, 1, 'the client that lost the cache slot was terminated, not leaked');
+});
