@@ -259,6 +259,18 @@ if (shots > 1) {
   t('the carousel starts on the photo that was clicked',
     (await page.locator('#lb-count').innerText()).trim().startsWith('1 /'));
   t('previous is disabled on the first photo', await page.locator('#lb-prev').isDisabled());
+
+  // It declares aria-modal="true" and sits last in the document, so without a trap
+  // Shift+Tab walks backwards into the search bar and result cards — live controls
+  // sitting under an opaque backdrop.
+  t('the carousel takes the page behind it out of the tab order',
+    await page.evaluate(() => !!document.querySelector('.trek-scroll')?.inert));
+  await page.keyboard.down('Shift');
+  await page.keyboard.press('Tab');
+  await page.keyboard.up('Shift');
+  t('Shift+Tab from the close button stays inside the carousel',
+    await page.evaluate(() => !!document.getElementById('lb')?.contains(document.activeElement)),
+    await page.evaluate(() => document.activeElement?.id || document.activeElement?.tagName));
   await page.locator('#lb-next').click();
   t('next advances the carousel',
     (await page.locator('#lb-count').innerText()).trim().startsWith('2 /'));
@@ -387,6 +399,15 @@ t('the adult stepper will not go below one',
 
 // 9. filters live in a popover and say how many are active
 await page.locator('[data-close-pop="who-pop"]').click();
+
+// Escape, "Done" and "Show stays" all live INSIDE the panel they close, and [hidden]
+// is display:none — so hiding the panel used to drop focus onto <body>, leaving a
+// keyboard user at the top of the document with no idea where they had been.
+await page.locator('#who-btn').click();
+await page.keyboard.press('Escape');
+t('closing a popover hands focus back to the button that opened it',
+  await page.evaluate(() => document.activeElement?.id === 'who-btn'),
+  await page.evaluate(() => document.activeElement?.id || document.activeElement?.tagName));
 await page.locator('#filters-btn').click();
 await page.fill('#minPrice', '80');
 // Place type is a plain <select> the design kit upgrades into an in-document dropdown.

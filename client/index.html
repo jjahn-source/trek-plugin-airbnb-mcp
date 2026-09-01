@@ -16,7 +16,10 @@
        simply clipped at the frame edge with no way to reach the rest of the results.
        html needs the height too, or body's 100% resolves against nothing. */
     [data-fill] { height: 100%; }
-    .trek-scroll { height: 100%; }
+    /* The search bar is sticky and opaque, so the browser's "scroll the focused thing
+       into view" can align a card or the Back button exactly underneath it. Reserve the
+       bar's height plus the host's inset, and focus lands below it instead (WCAG 2.4.11). */
+    .trek-scroll { height: 100%; scroll-padding-top: calc(var(--trek-inset-top, 0px) + 132px); }
     .wrap { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
 
     /* ---------------------------------------------------------------- search bar */
@@ -428,7 +431,7 @@
             <div class="seg">
               <span class="seg-label" id="lbl-where">Where</span>
               <input class="seg-input" id="location" name="location" required
-                     placeholder="Search destinations" aria-labelledby="lbl-where" aria-label="Where"
+                     placeholder="Search destinations" aria-labelledby="lbl-where"
                      role="combobox" aria-expanded="false" aria-autocomplete="list"
                      aria-controls="suggest" autocomplete="off" />
             </div>
@@ -666,12 +669,28 @@
     'dates-pop': ['checkin-btn', 'checkout-btn'],
   };
 
+  /**
+   * Which button opened the popover currently on screen, so closing can hand focus
+   * back to it.
+   *
+   * `[hidden]` is `display:none !important` here, and hiding the ancestor of the
+   * focused element drops focus to <body> in every browser. So Escape, "Done" and
+   * "Show stays" — all three of which live INSIDE the panel they close — used to
+   * leave a keyboard user at the top of the document with no idea where they were.
+   */
+  var popOpener = null;
+
   function closePops(except) {
+    var hadFocusInside = false;
     Object.keys(POPS).forEach(function (id) {
       if (id === except) return;
-      $(id).hidden = true;
+      var pop = $(id);
+      if (!pop.hidden && pop.contains(document.activeElement)) hadFocusInside = true;
+      pop.hidden = true;
       POPS[id].forEach(function (b) { $(b).setAttribute('aria-expanded', 'false'); });
     });
+    if (hadFocusInside && popOpener && document.contains(popOpener)) popOpener.focus();
+    if (!except) popOpener = null;
   }
 
   function togglePop(popId, btn) {
@@ -680,6 +699,7 @@
     closePops(open ? popId : null);
     pop.hidden = !open;
     btn.setAttribute('aria-expanded', String(open));
+    popOpener = open ? btn : null;
   }
 
   /* ----------------------------------------------------------------- calendar */
@@ -770,6 +790,7 @@
     lastPicked = picking;
     $('checkin-btn').setAttribute('aria-expanded', String(!$('dates-pop').hidden && picking === 'checkin'));
     $('checkout-btn').setAttribute('aria-expanded', String(!$('dates-pop').hidden && picking === 'checkout'));
+    popOpener = $('dates-pop').hidden ? null : $(which === 'checkin' ? 'checkin-btn' : 'checkout-btn');
     renderCalendar();
   }
   var lastPicked = null;
@@ -937,6 +958,10 @@
   function hideSuggest() {
     $('suggest').hidden = true;
     $('location').setAttribute('aria-expanded', 'false');
+    // Set on arrow-key movement and never cleared, this pointed at an option id that
+    // renderSuggest had since rebuilt or removed — so a screen reader announced an
+    // active option that was not there. It belongs to an OPEN list only.
+    $('location').removeAttribute('aria-activedescendant');
     suggestIndex = -1;
   }
 
@@ -1384,10 +1409,20 @@
       var data = await trek.invoke('/search', { method: 'POST', body: params });
       lastParams = params;
       listings = append ? listings.concat(data.results || []) : (data.results || []);
+      // A new search is a new result set. Keeping the carousel positions meant a
+      // listing that reappeared in an unrelated search opened on whatever photo it was
+      // left on, and the map grew for the life of the tab.
+      if (!append) cardPhotoIndex = {};
       cursor = data.cursor || null;
       commuteTimes = {};
-      setStatus('');
       render();
+      // Announce the OUTCOME, not silence. This used to clear the live region the
+      // moment the search returned, so a screen-reader user heard "Searching Airbnb…"
+      // and then nothing — no count, and no word that zero matched. The count chip is
+      // not a live region and cannot carry this.
+      setStatus(listings.length
+        ? listings.length + (cursor ? '+' : '') + (listings.length === 1 ? ' stay found' : ' stays found')
+        : 'No stays matched. Try widening the dates or clearing a filter.');
       loadCommutes();
     } catch (e) {
       // 403/401 mean the account link is missing or stale — send the user to fix it
@@ -1576,9 +1611,28 @@
     lbRender();
   }
 
+  /**
+   * Everything focusable inside the lightbox, in tab order.
+   *
+   * The dialog declares aria-modal="true" and sits LAST in the document, so without a
+   * trap forward-Tab left the page entirely and Shift+Tab walked backwards into the
+   * search bar and result cards — live controls sitting under an 88%-opaque backdrop.
+   */
+  function lbFocusables() {
+    return Array.prototype.filter.call(
+      $('lb').querySelectorAll('button:not([disabled]), [tabindex="0"]'),
+      function (el) { return el.offsetWidth > 0 || el.offsetHeight > 0; },
+    );
+  }
+
   function lbClose() {
     $('lb').hidden = true;
     document.body.classList.remove('lb-open');
+    // Hiding the backdrop is not the same as removing what is behind it from the tab
+    // order and the accessibility tree; `inert` is the part that actually honours the
+    // aria-modal claim.
+    var page = document.querySelector('.trek-scroll');
+    if (page) page.inert = false;
     lbPics = [];
     if (lbReturn && document.contains(lbReturn)) lbReturn.focus();
     lbReturn = null;
@@ -1602,6 +1656,8 @@
     }).join('');
     $('lb').hidden = false;
     document.body.classList.add('lb-open');
+    var page = document.querySelector('.trek-scroll');
+    if (page) page.inert = true;
     lbRender();
     $('lb-close').focus();
   }
@@ -1626,6 +1682,18 @@
       if (t && (e.key === 'Enter' || e.key === ' ')) {
         e.preventDefault(); lbOpen(Number(t.getAttribute('data-lb')) || 0);
       }
+      return;
+    }
+    if (e.key === 'Tab') {
+      // Cycle within the dialog. `inert` already removes the page behind it, so this
+      // only has to close the loop at the two ends.
+      var items = lbFocusables();
+      if (!items.length) return;
+      var first = items[0];
+      var last = items[items.length - 1];
+      var at = document.activeElement;
+      if (e.shiftKey && (at === first || !$('lb').contains(at))) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && (at === last || !$('lb').contains(at))) { e.preventDefault(); first.focus(); }
       return;
     }
     if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); lbClose(); }
