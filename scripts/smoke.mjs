@@ -525,7 +525,8 @@ await page.keyboard.press('Escape');
         // settings form, so nothing is configured and every required key is missing.
         const data = sub === '/status'
           ? { configured: false, connected: false,
-              missing: ['oauth_authorize_url', 'oauth_token_url', 'oauth_client_id', 'oauth_client_secret'] }
+              missing: ['oauth_authorize_url', 'oauth_token_url', 'oauth_client_id', 'oauth_client_secret'],
+              missingLabels: ['OAuth authorize URL', 'OAuth token URL', 'OAuth client id', 'OAuth client secret'] }
           : {};
         window.postMessage({ type: 'trek:response', requestId: m.requestId, data }, '*');
       }
@@ -535,8 +536,19 @@ await page.keyboard.press('Escape');
   await page3.waitForSelector('#gate .trek-title', { timeout: 10000 });
   const gateText = await page3.locator('#gate').innerText();
   t('unconfigured instance explains what the admin must do', /administrator/i.test(gateText));
-  t('the gate names the exact settings that are still missing',
-    /oauth_client_id/.test(gateText) && /oauth_client_secret/.test(gateText), gateText.slice(0, 160));
+  // By their FORM LABEL, not their storage key: the gate sends the admin to the settings
+  // form, and "OAuth client id" is a field they can point at where `oauth_client_id` is not.
+  t('the gate names the still-blank settings the way the form labels them',
+    /OAuth client id/.test(gateText) && /OAuth client secret/.test(gateText), gateText.slice(0, 200));
+
+  // The setup story is now the button, not a CLI. An admin who installed this from the
+  // registry has no repo to run a script in, so leading with one stranded exactly the
+  // person most likely to be reading this panel.
+  t('the gate walks through the setup steps and leads with the button, not a CLI',
+    /Register with OpenBnB/i.test(gateText)
+      && /This TREK server/i.test(gateText)
+      && !/npm run register/i.test(gateText),
+    gateText.slice(0, 320));
   // Described by capability, never by a version number. The gate has to serve both hosts
   // at once — it points at the Instance settings menu first, and still names the admin
   // API for a TREK that has no such menu — because it cannot tell which one it is on.

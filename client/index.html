@@ -291,6 +291,18 @@
     @keyframes sk { 0%, 100% { opacity: .55 } 50% { opacity: .95 } }
     @media (prefers-reduced-motion: reduce) { .sk-box { animation: none } }
 
+    .setup-steps {
+      margin: 0; padding-left: 20px; display: grid; gap: 7px;
+      font-size: 13px; line-height: 1.5; color: var(--text-secondary);
+    }
+    .setup-still { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-top: 2px; }
+    .setup-list { margin: 4px 0 0; padding: 0; list-style: none; display: grid; gap: 3px; }
+    .setup-list li {
+      display: flex; align-items: baseline; gap: 7px;
+      font-size: 13px; color: var(--text-primary);
+    }
+    .setup-dot { color: var(--warning, var(--text-faint)); font-size: 11px; }
+
     .empty { padding: 40px 16px; text-align: center; }
     .empty-title { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
     .state { max-width: 560px; }
@@ -571,6 +583,7 @@
   var guests = { adults: 2, children: 0 };
   var currentTheme = 'light';
   var missingKeys = [];
+  var missingLabels = [];
 
   var $ = function (id) { return document.getElementById(id); };
   var esc = function (s) {
@@ -593,21 +606,37 @@
       // settings; older 4.x has no such UI and needs the admin API. This panel cannot
       // tell which host it is on, so it points at the menu first and keeps the API as
       // the stated fallback rather than naming a version number either way.
-      var missingHtml = missingKeys.length
-        ? '<p class="trek-muted">Still needed: ' +
-          missingKeys.map(function (k) { return '<code>' + esc(k) + '</code>'; }).join(', ') + '</p>'
+      //
+      // The steps are numbered and the fields are ticked off because this is the one
+      // screen an admin reads while doing the work. It used to open by telling them to
+      // run a CLI in the plugin repo — advice that is useless to the admin most likely
+      // to be standing here, who installed this from the registry and has no checkout.
+      var settingsPath =
+        '<strong>Admin &rarr; Plugins &rarr; Airbnb Stays &rarr; &#8943; &rarr; Instance settings</strong>';
+      var steps = [
+        'Open ' + settingsPath + '.',
+        'Put your TREK address into <strong>This TREK server’s URL</strong> and press <strong>Save</strong>.',
+        'Press <strong>Register with OpenBnB</strong>. It prints a client id and a client secret.',
+        'Paste those two in, and type the two OAuth URLs shown in grey — they are placeholders, not values — then <strong>Save</strong> again.',
+      ];
+      var checklist = missingLabels.length
+        ? '<div class="setup-still">Still blank:</div><ul class="setup-list">' +
+          missingLabels.map(function (label) {
+            return '<li><span class="setup-dot" aria-hidden="true">○</span>' + esc(label) + '</li>';
+          }).join('') + '</ul>'
         : '';
       gate.innerHTML =
         '<div class="trek-glass trek-stack state" style="padding:16px">' +
         '<div class="trek-title">Almost ready</div>' +
-        '<p class="trek-muted">An administrator links this TREK server to OpenBnB once. Run ' +
-        '<code>npm run register -- &lt;your TREK URL&gt;</code> in the plugin repo to get a client id and secret.</p>' +
-        missingHtml +
-        '<p class="trek-muted">Paste them under <strong>Admin &rarr; Plugins &rarr; Airbnb Stays &rarr; ' +
-        '&#8943; &rarr; Instance settings</strong>. On an older TREK with no such menu, send the same values ' +
-        'to the admin API instead &mdash; the plugin’s README has the exact command. ' +
-        '<strong>Settings &rarr; Plugins &rarr; Airbnb Stays</strong> then offers a ' +
-        '<strong>Test connection</strong> button that says what is still wrong.</p>' +
+        '<p class="trek-muted">An administrator connects this TREK server to OpenBnB once. ' +
+        'It takes about a minute and needs no account, dashboard or support ticket.</p>' +
+        '<ol class="setup-steps">' +
+        steps.map(function (s) { return '<li>' + s + '</li>'; }).join('') +
+        '</ol>' +
+        checklist +
+        '<p class="trek-muted"><strong>Test connection</strong>, on the same page, then reports the first thing ' +
+        'still wrong. On an older TREK with no Instance settings menu, the same values go to the admin API ' +
+        'instead &mdash; the plugin’s README has the exact command.</p>' +
         '</div>';
       return;
     }
@@ -1710,6 +1739,11 @@
     try {
       var s = await trek.invoke('/status');
       missingKeys = Array.isArray(s.missing) ? s.missing : [];
+      // /status names the gaps twice: `missing` is the storage keys an admin PUTs to
+      // the config API, `missingLabels` is what the settings FORM calls them. The form
+      // is what this panel sends people to, so it reads the labels and falls back to
+      // the keys only on a host too old to send them.
+      missingLabels = Array.isArray(s.missingLabels) && s.missingLabels.length ? s.missingLabels : missingKeys;
       if (!s.configured) return renderGate('unconfigured');
       if (!s.connected) return renderGate('disconnected');
       renderGate('ok');
