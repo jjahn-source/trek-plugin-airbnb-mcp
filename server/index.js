@@ -3,7 +3,7 @@
 const { definePlugin } = require('trek-plugin-sdk');
 const { McpClient, McpError } = require('./mcp');
 const { normalizeSearch, normalizeListing, placeCandidates } = require('./normalize')
-const { staticMap, DEFAULT_TILE_URL, DEFAULT_TILE_URL_DARK, attributionFor } = require('./map');
+const { staticMap, DEFAULT_TILE_URL, DEFAULT_TILE_URL_DARK, attributionFor, imageContentType } = require('./map');
 const commute = require('./commute');
 
 const DEFAULT_MCP_URL = 'https://mcp.openbnb.ai/mcp';
@@ -536,8 +536,10 @@ module.exports = definePlugin({
         try {
           const res = await fetch(key, { signal: AbortSignal.timeout(10000) });
           if (!res.ok) return reply(502, { error: `photo fetch failed (${res.status})` });
-          const type = (res.headers.get('content-type') || '').split(';')[0].trim();
-          if (!type.startsWith('image/')) return reply(502, { error: 'not an image' });
+          // Named subtypes, not an `image/` prefix: this string is concatenated into the
+          // data: URI the frame puts in an <img src>. See imageContentType in map.js.
+          const type = imageContentType(res.headers.get('content-type'));
+          if (!type) return reply(502, { error: 'not an image' });
           const buf = Buffer.from(await res.arrayBuffer());
           if (buf.length > PHOTO_MAX_BYTES) return reply(502, { error: 'image too large' });
           const dataUri = `data:${type};base64,${buf.toString('base64')}`;

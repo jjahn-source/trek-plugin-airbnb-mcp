@@ -100,3 +100,36 @@ test('columns wrap around the antimeridian instead of going negative', async () 
   });
   assert.ok(asked.every((u) => !u.includes('/-')), asked.join(','));
 });
+
+/**
+ * The content type is not just a gate, it is CONCATENATED into the `data:` URI the
+ * client puts in an <img src>. A tile server that answers
+ *   Content-Type: image/png" onerror="…
+ * would otherwise close the src attribute and open an event handler inside the frame.
+ * `startsWith('image/')` passes that string happily, so the check has to name the
+ * subtypes it accepts rather than describe the prefix it wants.
+ */
+test('a content type that only STARTS as an image is refused', async () => {
+  const crafted = 'image/png" onerror="alert(1)';
+  await withFetch(async () => ({
+    ok: true,
+    headers: { get: () => crafted },
+    arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer,
+  }), async () => {
+    const m = await staticMap({ lat: 0, lng: 0, zoom: 5, template: 'https://crafted/{z}/{x}/{y}.png' });
+    assert.ok(m.tiles.every((t) => t === null), 'a crafted content type must yield no tile');
+  });
+});
+
+test('the real image subtypes are still accepted', async () => {
+  for (const [type, host] of [['image/png', 'png'], ['image/jpeg', 'jpeg'], ['image/webp', 'webp']]) {
+    await withFetch(async () => ({
+      ok: true,
+      headers: { get: () => type },
+      arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer,
+    }), async () => {
+      const m = await staticMap({ lat: 0, lng: 0, zoom: 5, template: `https://${host}/{z}/{x}/{y}.png` });
+      assert.ok(m.tiles.some((t) => t && t.startsWith(`data:${type};base64,`)), type);
+    });
+  }
+});

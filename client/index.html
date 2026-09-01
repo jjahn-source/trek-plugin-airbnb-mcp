@@ -135,8 +135,22 @@
     .pop-dates { right: 0; padding: 16px; }
     /* Wide enough for the price row at its natural size: label (~100) + gap (16) +
        input (76) + dash (~10) + gap (12) + input (76), inside 14px padding each side. */
-    .pop-filters { min-width: 320px; }
+    .pop-filters {
+      box-sizing: border-box; width: 350px; min-width: 0;
+      max-width: calc(100vw - 56px);
+    }
     .pop-filters .stepper .trek-input { width: 76px; }
+
+    /* The filter trigger sits about 28px from the frame's left edge. Keep the panel
+       inside that same gutter on a phone, then stack each label over its control so
+       the price fields and full place-type names have room instead of colliding. */
+    @media (max-width: 480px) {
+      .pop-filters .pop-row { align-items: stretch; flex-direction: column; gap: 8px; }
+      .pop-filters .stepper { width: 100%; }
+      .pop-filters .stepper .trek-input { flex: 1 1 0; width: auto; min-width: 0; }
+      .pop-filters .pt, .pop-filters .pt-btn { box-sizing: border-box; width: 100%; }
+      .pop-filters .pt-list { left: 0; right: 0; }
+    }
 
     /* Calendar — deliberately the same visual language as TREK's own date picker:
        narrow weekday initials, a 7-column grid, 32px cells, accent for the selection. */
@@ -193,11 +207,13 @@
       display: flex; flex-direction: column; gap: 8px; padding: 0;
       background: none; border: 0; box-shadow: none; cursor: pointer;
     }
-    .card-media { position: relative; }
+    .card-media { position: relative; overflow: hidden; border-radius: 14px; }
     .thumb {
       width: 100%; aspect-ratio: 20 / 19; object-fit: cover; display: block;
       border-radius: 14px; background: var(--bg-tertiary, var(--bg-hover));
+      transition: opacity .15s var(--trek-ease, ease);
     }
+    .thumb.is-loading { opacity: .72; }
     .thumb-empty {
       width: 100%; aspect-ratio: 20 / 19; border-radius: 14px;
       background: var(--bg-tertiary, var(--bg-hover));
@@ -217,7 +233,7 @@
       border: 0; border-radius: 50%; cursor: pointer; font-size: 17px; line-height: 1;
       background: var(--bg-card); color: var(--text-primary);
       box-shadow: var(--shadow-sm, var(--shadow-card));
-      transition: transform .15s var(--trek-ease, ease);
+      transition: transform .15s var(--trek-ease, ease); z-index: 3;
     }
     .card-add:hover:not(:disabled) { transform: scale(1.08); }
     .card-add:disabled { opacity: .55; cursor: default; }
@@ -226,6 +242,29 @@
        strengthens it. */
     .card-add { opacity: .92; }
     .card:hover .card-add, .card-add:focus-visible, .card-add.is-done { opacity: 1; }
+    .card-photo-nav {
+      position: absolute; z-index: 2; top: 50%; transform: translateY(-50%);
+      width: 30px; height: 30px; border: 0; border-radius: 50%; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+      background: color-mix(in srgb, var(--bg-card) 92%, transparent);
+      color: var(--text-primary); box-shadow: var(--shadow-sm, var(--shadow-card));
+      font-size: 18px; line-height: 1; opacity: .92;
+      transition: opacity .15s var(--trek-ease, ease), transform .15s var(--trek-ease, ease);
+    }
+    .card-photo-prev { left: 8px; }
+    .card-photo-next { right: 8px; }
+    .card:hover .card-photo-nav:not(:disabled), .card-photo-nav:focus-visible { opacity: 1; }
+    .card-photo-nav:hover:not(:disabled) { transform: translateY(-50%) scale(1.06); }
+    .card-photo-nav:disabled { opacity: 0; pointer-events: none; }
+    .card-dots {
+      position: absolute; z-index: 2; left: 50%; bottom: 9px; transform: translateX(-50%);
+      display: flex; align-items: center; gap: 4px; pointer-events: none;
+    }
+    .card-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: rgba(255,255,255,.58); box-shadow: 0 1px 2px rgba(0,0,0,.28);
+    }
+    .card-dot.is-current { width: 6px; height: 6px; background: #fff; }
     .card-line { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
     .card-name {
       font-weight: 600; font-size: 14px; line-height: 1.35; color: var(--text-primary);
@@ -265,12 +304,26 @@
       position: relative; height: 240px; max-width: 620px; border-radius: 14px; overflow: hidden;
       background: var(--bg-tertiary, var(--bg-hover)); border: 1px solid var(--border-primary);
     }
-    .map-mosaic { position: absolute; display: grid; }
+    /* The mosaic is 768px square and the box shows ~620x240 of it, so most of the
+       neighbourhood was simply cropped away. The tiles are already paid for — let the
+       reader pan around them instead of throwing five sixths of the map out. The
+       scroller is a child rather than the box itself so the attribution can stay pinned
+       to a corner instead of scrolling off with the tiles. */
+    .map-scroll {
+      position: absolute; inset: 0; overflow: auto; overscroll-behavior: contain;
+      cursor: grab; scrollbar-width: thin;
+    }
+    .map-scroll.is-panning { cursor: grabbing; }
+    .map-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+    .map-scroll::-webkit-scrollbar-thumb {
+      border-radius: 999px; background: color-mix(in srgb, var(--text-muted) 40%, transparent);
+    }
+    .map-mosaic { position: relative; display: grid; }
     .map-mosaic img { display: block; width: 256px; height: 256px; }
     /* An approximate circle, not a pin: Airbnb only publishes a rough location before
        booking, and a pin would claim precision the data does not have. */
     .map-area {
-      position: absolute; width: 116px; height: 116px; border-radius: 50%;
+      position: absolute; z-index: 1; width: 116px; height: 116px; border-radius: 50%;
       background: color-mix(in srgb, var(--accent) 22%, transparent);
       border: 2px solid var(--accent); transform: translate(-50%, -50%); pointer-events: none;
     }
@@ -280,9 +333,93 @@
       font-size: 10px; color: var(--text-muted);
     }
     .map-note { font-size: 12px; color: var(--text-muted); margin: 6px 0 0; }
-    .detail-photos { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
-    .detail-photos img { height: 190px; border-radius: 12px; flex: 0 0 auto; }
-    .amenities { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+    .detail-photos {
+      display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;
+      scroll-snap-type: x mandatory; overscroll-behavior-x: contain;
+    }
+    .detail-photos img {
+      height: 190px; border-radius: 12px; flex: 0 0 auto; cursor: zoom-in;
+      scroll-snap-align: start; transition: transform .15s var(--trek-ease, ease);
+    }
+    .detail-photos img:hover, .detail-photos img:focus-visible { transform: scale(1.02); }
+
+    /* ------------------------------------------------------------------ lightbox */
+    /* The strip shows five thumbnails of a listing that ships thirty. Opening one full
+       size, with the rest a keypress away, is the difference between glancing at a
+       place and actually looking at it. */
+    .lb { position: fixed; inset: 0; z-index: 80; display: flex; flex-direction: column;
+      background: color-mix(in srgb, #000 88%, transparent); }
+    .lb-stage { flex: 1; display: flex; align-items: center; justify-content: center;
+      min-height: 0; padding: 8px 56px; }
+    .lb-stage img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 10px; }
+    .lb-nav {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      width: 44px; height: 44px; border-radius: 50%; border: 0; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+      background: var(--bg-card); color: var(--text-primary);
+      font-size: 20px; line-height: 1; box-shadow: var(--shadow-md, var(--shadow-card));
+    }
+    .lb-nav:hover { background: var(--bg-hover); }
+    .lb-nav:disabled { opacity: .35; cursor: default; }
+    .lb-prev { left: 12px; }
+    .lb-next { right: 12px; }
+    .lb-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 10px 14px; color: #fff; font-size: 13px; }
+    .lb-close {
+      width: 34px; height: 34px; border-radius: 50%; border: 0; cursor: pointer;
+      background: var(--bg-card); color: var(--text-primary); font-size: 16px; line-height: 1;
+    }
+    /* A filmstrip so the reader can jump rather than only step. */
+    .lb-strip { display: flex; gap: 6px; overflow-x: auto; padding: 0 14px 12px; }
+    .lb-strip img {
+      height: 56px; border-radius: 6px; flex: 0 0 auto; cursor: pointer;
+      opacity: .5; transition: opacity .15s var(--trek-ease, ease);
+    }
+    .lb-strip img.is-current { opacity: 1; outline: 2px solid var(--accent); outline-offset: 1px; }
+    body.lb-open .trek-scroll { overflow: hidden; }
+    @media (max-width: 560px) {
+      .lb-stage { padding: 8px 12px; }
+      .lb-nav { width: 38px; height: 38px; }
+    }
+
+    /* ------------------------------------------------- place-type listbox */
+    /* A native <select> inside a plugin frame drops its option list through the iframe
+       edge, where it is clipped mid-word ("Entire hom…"). The frame cannot grow to fit
+       an OS popup, so the menu is drawn in the document instead — inside the popover
+       that owns it, where there is always room. */
+    .pt { position: relative; }
+    .pt-btn {
+      display: inline-flex; align-items: center; justify-content: space-between; gap: 8px;
+      min-width: 148px; padding: 7px 12px; cursor: pointer;
+      border: 1px solid var(--border-primary); border-radius: 10px;
+      background: var(--bg-input, var(--bg-card)); color: var(--text-primary);
+      font: inherit; font-size: 13px; text-align: left;
+    }
+    .pt-btn:hover { background: var(--bg-hover); }
+    .pt-btn[aria-expanded="true"] { border-color: var(--accent); }
+    .pt-caret { flex: 0 0 auto; font-size: 10px; color: var(--text-muted); }
+    .pt-list {
+      position: absolute; top: calc(100% + 6px); right: 0; z-index: 40; min-width: 100%;
+      margin: 0; padding: 6px; list-style: none;
+      background: var(--bg-card); border: 1px solid var(--border-primary);
+      border-radius: 12px; box-shadow: var(--shadow-md, var(--shadow-card));
+      max-height: 220px; overflow-y: auto;
+    }
+    .pt-list li {
+      padding: 8px 12px; border-radius: 8px; cursor: pointer;
+      font-size: 13px; color: var(--text-primary); white-space: nowrap;
+    }
+    .pt-list li:hover, .pt-list li[aria-selected="true"] { background: var(--bg-hover); }
+    .pt-list li[aria-selected="true"] { font-weight: 600; }
+    .amenities { display: grid; gap: 14px 20px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+    /* The kit gives .trek-field-value nowrap + ellipsis, which suits a one-word value
+       and destroys an amenity list: "Bath, Hairdryer, Shampoo, Conditio…" hides most of
+       what the reader came to check. Specificity beats `.trek-field > .trek-field-value`
+       so the typography is kept and only the clipping is undone. */
+    .amenities .trek-field > .trek-field-value {
+      white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.5;
+    }
+    .amenities .trek-field { min-width: 0; }
     .detail-desc { white-space: pre-wrap; line-height: 1.5; margin: 0; }
     .sr-only {
       position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
@@ -392,14 +529,17 @@
                 </div>
               </div>
               <div class="pop-row">
-                <div class="pop-row-label">Place type</div>
-                <select class="trek-select" id="propertyType" aria-label="Place type">
-                  <option value="">Any</option>
-                  <option value="entire_home">Entire home</option>
-                  <option value="private_room">Private room</option>
-                  <option value="shared_room">Shared room</option>
-                  <option value="hotel_room">Hotel room</option>
-                </select>
+                <div class="pop-row-label" id="pt-label">Place type</div>
+                <div class="pt" id="pt">
+                  <!-- The value still lives in an input with the original id, so every
+                       reader of $('propertyType').value keeps working untouched. -->
+                  <input type="hidden" id="propertyType" value="" />
+                  <button type="button" class="pt-btn" id="pt-btn"
+                          aria-haspopup="listbox" aria-expanded="false" aria-labelledby="pt-label pt-btn">
+                    <span id="pt-value">Any</span><span class="pt-caret" aria-hidden="true">▾</span>
+                  </button>
+                  <ul class="pt-list" id="pt-list" role="listbox" aria-labelledby="pt-label" hidden></ul>
+                </div>
               </div>
               <div class="pop-actions">
                 <button type="button" class="trek-btn trek-btn--ghost" id="filters-clear">Clear</button>
@@ -449,6 +589,7 @@
   var tripId = null;
   var cursor = null;
   var listings = [];
+  var cardPhotoIndex = {};
   var lastParams = null;
   var busy = false;
   var commuteTimes = {};
@@ -521,6 +662,7 @@
       $(id).hidden = true;
       POPS[id].forEach(function (b) { $(b).setAttribute('aria-expanded', 'false'); });
     });
+    if (except !== 'filters-pop') ptClose();
   }
 
   function togglePop(popId, btn) {
@@ -733,6 +875,79 @@
 
   /* ------------------------------------------------------------------- filters */
 
+  /* ---------------------------------------------------------- place type */
+  var PLACE_TYPES = [
+    { value: '', label: 'Any' },
+    { value: 'entire_home', label: 'Entire home' },
+    { value: 'private_room', label: 'Private room' },
+    { value: 'shared_room', label: 'Shared room' },
+    { value: 'hotel_room', label: 'Hotel room' },
+  ];
+
+  function ptLabel(v) {
+    for (var i = 0; i < PLACE_TYPES.length; i++) if (PLACE_TYPES[i].value === v) return PLACE_TYPES[i].label;
+    return 'Any';
+  }
+
+  /** Mirror the hidden input onto the button. Called after anything sets .value
+   *  behind the control's back — Clear, and restoring a cached search. */
+  function syncPlaceType() {
+    $('pt-value').textContent = ptLabel($('propertyType').value);
+  }
+
+  function ptClose() {
+    $('pt-list').hidden = true;
+    $('pt-btn').setAttribute('aria-expanded', 'false');
+  }
+
+  function ptOpen() {
+    var cur = $('propertyType').value;
+    $('pt-list').innerHTML = PLACE_TYPES.map(function (o) {
+      return '<li role="option" data-value="' + esc(o.value) + '" tabindex="-1" aria-selected="' +
+        (o.value === cur ? 'true' : 'false') + '">' + esc(o.label) + '</li>';
+    }).join('');
+    $('pt-list').hidden = false;
+    $('pt-btn').setAttribute('aria-expanded', 'true');
+    var sel = $('pt-list').querySelector('[aria-selected="true"]');
+    if (sel) sel.focus();
+  }
+
+  function ptPick(v) {
+    $('propertyType').value = v;
+    syncPlaceType();
+    ptClose();
+    renderFilterCount();
+    $('pt-btn').focus();
+  }
+
+  $('pt-btn').addEventListener('click', function (e) {
+    e.stopPropagation();
+    if ($('pt-list').hidden) ptOpen(); else ptClose();
+  });
+  $('pt-list').addEventListener('click', function (e) {
+    var li = e.target.closest('li[data-value]');
+    if (li) { e.stopPropagation(); ptPick(li.getAttribute('data-value')); }
+  });
+  // Arrow keys and Enter, so the control is usable without a pointer — the native
+  // select gave that for free and a custom one has to earn it back.
+  $('pt').addEventListener('keydown', function (e) {
+    var open = !$('pt-list').hidden;
+    if (e.key === 'Escape' && open) { e.stopPropagation(); ptClose(); $('pt-btn').focus(); return; }
+    if ((e.key === 'Enter' || e.key === ' ') && !open && e.target === $('pt-btn')) {
+      e.preventDefault(); ptOpen(); return;
+    }
+    if (!open) return;
+    var items = Array.prototype.slice.call($('pt-list').querySelectorAll('li'));
+    var at = items.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      var next = e.key === 'ArrowDown' ? Math.min(items.length - 1, at + 1) : Math.max(0, at - 1);
+      if (items[next]) items[next].focus();
+    } else if (e.key === 'Enter' && at >= 0) {
+      e.preventDefault(); ptPick(items[at].getAttribute('data-value'));
+    }
+  });
+
   function activeFilterCount() {
     var n = 0;
     if ($('minPrice').value !== '') n++;
@@ -751,6 +966,7 @@
     $('minPrice').value = '';
     $('maxPrice').value = '';
     $('propertyType').value = '';
+    syncPlaceType();
     renderFilterCount();
   });
   $('filters-apply').addEventListener('click', function () {
@@ -869,13 +1085,25 @@
   function cardHtml(l) {
     // No photo: a labelled placeholder box keeps the grid rhythm. Dropping the image
     // entirely made rows of different heights, which read as broken rather than sparse.
-    var media = l.photos && l.photos.length
-      ? '<img class="thumb" alt="" loading="lazy" data-photo="' + esc(l.photos[0]) + '" />'
+    var pics = Array.isArray(l.photos) ? l.photos : [];
+    var at = Math.max(0, Math.min(pics.length - 1, Number(cardPhotoIndex[String(l.id)]) || 0));
+    var media = pics.length
+      ? '<img class="thumb" alt="Photo ' + (at + 1) + ' of ' + pics.length + ' for ' + esc(l.name) + '" ' +
+          'loading="lazy" data-card-at="' + at + '" data-photo="' + esc(pics[at]) + '" />'
       : '<div class="thumb-empty">No photo</div>';
+    var photoControls = pics.length > 1
+      ? '<button class="card-photo-nav card-photo-prev" type="button" data-photo-nav="-1" ' +
+          'aria-label="Previous photo for ' + esc(l.name) + '"' + (at === 0 ? ' disabled' : '') + '>&#8249;</button>' +
+        '<button class="card-photo-nav card-photo-next" type="button" data-photo-nav="1" ' +
+          'aria-label="Next photo for ' + esc(l.name) + '"' + (at === pics.length - 1 ? ' disabled' : '') + '>&#8250;</button>' +
+        '<div class="card-dots" aria-hidden="true">' + pics.slice(0, 6).map(function (_, i) {
+          return '<span class="card-dot' + (i === at ? ' is-current' : '') + '"></span>';
+        }).join('') + '</div>'
+      : '';
     return '' +
       '<article class="card" data-details="' + esc(l.id) + '" tabindex="0" role="button" ' +
         'aria-label="' + esc(l.name) + ' — view details">' +
-        '<div class="card-media">' + media +
+        '<div class="card-media">' + media + photoControls +
           (l.badge ? '<span class="card-badge">' + esc(l.badge) + '</span>' : '') +
           '<button class="card-add" type="button" data-add="' + esc(l.id) + '" ' +
             'title="Add to trip" aria-label="Add ' + esc(l.name) + ' to trip">+</button>' +
@@ -1013,6 +1241,25 @@
 
   /** Data URIs already fetched this session, keyed by the original photo URL. */
   var photoCache = {};
+  var photoPending = {};
+
+  /** Share an in-flight proxy request when the same photo appears in a card and its
+   *  detail gallery at once. Apart from saving work, this prevents a slower, older
+   *  request from replacing a photo after someone has already pressed Next. */
+  function photoData(url) {
+    if (!url) return Promise.resolve(null);
+    if (photoCache[url]) return Promise.resolve(photoCache[url]);
+    if (photoPending[url]) return photoPending[url];
+    photoPending[url] = trek.invoke('/photo?url=' + encodeURIComponent(url))
+      .then(function (r) {
+        var data = r && r.dataUri ? r.dataUri : null;
+        if (data) photoCache[url] = data;
+        return data;
+      })
+      .catch(function () { return null; })
+      .then(function (data) { delete photoPending[url]; return data; });
+    return photoPending[url];
+  }
 
   /**
    * The frame's CSP forbids remote images, so each photo is fetched through the
@@ -1027,12 +1274,12 @@
     Array.prototype.forEach.call(imgs, function (img) {
       var url = img.getAttribute('data-photo');
       img.removeAttribute('data-photo');
-      if (photoCache[url]) { img.src = photoCache[url]; return; }
-      trek.invoke('/photo?url=' + encodeURIComponent(url))
-        .then(function (r) {
-          if (r && r.dataUri) { photoCache[url] = r.dataUri; img.src = r.dataUri; }
-        })
-        .catch(function () { /* keep the neutral placeholder */ });
+      img.setAttribute('data-photo-url', url);
+      photoData(url).then(function (data) {
+        // This <img> can be reused by a fast Next/Previous sequence. Only the request
+        // for its still-current URL is allowed to paint it.
+        if (data && img.getAttribute('data-photo-url') === url) img.src = data;
+      });
     });
   }
 
@@ -1041,6 +1288,36 @@
    * its neutral background. A listing is still perfectly usable without a map, and an
    * error banner for a decorative element would be noise.
    */
+  /**
+   * Drag to pan, the way every map behaves. The wheel already scrolls the box, but
+   * reaching for a scrollbar on a 620x240 window onto a 768px map is not what anyone
+   * expects a map to want. Pointer events cover mouse, pen and touch in one path.
+   */
+  function enableDragPan(el) {
+    var down = false, sx = 0, sy = 0, l = 0, t = 0;
+    el.addEventListener('pointerdown', function (e) {
+      // Let the browser keep native touch scrolling; hijacking it here would feel worse.
+      if (e.pointerType === 'touch') return;
+      down = true; sx = e.clientX; sy = e.clientY; l = el.scrollLeft; t = el.scrollTop;
+      el.classList.add('is-panning');
+      el.setPointerCapture(e.pointerId);
+    });
+    el.addEventListener('pointermove', function (e) {
+      if (!down) return;
+      el.scrollLeft = l - (e.clientX - sx);
+      el.scrollTop = t - (e.clientY - sy);
+    });
+    var stop = function (e) {
+      if (!down) return;
+      down = false; el.classList.remove('is-panning');
+      if (e.pointerId != null && el.hasPointerCapture && el.hasPointerCapture(e.pointerId)) {
+        el.releasePointerCapture(e.pointerId);
+      }
+    };
+    el.addEventListener('pointerup', stop);
+    el.addEventListener('pointercancel', stop);
+  }
+
   async function loadMap() {
     var box = $('detail-map');
     if (!box) return;
@@ -1054,14 +1331,39 @@
           esc((m && m.reason) || 'No map available.') + '</div>';
         return;
       }
+      // esc() even though these are our own server's data: URIs. The URI embeds the
+      // upstream Content-Type verbatim, so a tile host answering `image/png" onerror="…`
+      // would otherwise close this src attribute and open an event handler. The server
+      // now allow-lists the subtype too; neither half is asked to hold alone.
       var imgs = m.tiles.map(function (t) {
-        return t ? '<img alt="" src="' + t + '" />' : '<div style="width:256px;height:256px"></div>';
+        return t ? '<img alt="" src="' + esc(t) + '" />' : '<div style="width:256px;height:256px"></div>';
       }).join('');
+      // The mosaic sits in flow inside a scroller rather than being offset with
+      // left/top, so the reader can pan the part of the neighbourhood the box cannot
+      // show. The area circle moves into the mosaic — it marks a place on the map, so
+      // it has to travel with the tiles rather than stay pinned to the middle.
       box.innerHTML =
-        '<div class="map-mosaic" style="grid-template-columns:repeat(' + m.grid + ',' + m.tileSize + 'px);' +
-          'left:calc(50% - ' + m.markerX + 'px); top:calc(50% - ' + m.markerY + 'px)">' + imgs + '</div>' +
-        '<div class="map-area" style="left:50%; top:50%"></div>' +
+        '<div class="map-scroll" id="map-scroll" tabindex="0" aria-label="Map of the area, scrollable">' +
+          '<div class="map-mosaic" style="grid-template-columns:repeat(' + m.grid + ',' + m.tileSize + 'px);' +
+            'width:' + m.width + 'px; height:' + m.height + 'px">' + imgs +
+            '<div class="map-area" style="left:' + m.markerX + 'px; top:' + m.markerY + 'px"></div>' +
+          '</div>' +
+        '</div>' +
         (m.attribution ? '<div class="map-attr">' + esc(m.attribution) + '</div>' : '');
+
+      // Open centred on the listing (clamped at an edge where exact centring is not
+      // geometrically possible), then leave the reader in control. Wait one paint so
+      // the scroller has its final client size in both a TREK frame and a top-level test.
+      var sc = $('map-scroll');
+      enableDragPan(sc);
+      requestAnimationFrame(function () {
+        if (!document.contains(sc)) return;
+        var maxLeft = Math.max(0, sc.scrollWidth - sc.clientWidth);
+        var maxTop = Math.max(0, sc.scrollHeight - sc.clientHeight);
+        sc.scrollLeft = Math.min(maxLeft, Math.max(0, m.markerX - sc.clientWidth / 2));
+        sc.scrollTop = Math.min(maxTop, Math.max(0, m.markerY - sc.clientHeight / 2));
+        sc.setAttribute('data-centered', 'true');
+      });
     } catch (_) {
       box.innerHTML = '';
     }
@@ -1147,6 +1449,48 @@
   /** Full listing records, keyed by id — details are immutable per search, so one fetch each. */
   var detailCache = {};
 
+  function moveCardPhoto(btn, delta) {
+    var card = btn.closest('[data-details]');
+    if (!card) return;
+    var l = byId(card.getAttribute('data-details'));
+    var pics = l && Array.isArray(l.photos) ? l.photos : [];
+    if (pics.length < 2) return;
+    var img = card.querySelector('img[data-card-at]');
+    var from = Number(img && img.getAttribute('data-card-at')) || 0;
+    var at = Math.max(0, Math.min(pics.length - 1, from + delta));
+    if (at === from) return;
+
+    function showState(nextAt) {
+      cardPhotoIndex[String(l.id)] = nextAt;
+      img.setAttribute('data-card-at', String(nextAt));
+      var prev = card.querySelector('.card-photo-prev');
+      var next = card.querySelector('.card-photo-next');
+      if (prev) prev.disabled = nextAt === 0;
+      if (next) next.disabled = nextAt === pics.length - 1;
+      Array.prototype.forEach.call(card.querySelectorAll('.card-dot'), function (dot, i) {
+        dot.classList.toggle('is-current', i === nextAt);
+      });
+    }
+
+    var url = pics[at];
+    showState(at);
+    img.classList.add('is-loading');
+    img.setAttribute('data-photo-url', url);
+    // Keep the previous photo painted until the replacement is ready. If the proxy
+    // cannot fetch it, leave a useful image in place and put the controls back too.
+    photoData(url).then(function (data) {
+      if (img.getAttribute('data-photo-url') !== url) return;
+      img.classList.remove('is-loading');
+      if (!data) {
+        img.setAttribute('data-photo-url', pics[from]);
+        showState(from);
+        return;
+      }
+      img.src = data;
+      img.setAttribute('alt', 'Photo ' + (at + 1) + ' of ' + pics.length + ' for ' + l.name);
+    });
+  }
+
   function amenitiesHtml(amenities) {
     var groups = Object.keys(amenities || {});
     if (!groups.length) return '';
@@ -1164,8 +1508,9 @@
     // view already has several, so use those rather than showing nothing.
     var pics = (d.photos && d.photos.length ? d.photos : l.photos) || [];
     var photos = pics.length
-      ? '<div class="detail-photos">' + pics.map(function (u) {
-          return '<img alt="" loading="lazy" data-photo="' + esc(u) + '" />';
+      ? '<div class="detail-photos">' + pics.map(function (u, i) {
+          return '<img alt="Photo ' + (i + 1) + ' of ' + pics.length + '" loading="lazy" ' +
+            'role="button" tabindex="0" data-lb="' + i + '" data-photo="' + esc(u) + '" />';
         }).join('') + '</div>'
       : '';
     return '<div class="trek-glass trek-stack" style="padding:16px">' +
@@ -1190,11 +1535,103 @@
       '</div>';
   }
 
+  /* --------------------------------------------------------------- carousel */
+  /* Photo bytes are proxied through the plugin (the frame's CSP blocks remote images),
+     so the lightbox reuses the <img> elements already decoded in the strip rather than
+     fetching anything again — opening it costs nothing. */
+  var lbPics = [];
+  var lbAt = 0;
+  var lbReturn = null;
+
+  function lbRender() {
+    var stage = document.querySelector('#lb .lb-stage img');
+    if (!stage) return;
+    stage.src = lbPics[lbAt];
+    stage.alt = 'Photo ' + (lbAt + 1) + ' of ' + lbPics.length;
+    $('lb-count').textContent = (lbAt + 1) + ' / ' + lbPics.length;
+    $('lb-prev').disabled = lbAt === 0;
+    $('lb-next').disabled = lbAt === lbPics.length - 1;
+    var strip = $('lb-strip');
+    Array.prototype.forEach.call(strip.children, function (t, i) {
+      t.classList.toggle('is-current', i === lbAt);
+      if (i === lbAt) t.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    });
+  }
+
+  function lbGo(delta) {
+    var next = lbAt + delta;
+    if (next < 0 || next >= lbPics.length) return;
+    lbAt = next;
+    lbRender();
+  }
+
+  function lbClose() {
+    $('lb').hidden = true;
+    document.body.classList.remove('lb-open');
+    lbPics = [];
+    if (lbReturn && document.contains(lbReturn)) lbReturn.focus();
+    lbReturn = null;
+  }
+
+  async function lbOpen(index) {
+    // Resolve the full gallery through the shared proxy cache. A quick click while the
+    // strip is still loading must not silently turn an eight-photo listing into a
+    // one-photo lightbox.
+    var imgs = Array.prototype.slice.call(document.querySelectorAll('.detail-photos img'));
+    var urls = imgs.map(function (im) { return im.getAttribute('data-photo-url') || ''; });
+    var resolved = await Promise.all(urls.map(photoData));
+    if (!document.querySelector('.detail-photos')) return;
+    lbPics = resolved.filter(Boolean);
+    if (!lbPics.length) return;
+    lbAt = Math.max(0, Math.min(lbPics.length - 1,
+      resolved.slice(0, Math.max(0, index)).filter(Boolean).length));
+    lbReturn = imgs[index] || imgs[0] || null;
+    $('lb-strip').innerHTML = lbPics.map(function (u, i) {
+      return '<img alt="Go to photo ' + (i + 1) + '" role="button" tabindex="0" data-go="' + i + '" src="' + esc(u) + '" />';
+    }).join('');
+    $('lb').hidden = false;
+    document.body.classList.add('lb-open');
+    lbRender();
+    $('lb-close').focus();
+  }
+
+  document.addEventListener('click', function (e) {
+    var thumb = e.target.closest('.detail-photos img[data-lb]');
+    if (thumb) { lbOpen(Number(thumb.getAttribute('data-lb')) || 0); return; }
+    if (!$('lb').hidden) {
+      if (e.target.closest('#lb-prev')) return lbGo(-1);
+      if (e.target.closest('#lb-next')) return lbGo(1);
+      if (e.target.closest('#lb-close')) return lbClose();
+      var go = e.target.closest('#lb-strip img[data-go]');
+      if (go) { lbAt = Number(go.getAttribute('data-go')) || 0; return lbRender(); }
+      // A click on the backdrop closes; one on the photo itself must not.
+      if (e.target.closest('.lb-stage img') === null && e.target.closest('#lb')) return lbClose();
+    }
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if ($('lb').hidden) {
+      var t = e.target.closest && e.target.closest('.detail-photos img[data-lb]');
+      if (t && (e.key === 'Enter' || e.key === ' ')) {
+        e.preventDefault(); lbOpen(Number(t.getAttribute('data-lb')) || 0);
+      }
+      return;
+    }
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); lbClose(); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); lbGo(1); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); lbGo(-1); }
+    else if (e.key === 'Enter' || e.key === ' ') {
+      var go = e.target.closest && e.target.closest('#lb-strip img[data-go]');
+      if (go) { e.preventDefault(); lbAt = Number(go.getAttribute('data-go')) || 0; lbRender(); }
+    }
+  }, true);
+
   /** The card that opened the current detail view, so Back can put focus back where
    *  it came from instead of dropping it on <body>. */
   var returnFocusId = null;
 
   function showResults() {
+    if (!$('lb').hidden) lbClose();
     $('detail').hidden = true;
     $('detail').innerHTML = '';
     $('results').hidden = false;
@@ -1286,6 +1723,13 @@
       if (toAdd) await addToTrip(addBtn, toAdd);
       return;
     }
+    var photoBtn = e.target.closest('[data-photo-nav]');
+    if (photoBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      moveCardPhoto(photoBtn, Number(photoBtn.getAttribute('data-photo-nav')) || 0);
+      return;
+    }
     var card = e.target.closest('[data-details]');
     if (card) openDetails(card.getAttribute('data-details'));
   }
@@ -1298,7 +1742,7 @@
   $('results').addEventListener('keydown', function (e) {
     if (e.key !== 'Enter' && e.key !== ' ') return;
     var card = e.target.closest('[data-details]');
-    if (!card || e.target.closest('[data-add]')) return;
+    if (!card || e.target.closest('button')) return;
     e.preventDefault();
     openDetails(card.getAttribute('data-details'));
   });
@@ -1319,6 +1763,7 @@
         if (last.params.children != null) guests.children = Math.max(0, Number(last.params.children) || 0);
       }
       renderGuests();
+      syncPlaceType();
       renderFilterCount();
       renderDateValues();
       render();
@@ -1377,5 +1822,20 @@
   });
 })();
 </script>
+
+<!-- Photo carousel. Outside .trek-scroll so it covers the frame rather than scrolling
+     inside it; position:fixed resolves against the frame's viewport. -->
+<div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="Listing photos" hidden>
+  <div class="lb-bar">
+    <span id="lb-count">1 / 1</span>
+    <button type="button" class="lb-close" id="lb-close" aria-label="Close photos">&times;</button>
+  </div>
+  <div class="lb-stage">
+    <button type="button" class="lb-nav lb-prev" id="lb-prev" aria-label="Previous photo">&#8249;</button>
+    <img alt="" />
+    <button type="button" class="lb-nav lb-next" id="lb-next" aria-label="Next photo">&#8250;</button>
+  </div>
+  <div class="lb-strip" id="lb-strip"></div>
+</div>
 </body>
 </html>

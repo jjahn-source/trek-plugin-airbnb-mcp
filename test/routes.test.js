@@ -619,3 +619,51 @@ test('replacing a stale session hands the old one back instead of abandoning it'
   assert.equal(mcp.deletes, 1, 'the replaced session was terminated');
   assert.equal(mcp.inits, 2, 'and a fresh one took its place');
 });
+
+/**
+ * The content type is embedded in the `data:` URI the frame puts in an <img src>, so a
+ * CDN answering `image/png" onerror="…` would close the attribute and open an event
+ * handler inside the plugin frame. `startsWith('image/')` waves that through; the
+ * allow-list does not. Same defect class as the map tiles — same fix, shared.
+ */
+test('/photo refuses a content type that only STARTS as an image', async () => {
+  const real = globalThis.fetch;
+  globalThis.fetch = async () => ({
+    ok: true,
+    status: 200,
+    headers: { get: () => 'image/png" onerror="alert(1)' },
+    arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer,
+  });
+  try {
+    const h = host({ oauthAccessToken: 'tok' });
+    const res = await h.run(plugin).route(
+      { method: 'GET', path: '/photo' },
+      { query: { url: 'https://a0.muscache.com/im/crafted.jpg' } },
+    );
+    assert.equal(res.status, 502);
+    assert.match(body(res).error, /not an image/);
+  } finally {
+    globalThis.fetch = real;
+  }
+});
+
+test('/photo still embeds a genuine image', async () => {
+  const real = globalThis.fetch;
+  globalThis.fetch = async () => ({
+    ok: true,
+    status: 200,
+    headers: { get: () => 'image/jpeg' },
+    arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer,
+  });
+  try {
+    const h = host({ oauthAccessToken: 'tok' });
+    const res = await h.run(plugin).route(
+      { method: 'GET', path: '/photo' },
+      { query: { url: 'https://a0.muscache.com/im/real.jpg' } },
+    );
+    assert.equal(res.status, 200);
+    assert.match(body(res).dataUri, /^data:image\/jpeg;base64,/);
+  } finally {
+    globalThis.fetch = real;
+  }
+});

@@ -100,12 +100,33 @@ function tileUrl(template, z, x, y) {
  */
 const TILE_UA = 'TREK-airbnb-stays-plugin/1.6 (+https://github.com/jjahn-source/trek-plugin-airbnb-mcp)';
 
+/**
+ * The image content type, or null if the header is not one we are willing to embed.
+ *
+ * This value is not merely a gate — it is CONCATENATED into the `data:` URI that ends
+ * up in an `<img src>` inside the frame. A tile host answering
+ *   Content-Type: image/png" onerror="…
+ * satisfies any `startsWith('image/')` test, then closes the src attribute and opens an
+ * event handler. So the check NAMES the subtypes it accepts rather than describing the
+ * prefix it hopes for: an allow-list cannot be talked into admitting a quote.
+ *
+ * Shared with /photo in index.js, which embeds CDN bytes the same way and is reachable
+ * by the same trick. The frame escapes the URI as well — this is the half that holds
+ * even if a future caller forgets to.
+ */
+/** Raster only. SVG is a document format that happens to draw, and no tile or listing
+ *  photo has ever needed it. */
+function imageContentType(raw) {
+  const type = String(raw || '').split(';')[0].trim().toLowerCase();
+  return /^image\/(png|jpeg|jpg|webp|gif|avif)$/.test(type) ? type : null;
+}
+
 async function fetchTile(url) {
   if (tileCache.has(url)) return tileCache.get(url);
   const res = await fetch(url, { headers: { 'User-Agent': TILE_UA }, signal: AbortSignal.timeout(8000) });
   if (!res.ok) throw new Error(`tile ${res.status}`);
-  const type = (res.headers.get('content-type') || '').split(';')[0].trim();
-  if (!type.startsWith('image/')) throw new Error('tile is not an image');
+  const type = imageContentType(res.headers.get('content-type'));
+  if (!type) throw new Error('tile is not an image');
   const buf = Buffer.from(await res.arrayBuffer());
   if (buf.length > TILE_MAX_BYTES) throw new Error('tile too large');
   const dataUri = `data:${type};base64,${buf.toString('base64')}`;
@@ -164,6 +185,6 @@ async function staticMap({ lat, lng, zoom = 14, template }) {
 }
 
 module.exports = {
-  staticMap, project, tileUrl, TILE, GRID,
+  staticMap, project, tileUrl, TILE, GRID, imageContentType,
   DEFAULT_TILE_URL, DEFAULT_TILE_URL_DARK, DEFAULT_ATTRIBUTION, OSM_ATTRIBUTION, attributionFor,
 };
