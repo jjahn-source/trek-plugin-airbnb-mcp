@@ -71,15 +71,19 @@ once; every traveller does the third for themselves.
 
 ### 1. Connect this TREK server to OpenBnB (admin, once)
 
-Open **Admin → Plugins → Airbnb Stays → ⋯ → Instance settings**.
+This crosses two screens, because TREK puts plugin **settings** in the admin area and
+plugin **buttons** on your own settings page:
 
-1. Put the address your users reach TREK on into **This TREK server's URL** — including
-   any path, if TREK is hosted under one (`https://example.com/trek`) — and press
-   **Save**. Saving restarts the plugin, which is how it comes to know the value.
-2. Press **Register with OpenBnB**. The plugin performs OAuth dynamic client
-   registration against OpenBnB and prints a **client id** and a **client secret**.
-3. Paste those two into **OAuth client id** and **OAuth client secret**, type the two
-   OAuth URLs shown in grey (they are placeholders, not values), and press **Save**.
+1. **Admin → Plugins → Airbnb Stays → ⋯ → Instance settings.** Put the address your
+   users reach TREK on into **This TREK server's URL** — including any path, if TREK is
+   hosted under one (`https://example.com/trek`) — and press **Save**. Saving restarts
+   the plugin, which is how it comes to know the value.
+2. **Settings → Plugins → Airbnb Stays.** Press **Register with OpenBnB**. The plugin
+   performs OAuth dynamic client registration and prints a **client id** and a
+   **client secret**.
+3. **Back to Admin → ⋯ → Instance settings.** Paste those two into **OAuth client id**
+   and **OAuth client secret**, type the two OAuth URLs shown in grey (they are
+   placeholders, not values), and press **Save**.
 
 No account, no dashboard, no support ticket — OpenBnB implements RFC 7591, so the
 endpoint mints the credentials on request. The plugin cannot fill the fields in for
@@ -87,7 +91,8 @@ itself: TREK hands a plugin its config read-only, and the host's OAuth broker re
 these values straight out of the encrypted store, so the paste is the one step that has
 to stay manual.
 
-Then press **Test connection**, on the same page. It reports the first thing that is
+Then press **Test connection**, which sits beside the Register button on your own
+Settings → Plugins card. It reports the first thing that is
 actually wrong — a field still blank, an endpoint that will not answer, a token OpenBnB
 rejects — instead of leaving you to discover it when a traveller's sign-in fails days
 later.

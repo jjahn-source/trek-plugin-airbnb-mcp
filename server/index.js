@@ -731,8 +731,13 @@ module.exports = definePlugin({
      *
      * Setup used to require a repo checkout, a Node install and a CLI run before an
      * admin could paste anything — and an admin who installed this from the registry
-     * has no repo to check out. The same registration runs here instead, one button
-     * away from the fields the values go into.
+     * has no repo to check out. The same registration runs here instead.
+     *
+     * Note WHERE this button appears: TREK renders plugin actions on the acting user's
+     * own Settings → Plugins card (PluginSettingsTab), never inside the admin instance-
+     * settings modal, whose footer is Save alone. So the button and the fields it feeds
+     * are on two different screens, and every message here has to say which is which
+     * rather than pointing "above" at something that is not there.
      *
      * It cannot finish the job: `ctx.config` is read-only and the host's broker reads
      * the credentials straight out of the encrypted instance config, so the last step
@@ -762,8 +767,8 @@ module.exports = definePlugin({
           ok: true,
           message:
             `Registered. Client id: ${out.clientId} — Client secret: ${out.clientSecret} — ` +
-            'paste both into the fields above and press Save. Type the two URLs shown as ' +
-            'grey placeholder text in as well; they are hints, not values.',
+            'paste both into Admin → Plugins → Airbnb Stays → Instance settings, along with the ' +
+            'two URLs shown there in grey (they are placeholders, not values), and Save.',
         };
       } catch (err) {
         const detail = String((err && err.message) || 'registration failed');

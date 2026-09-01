@@ -45,7 +45,7 @@
       "required": false,
       "scope": "instance",
       "placeholder": "https://trek.example.com",
-      "hint": "Only needed for the \"Register with OpenBnB\" button below. Type the address your users reach TREK on, including any path it is hosted under, then Save — the button turns it into the OAuth redirect URI and registers this server for you."
+      "hint": "Needed by the \"Register with OpenBnB\" button, which lives on your own Settings → Plugins → Airbnb Stays card (TREK renders plugin buttons there, not in this admin form). Type the address your users reach TREK on, including any path it is hosted under, then Save — the button turns it into the OAuth redirect URI."
     },
     {
       "key": "oauth_authorize_url",
@@ -74,7 +74,7 @@
       "required": true,
       "scope": "instance",
       "placeholder": "openbnb-xxxxxxxxxxxxxxxx",
-      "hint": "Press \"Register with OpenBnB\" below and paste the client id it prints. Unique to this TREK instance. (There is a CLI equivalent for scripted installs: `npm run register -- <your TREK URL>` in the plugin repo.)"
+      "hint": "Go to Settings → Plugins → Airbnb Stays and press \"Register with OpenBnB\", then come back here and paste the client id it printed. Unique to this TREK instance. (Scripted alternative: `npm run register -- <your TREK URL>` in the plugin repo.)"
     },
     {
       "key": "oauth_client_secret",
@@ -149,7 +149,7 @@
     {
       "key": "register_client",
       "label": "Register with OpenBnB",
-      "hint": "Fill in \"This TREK server's URL\" above and Save first. This then registers this server with OpenBnB and prints the client id and secret to paste into the two fields above — no repo checkout, no terminal."
+      "hint": "Registers this server with OpenBnB and prints a client id and secret. Fill in \"This TREK server's URL\" under Admin → Plugins → Airbnb Stays → Instance settings and Save first; paste the two values back into that same form afterwards."
     },
     {
       "key": "test_connection",
