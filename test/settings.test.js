@@ -86,16 +86,33 @@ test('every setting is instance-scoped, labelled and hinted', () => {
   }
 });
 
-test('no setting relies on a manifest "default" to be usable', () => {
-  // The SDK's ManifestSettingField has no `default`, so a form built from the manifest
-  // renders these fields EMPTY however the JSON reads. Anything optional must therefore
-  // work when saved blank, and anything required must show the admin what to type.
-  // `default` silently doing nothing is exactly the trap this guards against.
+test('a "default" is a bonus, never the thing that makes a field usable', () => {
+  // TREK is adding `default` (jubnl, on TREK-Plugins#87), so declaring one is worth it:
+  // on a host that honours it the two constant OAuth URLs arrive filled in and setup is
+  // two fields instead of four. But every host older than that release drops it silently
+  // — `persistSettingsFields` never reads the key — so nothing may DEPEND on it. Each
+  // field must still be usable with the value absent: a placeholder to show what to type,
+  // and, for anything optional, a code-side fallback so blank means "use the built-in".
   for (const s of manifest.settings) {
-    assert.equal(s.default, undefined, `${s.key} must not depend on an unsupported "default"`);
     if (!s.secret) {
       assert.ok(s.placeholder, `${s.key} needs a placeholder — the only value hint an empty field gets`);
     }
+    if (s.default !== undefined) {
+      // Two places to state the same value is two places to get it wrong. Keeping them
+      // equal means the greyed-out hint and the pre-filled value can never disagree.
+      assert.equal(s.default, s.placeholder,
+        `${s.key}: default and placeholder must not drift apart`);
+    }
+  }
+});
+
+test('the credentials never carry a default, however tempting the placeholder looks', () => {
+  // oauth_client_id's placeholder is a FORMAT ("openbnb-xxxx…"), not a value, and the
+  // secret has none at all. Defaulting either would pre-fill a field with something that
+  // is not a credential, which reads as configured and fails at the token exchange.
+  for (const key of ['oauth_client_id', 'oauth_client_secret']) {
+    const s = manifest.settings.find((f) => f.key === key);
+    assert.equal(s.default, undefined, `${key} must never be pre-filled`);
   }
 });
 

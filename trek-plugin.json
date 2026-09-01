@@ -1,7 +1,7 @@
 {
   "id": "airbnb-mcp",
   "name": "Airbnb Stays",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "apiVersion": 1,
   "type": "trip-page",
   "trek": ">=4.0.0 <5.0.0",
@@ -20,12 +20,14 @@
     "oauth:client",
     "http:outbound:mcp.openbnb.ai",
     "http:outbound:*.muscache.com",
+    "http:outbound:server.arcgisonline.com",
     "http:outbound:tile.openstreetmap.org",
     "hook:place-detail-provider"
   ],
   "egress": [
     "mcp.openbnb.ai",
     "*.muscache.com",
+    "server.arcgisonline.com",
     "tile.openstreetmap.org"
   ],
   "capabilities": {
@@ -41,7 +43,8 @@
       "required": true,
       "scope": "instance",
       "placeholder": "https://mcp.openbnb.ai/authorize",
-      "hint": "Constant for the hosted OpenBnB service — type the greyed-out value exactly as shown. Change it only if you run your own OpenBnB."
+      "hint": "Constant for the hosted OpenBnB service — type the greyed-out value exactly as shown. Change it only if you run your own OpenBnB.",
+      "default": "https://mcp.openbnb.ai/authorize"
     },
     {
       "key": "oauth_token_url",
@@ -50,7 +53,8 @@
       "required": true,
       "scope": "instance",
       "placeholder": "https://mcp.openbnb.ai/token",
-      "hint": "Constant for the hosted OpenBnB service — type the greyed-out value exactly as shown. Change it only if you run your own OpenBnB."
+      "hint": "Constant for the hosted OpenBnB service — type the greyed-out value exactly as shown. Change it only if you run your own OpenBnB.",
+      "default": "https://mcp.openbnb.ai/token"
     },
     {
       "key": "oauth_client_id",
@@ -77,7 +81,8 @@
       "required": false,
       "scope": "instance",
       "placeholder": "https://mcp.openbnb.ai/mcp",
-      "hint": "Optional. Leave blank to use the hosted OpenBnB service; the plugin falls back to the value shown."
+      "hint": "Optional. Leave blank to use the hosted OpenBnB service; the plugin falls back to the value shown.",
+      "default": "https://mcp.openbnb.ai/mcp"
     },
     {
       "key": "map_tile_url",
@@ -85,8 +90,9 @@
       "input_type": "text",
       "required": false,
       "scope": "instance",
-      "placeholder": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-      "hint": "Optional. Leave blank for OpenStreetMap, which needs no key. Point it elsewhere and add that host under Allowed hosts."
+      "placeholder": "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+      "hint": "Optional. Leave blank for Esri's grey canvas, which needs no key and matches TREK's own basemap. Point it elsewhere and add that host under Allowed hosts.",
+      "default": "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"
     },
     {
       "key": "map_tile_url_dark",
@@ -94,8 +100,9 @@
       "input_type": "text",
       "required": false,
       "scope": "instance",
-      "placeholder": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-      "hint": "Optional. Leave blank to reuse the light-theme tiles."
+      "placeholder": "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+      "hint": "Optional. Leave blank for Esri's dark grey canvas, used automatically on a dark theme.",
+      "default": "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
     },
     {
       "key": "map_attribution",
@@ -103,15 +110,16 @@
       "input_type": "text",
       "required": false,
       "scope": "instance",
-      "placeholder": "© OpenStreetMap contributors",
-      "hint": "Optional. Leave blank for the OpenStreetMap credit. Change it if you change the tile source — most providers require their own."
+      "placeholder": "Tiles © Esri — Esri, DeLorme, NAVTEQ",
+      "hint": "Optional. Leave blank and the credit follows whichever tile source is in use. Set it if you point the tiles at a provider the plugin does not recognise.",
+      "default": "Tiles © Esri — Esri, DeLorme, NAVTEQ"
     }
   ],
   "actions": [
     {
       "key": "test_connection",
       "label": "Test connection",
-      "hint": "Checks this instance\u2019s OpenBnB settings end to end and names the first thing that is wrong."
+      "hint": "Checks this instance’s OpenBnB settings end to end and names the first thing that is wrong."
     }
   ],
   "operatorEgress": true

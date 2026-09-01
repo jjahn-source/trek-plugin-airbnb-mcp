@@ -155,9 +155,58 @@ test('/map works with NO map settings at all — the built-in tile source is a f
   assert.ok(!out.unavailable, 'must not report unavailable without settings');
   assert.equal(out.tiles.length, 9);
   assert.ok(out.tiles.every((tile) => typeof tile === 'string' && tile.startsWith('data:image/png;base64,')));
-  assert.ok(asked.every((u) => u.startsWith('https://tile.openstreetmap.org/')), asked.join(','));
+  // Esri's grey canvas, matching the basemap TREK draws its own maps on.
+  assert.ok(
+    asked.every((u) => u.startsWith('https://server.arcgisonline.com/') && u.includes('World_Light_Gray_Base')),
+    asked.join(','),
+  );
+  // Esri orders the path {z}/{y}/{x}, the row before the column — unlike every other
+  // template here. Substitution is by name, so getting this wrong would silently
+  // transpose the mosaic rather than fail.
+  assert.match(asked[0], /\/tile\/14\/\d+\/\d+$/);
+  const centre = asked[4].match(/\/tile\/14\/(\d+)\/(\d+)$/);
+  assert.equal(centre[1], '5636', 'row (y) comes first');
+  assert.equal(centre[2], '8296', 'column (x) comes second');
   // Attribution is a legal requirement of the tile source, so it cannot depend on config.
-  assert.match(out.attribution, /OpenStreetMap/);
+  assert.match(out.attribution, /Esri/);
+});
+
+function withTiles(t) {
+  const original = globalThis.fetch;
+  const asked = [];
+  globalThis.fetch = async (url) => {
+    asked.push(String(url));
+    return { ok: true, headers: { get: () => 'image/png' },
+      arrayBuffer: async () => new Uint8Array([137, 80, 78, 71]).buffer };
+  };
+  t.after(() => { globalThis.fetch = original; });
+  return asked;
+}
+
+test('a dark theme gets the dark basemap, not the light one dimmed by nothing', async (t) => {
+  // The dark setting used to fall through to the LIGHT default when unset, which put a
+  // bright white map inside a dark trip page.
+  const asked = withTiles(t);
+  const h = createMockHost({ grants: GRANTS, config: {}, actingUserId: 42, oauthAccessToken: 'tok' });
+  const res = await h.run(plugin).route({ method: 'GET', path: '/map' },
+    { query: { lat: '48.8584', lng: '2.2945', theme: 'dark' } });
+  assert.equal(res.status, 200);
+  assert.ok(asked.every((u) => u.includes('World_Dark_Gray_Base')), asked[0]);
+});
+
+test('attribution follows the tile source an operator actually chose', async (t) => {
+  // Printing Esri's credit under OpenStreetMap tiles is wrong in both directions, so the
+  // source decides rather than a constant.
+  withTiles(t);
+  const h = createMockHost({
+    grants: GRANTS,
+    config: { map_tile_url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png' },
+    actingUserId: 42, oauthAccessToken: 'tok',
+  });
+  const res = await h.run(plugin).route({ method: 'GET', path: '/map' },
+    { query: { lat: '48.8584', lng: '2.2945' } });
+  assert.match(body(res).attribution, /OpenStreetMap/);
+  assert.doesNotMatch(body(res).attribution, /Esri/);
 });
 
 test('a configured tile source overrides the built-in one', async (t) => {

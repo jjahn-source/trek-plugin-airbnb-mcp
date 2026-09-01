@@ -3,7 +3,7 @@
 const { definePlugin } = require('trek-plugin-sdk');
 const { McpClient, McpError } = require('./mcp');
 const { normalizeSearch, normalizeListing, placeCandidates } = require('./normalize')
-const { staticMap, DEFAULT_TILE_URL, DEFAULT_ATTRIBUTION } = require('./map');
+const { staticMap, DEFAULT_TILE_URL, DEFAULT_TILE_URL_DARK, attributionFor } = require('./map');
 const commute = require('./commute');
 
 const DEFAULT_MCP_URL = 'https://mcp.openbnb.ai/mcp';
@@ -574,15 +574,22 @@ module.exports = definePlugin({
         const dark = String(q.theme || '') === 'dark';
         // Fall back to the built-in source, so the map works on a TREK that has no way to
         // fill in instance settings. The settings only ever narrow this, never enable it.
+        // Dark now has a real source of its own rather than falling through to the light
+        // one, which used to put a bright map inside a dark trip page.
         const template =
-          (dark ? cfg.map_tile_url_dark : cfg.map_tile_url) || cfg.map_tile_url || DEFAULT_TILE_URL;
+          (dark ? cfg.map_tile_url_dark : cfg.map_tile_url) ||
+          cfg.map_tile_url ||
+          (dark ? DEFAULT_TILE_URL_DARK : DEFAULT_TILE_URL);
 
         try {
           const map = await staticMap({ lat, lng, zoom, template });
           if (!map.tiles.some(Boolean)) {
             return reply(200, { unavailable: true, reason: 'The map service did not return any tiles.' });
           }
-          return reply(200, Object.assign({ attribution: cfg.map_attribution || DEFAULT_ATTRIBUTION }, map));
+          // The credit follows the SOURCE actually used, so an operator who overrides the
+          // tiles and forgets the attribution does not publish the wrong one.
+          const attribution = cfg.map_attribution || attributionFor(template);
+          return reply(200, Object.assign({ attribution }, map));
         } catch (err) {
           // A missing map must never take the listing down with it.
           ctx.log.info(`map: ${(err && err.message) || 'failed'}`);

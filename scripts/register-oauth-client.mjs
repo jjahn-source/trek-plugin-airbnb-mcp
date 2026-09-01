@@ -109,14 +109,17 @@ if (!client.client_secret) {
 
 console.log(`  Registered.
 
-  Paste these into TREK → Admin → Plugins → Airbnb via OpenBnB → Settings:
+  Paste these into TREK → Admin → Plugins → Airbnb Stays → ⋯ → Instance settings
+  (on an older TREK with no such menu, send them to the admin API — see the README):
 
     OAuth authorize URL   ${meta.authorization_endpoint}
     OAuth token URL       ${meta.token_endpoint}
-    OAuth scopes          (leave blank)
     OAuth client id       ${client.client_id}
     OAuth client secret   ${client.client_secret}
 
+  The form shows the two URLs as greyed-out placeholder text. That is a hint, not a
+  value — type them in, or the fields save empty.
+
   Keep the secret out of version control. Each traveller then connects their own
-  OpenBnB account under Settings -> Plugins -> Airbnb via OpenBnB -> Connect.
+  OpenBnB account under Settings -> Plugins -> Airbnb Stays -> Connect.
 `);

@@ -14,12 +14,45 @@
  */
 
 /**
- * Built-in tile source. Every map setting is an OVERRIDE, never a requirement: on a TREK
- * without an instance-settings form the config arrives empty, and a plugin that treated
- * these as required would simply have no map there. Keyless OSM works everywhere.
+ * Built-in tile source: Esri's grey canvas, matching the muted basemap TREK draws its
+ * own maps on, so the detail map does not look like a different application.
+ *
+ * TREK's own default is OpenFreeMap Positron, which cannot be used here: OpenFreeMap
+ * serves VECTOR tiles only, as MapLibre style documents, and this is a raster stitcher —
+ * it has to fetch finished {z}/{x}/{y} images because the plugin frame's CSP forbids
+ * loading a tile from a map host at all. Esri's grey canvas is the same design intent in
+ * raster form, it is keyless, and TREK offers it as a basemap of its own, so the two
+ * surfaces agree. CARTO's Positron raster would have been the closest match but has
+ * carried an "API KEY REQUIRED" watermark on keyless tiles since 26.08.2026.
+ *
+ * Note the {z}/{y}/{x} order — Esri puts the row before the column, unlike every other
+ * template here. tileUrl() substitutes by NAME, so this needs no special handling.
+ *
+ * Every map setting remains an OVERRIDE, never a requirement: on a TREK that cannot fill
+ * in instance settings the config arrives empty, and a plugin that treated these as
+ * required would simply have no map there.
  */
-const DEFAULT_TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-const DEFAULT_ATTRIBUTION = '© OpenStreetMap contributors';
+const ESRI_BASE = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas';
+const DEFAULT_TILE_URL = `${ESRI_BASE}/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}`;
+const DEFAULT_TILE_URL_DARK = `${ESRI_BASE}/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}`;
+const DEFAULT_ATTRIBUTION = 'Tiles © Esri — Esri, DeLorme, NAVTEQ';
+const OSM_ATTRIBUTION = '© OpenStreetMap contributors';
+
+/**
+ * The credit owed by whichever tile source a map was actually drawn from.
+ *
+ * The source decides, not the call site. An operator who points `map_tile_url` at OSM
+ * and leaves `map_attribution` alone would otherwise get Esri's credit printed under
+ * OpenStreetMap tiles — wrong, and a licence problem in both directions.
+ */
+function attributionFor(template) {
+  const t = String(template || '');
+  if (!t || t.includes('arcgisonline.com')) return DEFAULT_ATTRIBUTION;
+  if (t.includes('openstreetmap.org')) return OSM_ATTRIBUTION;
+  // An unknown source gets no invented credit — the operator who pointed us at it
+  // knows who owns it and can say so with `map_attribution`.
+  return '';
+}
 
 const TILE = 256;
 const GRID = 3; // 3x3 tiles around the centre — enough context to recognise a neighbourhood
@@ -130,4 +163,7 @@ async function staticMap({ lat, lng, zoom = 14, template }) {
   };
 }
 
-module.exports = { staticMap, project, tileUrl, TILE, GRID, DEFAULT_TILE_URL, DEFAULT_ATTRIBUTION };
+module.exports = {
+  staticMap, project, tileUrl, TILE, GRID,
+  DEFAULT_TILE_URL, DEFAULT_TILE_URL_DARK, DEFAULT_ATTRIBUTION, OSM_ATTRIBUTION, attributionFor,
+};

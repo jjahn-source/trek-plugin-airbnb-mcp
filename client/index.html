@@ -120,10 +120,23 @@
       position: absolute; top: 100%; z-index: 30; margin-top: 8px; padding: 14px; min-width: 260px;
       background: var(--bg-card); border: 1px solid var(--border-primary);
       border-radius: 16px; box-shadow: var(--shadow-md, var(--shadow-card));
+      /* A trip page FILLS its frame, so the popover's room is the frame's height — not
+         the page's. On a short frame (a small window, or a host that sizes the frame to
+         our own short empty state) a 210px popover opening ~145px down runs past the
+         bottom edge and its actions are simply unreachable: nothing here scrolls, because
+         every ancestor is overflow:visible and the clip is the iframe itself. Cap it
+         against the space actually below the trigger and let the popover scroll instead,
+         so "Show stays" is always reachable however little room there is. */
+      max-height: calc(100vh - var(--trek-inset-top, 0px) - 160px);
+      overflow-y: auto; overscroll-behavior: contain;
     }
     /* Right-aligned so a popover under the last segments stays inside the bar. */
     .pop-right { right: 0; }
     .pop-dates { right: 0; padding: 16px; }
+    /* Wide enough for the price row at its natural size: label (~100) + gap (16) +
+       input (76) + dash (~10) + gap (12) + input (76), inside 14px padding each side. */
+    .pop-filters { min-width: 320px; }
+    .pop-filters .stepper .trek-input { width: 76px; }
 
     /* Calendar — deliberately the same visual language as TREK's own date picker:
        narrow weekday initials, a 7-column grid, 32px cells, accent for the selection. */
@@ -155,7 +168,11 @@
       padding: 8px 0;
     }
     .pop-row + .pop-row { border-top: 1px solid var(--border-primary); }
-    .pop-row-label { font-size: 14px; color: var(--text-primary); }
+    /* nowrap is the point: at the popover's min-width the two 84px price inputs left the
+       label about 66px, and "Price per night" broke onto three lines — which reads as a
+       clipped control rather than a wrapped label. The row is sized to fit the label
+       whole instead (see .pop-filters), so this can never be the thing that gives. */
+    .pop-row-label { font-size: 14px; color: var(--text-primary); white-space: nowrap; }
     .pop-row-hint { font-size: 12px; color: var(--text-muted); }
     .stepper { display: flex; align-items: center; gap: 12px; }
     .stepper button {
@@ -365,13 +382,13 @@
             <button type="button" class="chip-btn" id="filters-btn" aria-expanded="false" aria-controls="filters-pop">
               Filters <span class="chip-count" id="filters-count" hidden>0</span>
             </button>
-            <div class="pop" id="filters-pop" role="dialog" aria-label="Filters" hidden>
+            <div class="pop pop-filters" id="filters-pop" role="dialog" aria-label="Filters" hidden>
               <div class="pop-row">
                 <div class="pop-row-label">Price per night</div>
                 <div class="stepper">
-                  <input class="trek-input" type="number" id="minPrice" min="0" placeholder="min" aria-label="Minimum price per night" style="width:84px" />
+                  <input class="trek-input" type="number" id="minPrice" min="0" placeholder="min" aria-label="Minimum price per night" />
                   <span class="pop-row-hint">–</span>
-                  <input class="trek-input" type="number" id="maxPrice" min="0" placeholder="max" aria-label="Maximum price per night" style="width:84px" />
+                  <input class="trek-input" type="number" id="maxPrice" min="0" placeholder="max" aria-label="Maximum price per night" />
                 </div>
               </div>
               <div class="pop-row">

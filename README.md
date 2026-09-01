@@ -81,8 +81,10 @@ field arrives labelled, marked required or optional, and carrying the value it e
 greyed-out placeholder text. Type the two URLs exactly as the placeholders show them,
 paste the client id and secret, and press **Save**.
 
-> Placeholders are a hint, not a value — an empty field saves as empty. The two URLs
-> have to be typed in even though they never vary.
+> On a TREK that honours a manifest `default`, the two URLs and every optional field
+> arrive pre-filled and you only supply the client id and secret. On an older one the
+> greyed-out text is a placeholder, not a value — an empty field saves as empty, so type
+> the two URLs in even though they never vary.
 
 Saving **restarts the plugin for you** if it is running, so the new values take effect
 immediately — a plugin is handed its config once, when its process starts, and TREK
@@ -124,8 +126,9 @@ The secret is stored encrypted either way and never leaves the host. The plugin'
 also lists the settings still missing, so you can check your work there.
 
 > The map and the MCP endpoint need no configuration at all. Leave them blank: the plugin
-> falls back to OpenStreetMap tiles and the hosted OpenBnB endpoint on its own, and those
-> settings exist only to override that.
+> falls back to Esri's grey canvas — the same muted basemap TREK draws its own maps on,
+> with a dark variant used automatically on a dark theme — and to the hosted OpenBnB
+> endpoint. Those settings exist only to override that.
 
 ### 3. Each traveller connects their own account
 
@@ -146,7 +149,8 @@ searches. Until a user connects, the tab shows a prompt instead of a search form
 | `oauth:client` | Lets TREK run the OAuth flow to OpenBnB for each user and hand this plugin a short-lived access token for whoever is searching. The client secret and refresh token stay with the host. |
 | `http:outbound:mcp.openbnb.ai` | The one network call this plugin makes: the MCP request that runs the search or fetches a listing's details. |
 | `http:outbound:*.muscache.com` | Listing photos live on Airbnb's image CDN. The plugin frame's CSP blocks remote images, so photos are fetched here and passed to the page as data URIs. No other host is proxied. |
-| `http:outbound:tile.openstreetmap.org` | Map tiles for the "Where you'll be" map in a listing's details. Same reason as the photos: the frame's CSP blocks remote images, so tiles are fetched here and passed to the page as data URIs. The tile source is an admin setting — point it at another provider and add that host under **Allowed hosts**. |
+| `http:outbound:server.arcgisonline.com` | Map tiles for the "Where you'll be" map in a listing's details. Esri's grey canvas is the default because it matches the basemap TREK draws its own maps on, and it needs no key. Same reason as the photos: the frame's CSP blocks remote images, so tiles are fetched here and passed to the page as data URIs. |
+| `http:outbound:tile.openstreetmap.org` | The most likely alternative tile source, declared so switching to it needs no extra step. Not used unless an admin points **Map tiles** at it. Any other provider works too — add that host under **Allowed hosts**. |
 | `hook:place-detail-provider` | Adds the Airbnb link, price and rating rows to the detail panel of a place this plugin added. |
 
 ## Development
