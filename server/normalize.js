@@ -150,6 +150,70 @@ function parsePriceAmount(label) {
   return Number.isFinite(n) ? n : null;
 }
 
+/**
+ * The full price, read out of the breakdown Airbnb already wrote.
+ *
+ * `explanationData.priceDetails` spells it all out —
+ *   "4 nights x $221.35 USD: $885.38 USD, Taxes: $136.34 USD, Total: $1,021.72 USD"
+ * — so nothing here is arithmetic we invent. That matters: multiplying a nightly rate
+ * by a night count gives a number that is confidently wrong the moment a cleaning fee,
+ * a weekly discount or a tax exists, and each of those is ordinary.
+ *
+ * The card has always shown the accessibility label, which is the TOTAL. The nightly
+ * rate people actually compare on, and the tax share that surprises them at checkout,
+ * were sitting one field away unread.
+ *
+ * Every field is independently optional. A label this cannot parse — a locale wording
+ * it differently, a stay quoted on application — yields nulls, and the UI falls back
+ * to the label it has always shown rather than printing a guess.
+ */
+function parsePriceDetails(text) {
+  const empty = {
+    nights: null, nightly: null, base: null, taxes: null, total: null,
+    discount: null, discountLabel: null, currency: null,
+  };
+  const s = typeof text === 'string' ? text.replace(/[  ]/g, ' ') : '';
+  if (!s) return empty;
+
+  // Split on comma-SPACE, never on a bare comma: "$1,021.72" and "221,35 EUR" both
+  // carry one inside the number, so a plain `,` delimiter cuts a total of 1,021.72
+  // down to 1 and loses a European nightly rate entirely.
+  const parts = s.split(/,\s+/);
+  const find = (re) => {
+    for (const part of parts) {
+      const m = part.match(re);
+      if (m) return m;
+    }
+    return null;
+  };
+
+  // "4 nights x $221.35 USD: $885.38 USD" — the count, the rate, and the rate's subtotal.
+  const perNight = find(/(\d+)\s*nights?\s*[x×]\s*(.+?)\s*:\s*(.+)/i);
+  const totalPart = find(/^\s*total\s*:\s*(.+)/i);
+  const taxPart = find(/^\s*tax(?:es)?\s*:\s*(.+)/i);
+  // Real payloads carry discount lines — "Early booking discount: -$119.53 USD" — which
+  // is why the total can sit BELOW nights x nightly, and why reading it beats computing
+  // it. parsePriceAmount reads the magnitude; the sign is already in the wording.
+  const discountPart = find(/^\s*(.*discount.*?)\s*:\s*(.+)/i);
+
+  const amount = (part) => (part ? parsePriceAmount(part) : null);
+  const out = {
+    nights: perNight ? Number(perNight[1]) : null,
+    nightly: amount(perNight && perNight[2]),
+    base: amount(perNight && perNight[3]),
+    taxes: amount(taxPart && taxPart[1]),
+    total: amount(totalPart && totalPart[1]),
+    discount: amount(discountPart && discountPart[2]),
+    discountLabel: discountPart ? discountPart[1].trim() : null,
+    currency: null,
+  };
+  // An ISO code when the label carries one. Symbols are left to the label itself,
+  // which is already rendered in the viewer's locale and needs no help from us.
+  const code = s.match(/\b([A-Z]{3})\b/);
+  if (code) out.currency = code[1];
+  return out;
+}
+
 function normalizeResult(raw) {
   if (!raw || typeof raw !== 'object') return null;
   const id = raw.id != null ? String(raw.id) : null;
@@ -159,6 +223,10 @@ function normalizeResult(raw) {
     findString(raw.structuredDisplayPrice || {}, ['accessibilityLabel']) ||
     findString(raw.structuredDisplayPrice || {}, ['priceString']) ||
     null;
+
+  const priceDetail = parsePriceDetails(
+    findString(raw.structuredDisplayPrice || {}, ['priceDetails']),
+  );
 
   const ratingLabel = typeof raw.avgRatingA11yLabel === 'string' ? raw.avgRatingA11yLabel : null;
   const { rating, reviews } = parseRating(ratingLabel);
@@ -192,6 +260,17 @@ function normalizeResult(raw) {
     badge: textOf(raw.badges, ['text']),
     priceLabel,
     priceAmount: parsePriceAmount(priceLabel),
+    // The breakdown, when the payload carries one. Additive: priceLabel and
+    // priceAmount stay exactly as they were, because the client's sort, the restore
+    // cache and the place-detail panel all read them.
+    pricePerNight: priceDetail.nightly,
+    priceNights: priceDetail.nights,
+    priceBase: priceDetail.base,
+    priceTaxes: priceDetail.taxes,
+    priceTotal: priceDetail.total,
+    priceDiscount: priceDetail.discount,
+    priceDiscountLabel: priceDetail.discountLabel,
+    priceCurrency: priceDetail.currency,
     ratingLabel,
     rating,
     reviews,
@@ -412,6 +491,7 @@ module.exports = {
   normalizeResult,
   parseRating,
   parsePriceAmount,
+  parsePriceDetails,
   findCoords,
   findPhotos,
   findString,

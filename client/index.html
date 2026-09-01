@@ -276,6 +276,13 @@
     }
     .card-price { font-size: 14px; color: var(--text-primary); }
     .card-price .amount { font-weight: 600; }
+    .card-nightly { color: var(--text-muted); }
+    /* The breakdown in the detail view: a small ledger, right-aligned figures. */
+    .price-rows { display: grid; gap: 4px; max-width: 340px; }
+    .price-row { display: flex; justify-content: space-between; gap: 16px; font-size: 13px; color: var(--text-secondary); }
+    .price-row.is-total { border-top: 1px solid var(--border-primary); padding-top: 6px; margin-top: 2px;
+      font-weight: 600; color: var(--text-primary); }
+    .price-row.is-credit { color: var(--success, var(--text-secondary)); }
     .commute { display: grid; gap: 3px; padding-top: 2px; }
     .commute-row { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--text-muted); }
     .commute-row span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1005,6 +1012,34 @@
 
   /* ------------------------------------------------------------------- results */
 
+  /**
+   * A money figure in the viewer's own locale.
+   *
+   * Only the BREAKDOWN needs this. `priceLabel` arrives already rendered by Airbnb in
+   * the viewer's locale and is printed as-is; these are bare numbers with an ISO code,
+   * so they have to be formatted here or they read as "221.35" next to "$1,022 USD".
+   * Whole units: nobody compares stays on the cents.
+   */
+  function money(amount, currency) {
+    if (amount == null || !isFinite(amount)) return null;
+    try {
+      return new Intl.NumberFormat(undefined, {
+        style: currency ? 'currency' : 'decimal',
+        currency: currency || undefined,
+        maximumFractionDigits: 0,
+      }).format(amount);
+    } catch (_) {
+      // An unrecognised currency code must not take the price row down with it.
+      return String(Math.round(amount));
+    }
+  }
+
+  /** "$221/night", when the payload told us the nightly rate. */
+  function nightlyText(l) {
+    var per = money(l.pricePerNight, l.priceCurrency);
+    return per ? per + '/night' : null;
+  }
+
   function ratingText(l) {
     if (l.rating == null) return 'New';
     return '★ ' + l.rating + (l.reviews != null ? ' (' + l.reviews + ')' : '');
@@ -1056,7 +1091,14 @@
         (l.subtitle || l.area
           ? '<div class="card-sub">' + esc([l.subtitle, l.area].filter(Boolean).join(' · ')) + '</div>'
           : '') +
-        '<div class="card-price"><span class="amount">' + esc(l.priceLabel || '—') + '</span></div>' +
+        // The label is the TOTAL for the stay ("$1,022 USD total"); the nightly rate
+        // beside it is what people actually compare on. Both, because a total without a
+        // rate hides how long the stay is and a rate without a total is what booking
+        // sites got regulated for.
+        '<div class="card-price">' +
+          '<span class="amount">' + esc(l.priceLabel || '—') + '</span>' +
+          (nightlyText(l) ? '<span class="card-nightly"> · ' + esc(nightlyText(l)) + '</span>' : '') +
+        '</div>' +
         '<div class="commute" data-commute="' + esc(l.id) + '"' +
           (commuteTimes[String(l.id)] && commuteTimes[String(l.id)].length ? '' : ' hidden') + '>' +
           commuteHtml(l.id) +
@@ -1432,6 +1474,33 @@
     });
   }
 
+  /**
+   * The price, itemised the way Airbnb itemises it.
+   *
+   * Everything here is READ from the payload's own breakdown, never computed: real
+   * results carry discount lines ("Early booking discount: -$119.53"), so nights x
+   * nightly is not the total and a plugin that multiplied would quote confidently
+   * wrong figures. Rendered only when the payload actually said so.
+   */
+  function priceRowsHtml(l) {
+    if (l.pricePerNight == null || !l.priceNights) return '';
+    var cur = l.priceCurrency;
+    var rows = [];
+    var nights = l.priceNights + (l.priceNights === 1 ? ' night' : ' nights');
+    rows.push(['' + nights + ' \u00d7 ' + money(l.pricePerNight, cur), money(l.priceBase != null ? l.priceBase : l.pricePerNight * l.priceNights, cur), '']);
+    if (l.priceDiscount != null) {
+      rows.push([l.priceDiscountLabel || 'Discount', '\u2212' + money(l.priceDiscount, cur), ' is-credit']);
+    }
+    if (l.priceTaxes != null) rows.push(['Taxes', money(l.priceTaxes, cur), '']);
+    if (l.priceTotal != null) rows.push(['Total', money(l.priceTotal, cur), ' is-total']);
+
+    return '<div class="trek-sectionhead">Price</div><div class="price-rows">' +
+      rows.map(function (r) {
+        return '<div class="price-row' + r[2] + '"><span>' + esc(r[0]) + '</span><span>' + esc(r[1] || '—') + '</span></div>';
+      }).join('') +
+    '</div>';
+  }
+
   function amenitiesHtml(amenities) {
     var groups = Object.keys(amenities || {});
     if (!groups.length) return '';
@@ -1469,6 +1538,7 @@
           '<div class="map-box" id="detail-map" data-lat="' + esc(l.lat) + '" data-lng="' + esc(l.lng) + '"></div>' +
           '<p class="map-note">Airbnb shows an approximate area until a booking is confirmed.</p>'
         : '') +
+      priceRowsHtml(l) +
       (d.description ? '<p class="detail-desc">' + esc(d.description) + '</p>' : '') +
       (d.highlights ? '<div class="trek-sectionhead">Highlights</div><p class="detail-desc">' + esc(d.highlights) + '</p>' : '') +
       amenitiesHtml(d.amenities) +

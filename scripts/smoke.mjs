@@ -20,7 +20,7 @@ if (!frame) {
 }
 
 const RESULTS = [
-  { id: '1', url: 'https://www.airbnb.com/rooms/1', name: 'Sunlit loft above Rue des Rosiers', subtitle: 'Entire rental unit', area: 'Le Marais · 2 beds', badge: 'Guest favourite', priceLabel: '$1,240 for 4 nights', priceAmount: 1240, rating: 4.92, reviews: 148, lat: 48.86, lng: 2.35, photos: [
+  { id: '1', url: 'https://www.airbnb.com/rooms/1', name: 'Sunlit loft above Rue des Rosiers', subtitle: 'Entire rental unit', area: 'Le Marais · 2 beds', badge: 'Guest favourite', priceLabel: '$1,240 USD total', priceAmount: 1240, pricePerNight: 280, priceNights: 4, priceBase: 1120, priceTaxes: 120, priceTotal: 1240, priceCurrency: 'USD', rating: 4.92, reviews: 148, lat: 48.86, lng: 2.35, photos: [
     'https://a0.muscache.com/im/pictures/one.jpg',
     'https://a0.muscache.com/im/pictures/two.jpg',
     'https://a0.muscache.com/im/pictures/three.jpg',
@@ -28,7 +28,7 @@ const RESULTS = [
   // Taken from real captured data: apostrophes, en-dashes and an ampersand are what
   // Airbnb listing names actually contain, and they are exactly what a double-escaping
   // bug turns into "&#39;" on screen.
-  { id: '2', url: 'https://www.airbnb.com/rooms/2', name: "Paris 10th – Gare de l'Est & Gare du Nord", subtitle: 'Entire rental unit', area: '10th arr. · 1 bed', badge: null, priceLabel: '$860 for 4 nights', priceAmount: 860, rating: 4.78, reviews: 92, lat: 48.88, lng: 2.36, photos: [] },
+  { id: '2', url: 'https://www.airbnb.com/rooms/2', name: "Paris 10th – Gare de l'Est & Gare du Nord", subtitle: 'Entire rental unit', area: '10th arr. · 1 bed', badge: null, priceLabel: '$860 USD total', priceAmount: 860, pricePerNight: 240, priceNights: 4, priceBase: 960, priceDiscount: 130, priceDiscountLabel: 'Early booking discount', priceTaxes: 30, priceTotal: 860, priceCurrency: 'USD', rating: 4.78, reviews: 92, lat: 48.88, lng: 2.36, photos: [] },
 ];
 
 const LISTING = {
@@ -115,6 +115,14 @@ const commuteCall = invoked.find((c) => c.sub === '/commute');
 t('measures the result set against trip places in one call', !!commuteCall
   && commuteCall.body.tripId === 7 && commuteCall.body.mode === 'transit'
   && commuteCall.body.listings.length === 2);
+// The card carries BOTH figures: the total for the stay and the nightly rate people
+// compare on. A total alone hides how long the stay is; a rate alone is what booking
+// sites were regulated for.
+t('a card shows the total and the nightly rate together', await page.evaluate(() => {
+  const el = document.querySelector('[data-details="1"] .card-price');
+  return el ? /total/i.test(el.textContent) && /\/night/.test(el.textContent) : false;
+}), await page.locator('[data-details="1"] .card-price').innerText());
+
 t('shows the travel time and destination on its listing card',
   /Louvre/.test(await page.locator('[data-commute="1"]').innerText())
   && /14 min/.test(await page.locator('[data-commute="1"]').innerText()));
@@ -176,6 +184,17 @@ t('shows the description', detailText.includes('original beams'));
 // The kit uppercases .trek-field-label, so innerText yields "BATHROOM" — match loosely.
 const detailLower = detailText.toLowerCase();
 t('shows amenity groups', detailLower.includes('bathroom') && detailLower.includes('not included'));
+
+// The breakdown is itemised from the payload, never recomputed — real results carry
+// discount lines that make nights x nightly larger than the total, so a plugin doing
+// the arithmetic itself would quote figures that are confidently wrong.
+t('the detail view itemises the price rather than restating one number', await page.evaluate(() => {
+  const rows = [...document.querySelectorAll('#detail .price-row')].map((r) => r.textContent);
+  return rows.length >= 3
+    && rows.some((r) => /nights?\s*\u00d7/.test(r))
+    && rows.some((r) => /Taxes/.test(r))
+    && rows.some((r) => /Total/.test(r));
+}), await page.locator('#detail .price-rows').innerText().catch(() => '(no price rows)'));
 t('shows house rules', detailText.includes('Quiet hours'));
 t('hides the results grid while the detail is open', await page.locator('#results').isHidden());
 

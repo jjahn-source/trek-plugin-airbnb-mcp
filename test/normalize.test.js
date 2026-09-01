@@ -1,7 +1,9 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { normalizeSearch, normalizeListing, parseRating, parsePriceAmount, findCoords, findPhotos } = require('../server/normalize');
+const {
+  normalizeSearch, normalizeListing, parseRating, parsePriceAmount, parsePriceDetails, findCoords, findPhotos,
+} = require('../server/normalize');
 
 /**
  * Mirrors what the OpenBnB server actually emits: the fields its allow-schema keeps,
@@ -129,4 +131,77 @@ test('normalizeListing gathers amenity groups and falls back to a derived url', 
 
 test('normalizeListing rethrows an error payload', () => {
   assert.throws(() => normalizeListing('1', { error: 'listing not found' }), /listing not found/);
+});
+
+/* ------------------------------------------------------------ price detail */
+
+/**
+ * The hosted payload spells the whole price out — "4 nights x $221.35 USD: $885.38
+ * USD, Taxes: $136.34 USD, Total: $1,021.72 USD" — so none of this is arithmetic we
+ * have to invent. The card has always shown the accessibility label, which is the
+ * TOTAL ("$1,022 USD total"); the nightly rate a traveller compares stays on, and the
+ * tax share they get caught out by, were both sitting one field away unread.
+ */
+test('the price breakdown is read out of priceDetails rather than recomputed', () => {
+  const p = parsePriceDetails('4 nights x $221.35 USD: $885.38 USD, Taxes: $136.34 USD, Total: $1,021.72 USD');
+  assert.equal(p.nights, 4);
+  assert.equal(p.nightly, 221.35);
+  assert.equal(p.taxes, 136.34);
+  assert.equal(p.total, 1021.72);
+  assert.equal(p.currency, 'USD');
+});
+
+test('a stay quoted without taxes still yields a nightly rate and a total', () => {
+  const p = parsePriceDetails('3 nights x $100.00 USD: $300.00 USD, Total: $300.00 USD');
+  assert.equal(p.nights, 3);
+  assert.equal(p.nightly, 100);
+  assert.equal(p.taxes, null);
+  assert.equal(p.total, 300);
+});
+
+test('a single night is not mis-read as plural-only', () => {
+  const p = parsePriceDetails('1 night x $89.46 USD: $89.46 USD, Total: $95.00 USD');
+  assert.equal(p.nights, 1);
+  assert.equal(p.nightly, 89.46);
+});
+
+/**
+ * European grouping. The existing amount parser already knows that the LAST separator
+ * decides; the breakdown must not quietly reintroduce the bug it was written to fix.
+ */
+test('a European-formatted breakdown is not read as a fraction of a euro', () => {
+  const p = parsePriceDetails('4 nights x 221,35 EUR: 885,38 EUR, Total: 1.021,72 EUR');
+  assert.equal(p.nightly, 221.35);
+  assert.equal(p.total, 1021.72);
+  assert.equal(p.currency, 'EUR');
+});
+
+test('an unparseable breakdown yields nulls, never a wrong number', () => {
+  for (const junk of ['', null, undefined, 'Price on application', 'Total: ']) {
+    const p = parsePriceDetails(junk);
+    assert.equal(p.nightly, null, String(junk));
+    assert.equal(p.total, null, String(junk));
+    assert.equal(p.nights, null, String(junk));
+  }
+});
+
+test('a search result carries the breakdown alongside the label it already had', () => {
+  const out = normalizeSearch({
+    searchResults: [{
+      id: '1',
+      structuredDisplayPrice: {
+        primaryLine: { accessibilityLabel: '$1,022 USD total' },
+        explanationData: { priceDetails: '4 nights x $221.35 USD: $885.38 USD, Taxes: $136.34 USD, Total: $1,021.72 USD' },
+      },
+    }],
+  }, null);
+  const r = out.results[0];
+  // The label and the sortable amount are untouched — the place-detail panel, the
+  // restore cache and the client's sort all read them.
+  assert.equal(r.priceLabel, '$1,022 USD total');
+  assert.equal(r.pricePerNight, 221.35);
+  assert.equal(r.priceNights, 4);
+  assert.equal(r.priceTotal, 1021.72);
+  assert.equal(r.priceTaxes, 136.34);
+  assert.equal(r.priceCurrency, 'USD');
 });

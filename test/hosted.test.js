@@ -140,3 +140,51 @@ test('a section the listing genuinely lacks stays null rather than inventing tex
   // POLICIES_DEFAULT comes back with only an id for this listing.
   assert.equal(normalizeListing('1', listing).houseRules, null);
 });
+
+/**
+ * The price breakdown, checked against real captured payloads rather than against a
+ * hand-written example of what one might look like. This is the assertion that would
+ * catch OpenBnB rewording `priceDetails` — at which point the cards quietly lose the
+ * nightly rate and the budget line loses its number, with every other test still green.
+ */
+test('every real result yields a nightly rate and a total that agree with each other', () => {
+  const out = normalizeSearch(search, null);
+  const withDetail = out.results.filter((r) => r.pricePerNight != null);
+
+  assert.ok(withDetail.length, 'no result carried a parseable price breakdown at all');
+  assert.equal(withDetail.length, out.results.length, 'some results lost their breakdown');
+
+  for (const r of withDetail) {
+    assert.ok(r.priceNights > 0, `night count for ${r.id}, got ${r.priceNights}`);
+    assert.ok(r.priceTotal > 0, `total for ${r.id}, got ${r.priceTotal}`);
+    assert.equal(r.priceCurrency, 'USD', `currency for ${r.id}`);
+
+    // The total is in the same postcode as the nights it covers, but deliberately NOT
+    // equal to them: taxes sit on top and discounts come off. One real result here is
+    // "4 nights x $321.99: $1,287.97, Early booking discount: -$119.53, Taxes: $24.10,
+    // Total: $1,192.54" — below nights x nightly. That result is the whole argument for
+    // reading the total rather than computing it, so the bound is loose on purpose.
+    const nightsCost = r.pricePerNight * r.priceNights;
+    assert.ok(
+      r.priceTotal > nightsCost * 0.5 && r.priceTotal < nightsCost * 2,
+      `${r.id}: total ${r.priceTotal} is nowhere near ${r.priceNights} nights at ${r.pricePerNight}`,
+    );
+
+    // And the label the card has always shown is the same figure, to the rounding
+    // Airbnb does in it ("$1,022 USD total" for a $1,021.72 stay).
+    assert.ok(
+      Math.abs(r.priceAmount - r.priceTotal) <= 1,
+      `${r.id}: label says ${r.priceAmount}, breakdown says ${r.priceTotal}`,
+    );
+  }
+});
+
+test('a real discounted stay reports what came off, not just the final figure', () => {
+  const out = normalizeSearch(search, null);
+  const discounted = out.results.filter((r) => r.priceDiscount != null);
+  assert.ok(discounted.length, 'no captured result carried a discount line');
+  for (const r of discounted) {
+    assert.ok(r.priceDiscount > 0, `${r.id}: discount magnitude, got ${r.priceDiscount}`);
+    assert.match(r.priceDiscountLabel, /discount/i, `${r.id}: ${r.priceDiscountLabel}`);
+  }
+});
