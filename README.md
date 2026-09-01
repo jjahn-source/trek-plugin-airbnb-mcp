@@ -22,11 +22,24 @@ Each result also shows travel time to the places already pinned on the trip. One
 distance-matrix request compares up to 20 stays at once, and the traveller can
 switch between transit, driving, walking and cycling without leaving the results.
 
+Every card carries both figures a booking decision is made on: the **total for the
+stay** and the **nightly rate**. Open one and the price is itemised the way Airbnb
+itemises it — nights × rate, any discount, taxes, total — read out of the payload
+rather than multiplied out, because real listings carry discounts that make the total
+*lower* than nights × nightly.
+
 A stay is somewhere you sleep, so when your check-in and check-out dates match days
 on the trip it is added as a **lodging block spanning those nights** — the same thing
 the planner creates by hand, partner hotel reservation included — not just a pin on
 the map. Dates outside the trip still add the place on its own. Either way it keeps
 its price, rating and booking dates, which show up again in the place-detail panel.
+
+Adding a stay also puts its total on the **trip budget**, so the largest line on most
+trips is money the trip knows about rather than a note attached to a pin.
+
+And the planner will tell you when nights have **no accommodation booked** — but only
+on a trip that already has at least one stay on it. A trip with no lodging at all is
+one being handled elsewhere, and this plugin has no standing to nag about it.
 
 **Details** on any card opens the full listing for your dates — description, highlights,
 amenities grouped the way Airbnb groups them (including what is *not* included), and the
@@ -53,50 +66,50 @@ reconnect.
 
 ## Setup
 
-### 1. Register this TREK instance with OpenBnB (admin, once)
+Three steps, all of them on screens you already have open. An admin does the first two
+once; every traveller does the third for themselves.
 
-OpenBnB supports OAuth Dynamic Client Registration, so this is one command — no
-account, no dashboard, no support ticket:
+### 1. Connect this TREK server to OpenBnB (admin, once)
+
+Open **Admin → Plugins → Airbnb Stays → ⋯ → Instance settings**.
+
+1. Put the address your users reach TREK on into **This TREK server's URL** — including
+   any path, if TREK is hosted under one (`https://example.com/trek`) — and press
+   **Save**. Saving restarts the plugin, which is how it comes to know the value.
+2. Press **Register with OpenBnB**. The plugin performs OAuth dynamic client
+   registration against OpenBnB and prints a **client id** and a **client secret**.
+3. Paste those two into **OAuth client id** and **OAuth client secret**, type the two
+   OAuth URLs shown in grey (they are placeholders, not values), and press **Save**.
+
+No account, no dashboard, no support ticket — OpenBnB implements RFC 7591, so the
+endpoint mints the credentials on request. The plugin cannot fill the fields in for
+itself: TREK hands a plugin its config read-only, and the host's OAuth broker reads
+these values straight out of the encrypted store, so the paste is the one step that has
+to stay manual.
+
+Then press **Test connection**, on the same page. It reports the first thing that is
+actually wrong — a field still blank, an endpoint that will not answer, a token OpenBnB
+rejects — instead of leaving you to discover it when a traveller's sign-in fails days
+later.
+
+> **Why the URL matters.** TREK builds the OAuth redirect from your `APP_URL`, and
+> OpenBnB will only redirect to the URI registered here. OAuth compares the two
+> exactly, so a missing subpath or a stray slash does not fail at registration — it
+> fails much later, as a sign-in that never completes.
+
+<details>
+<summary>Scripted installs, and TREKs with no settings form</summary>
+
+For provisioning or CI, the same registration runs from a terminal — it calls the same
+module, so both paths derive an identical redirect URI:
 
 ```bash
 npm run register -- https://trek.example.com
 ```
 
-Pass exactly your server's **`APP_URL`** — the public base URL your users reach TREK
-on, *including any path* if TREK is hosted under one (`https://example.com/trek`).
-TREK builds the OAuth redirect from `APP_URL`, and OpenBnB only redirects to the URI
-registered here, so a mismatch shows up later as a sign-in that never completes. The
-script prints the redirect URI it registers — check it against your `APP_URL`.
-
-It registers a confidential client and prints a **client id** and **client secret**.
-
-### 2. Give the values to TREK (admin, once)
-
-Four settings have to reach the server: the authorize and token URLs (constants of the
-OpenBnB service — the same on every install) and the two credentials the script printed.
-
-**On a TREK with an instance-settings UI**, open **Admin → Plugins → Airbnb Stays →
-⋯ → Instance settings**. TREK builds that form from this plugin's manifest, so every
-field arrives labelled, marked required or optional, and carrying the value it expects as
-greyed-out placeholder text. Type the two URLs exactly as the placeholders show them,
-paste the client id and secret, and press **Save**.
-
-> On a TREK that honours a manifest `default`, the two URLs and every optional field
-> arrive pre-filled and you only supply the client id and secret. On an older one the
-> greyed-out text is a placeholder, not a value — an empty field saves as empty, so type
-> the two URLs in even though they never vary.
-
-Saving **restarts the plugin for you** if it is running, so the new values take effect
-immediately — a plugin is handed its config once, when its process starts, and TREK
-re-spawns it on save rather than making you do it. The toast tells you when it did.
-
-To check your work, go to **Settings → Plugins → Airbnb Stays** and press
-**Test connection**. It reports the first thing that is actually wrong — a field still
-blank, an endpoint that will not answer, a token OpenBnB rejects — instead of leaving you
-to discover it when a traveller's sign-in fails days later.
-
-**On an older TREK with no such menu**, send the same values to the admin API. Sign in as
-an admin, then from the browser console on your TREK tab (it reuses your session cookie):
+On a TREK too old to build a settings form from the manifest, send the values to the
+admin API instead. Activate the plugin first (**Admin → Plugins → Airbnb Stays**, toggle
+it on), then, signed in as an admin, from the browser console on your TREK tab:
 
 ```js
 await fetch('/api/admin/plugins/airbnb-mcp/config', {
@@ -111,31 +124,33 @@ await fetch('/api/admin/plugins/airbnb-mcp/config', {
 }).then(r => r.json())
 ```
 
-Activate the plugin first (**Admin → Plugins → Airbnb Stays**, toggle it on) — the call
-above stores the settings either way, but there is nothing running to read them until it
-is active.
+Then **restart it**: **Admin → Plugins → ⋯ → Restart**. On such a host this is required
+rather than tidiness — a plugin reads its settings once, when its process starts, so
+without a restart the save appears to work and nothing changes. (Do not reach for
+`POST /reload`: that endpoint is dev-only and answers 403 on a normal install. The
+panel's Restart is a deactivate/activate cycle, which is the mechanism you want.)
 
-Then **restart it**: **Admin → Plugins → ⋯ → Restart**. On a TREK old enough to lack the
-settings form, this step is required rather than tidiness — a plugin reads its settings
-once, when its process starts, so without a restart the save appears to work and nothing
-changes. (Do not reach for `POST /reload`: that endpoint is dev-only and answers 403 on a
-normal install. The panel's Restart is a deactivate/activate cycle, which is the mechanism
-you want.)
+</details>
 
-The secret is stored encrypted either way and never leaves the host. The plugin's own tab
-also lists the settings still missing, so you can check your work there.
+The secret is stored encrypted either way and never leaves the host. It is also never
+written anywhere the plugin controls — not to its database, not to a log.
 
-> The map and the MCP endpoint need no configuration at all. Leave them blank: the plugin
-> falls back to Esri's grey canvas — the same muted basemap TREK draws its own maps on,
-> with a dark variant used automatically on a dark theme — and to the hosted OpenBnB
-> endpoint. Those settings exist only to override that.
+### 2. Choose a map style (admin, optional)
+
+**Map style** picks the basemap the "Where you'll be" map draws on: Esri's grey canvas
+(the default — keyless, and the same muted basemap TREK draws its own maps on, with a
+dark variant used automatically on a dark theme), OpenStreetMap, or a custom tile
+server. The first two need nothing else; the third reads the three **Custom map…**
+fields below it, and that host has to be added under **Allowed hosts**.
+
+Leave the whole section alone and the map works.
 
 ### 3. Each traveller connects their own account
 
-Every user goes to **Settings → Plugins → Airbnb Stays → Connect** once and
-signs in to OpenBnB with Google, an email address or SSO. OpenBnB accounts are free.
-TREK never sees the password, and one person's account is never used for another's
-searches. Until a user connects, the tab shows a prompt instead of a search form.
+Every user goes to **Settings → Plugins → Airbnb Stays → Connect** once and signs in to
+OpenBnB with Google, an email address or SSO. OpenBnB accounts are free. TREK never sees
+the password, and one person's account is never used for another's searches. Until a
+user connects, the tab shows a prompt instead of a search form.
 
 ## Permissions
 
@@ -150,15 +165,18 @@ searches. Until a user connects, the tab shows a prompt instead of a search form
 | `http:outbound:mcp.openbnb.ai` | The one network call this plugin makes: the MCP request that runs the search or fetches a listing's details. |
 | `http:outbound:*.muscache.com` | Listing photos live on Airbnb's image CDN. The plugin frame's CSP blocks remote images, so photos are fetched here and passed to the page as data URIs. No other host is proxied. |
 | `http:outbound:server.arcgisonline.com` | Map tiles for the "Where you'll be" map in a listing's details. Esri's grey canvas is the default because it matches the basemap TREK draws its own maps on, and it needs no key. Same reason as the photos: the frame's CSP blocks remote images, so tiles are fetched here and passed to the page as data URIs. |
-| `http:outbound:tile.openstreetmap.org` | The most likely alternative tile source, declared so switching to it needs no extra step. Not used unless an admin points **Map tiles** at it. Any other provider works too — add that host under **Allowed hosts**. |
+| `http:outbound:tile.openstreetmap.org` | The other named **Map style**, declared so choosing OpenStreetMap needs no extra step. Not used unless an admin picks it. Any other provider works too, via **Custom** — add that host under **Allowed hosts**. |
 | `hook:place-detail-provider` | Adds the Airbnb link, price and rating rows to the detail panel of a place this plugin added. |
+| `hook:trip-warning-provider` | Tells the planner when nights on the trip have no accommodation booked. It only speaks to a trip that already has at least one stay on it — a trip with no lodging at all is one being handled elsewhere, and nagging about it would make this plugin the noisiest thing in the planner. |
+| `db:write:costs` | Adds the stay's total to the trip budget when you add it, so the largest line on most trips is money the trip knows about rather than a note on a pin. Skipped silently if the price cannot be read, and never at the cost of the place itself. |
 
 ## Development
 
 ```bash
 npm install
-npm test          # 102 unit tests: MCP transport, session reuse, normalisation, tile maths, every route
-npm run smoke     # 49 browser checks: packs the frame and drives the real UI
+npm test          # 164 unit tests: MCP transport, session reuse, normalisation, price parsing,
+                  # OAuth registration, tile maths, the warning hook, every route
+npm run smoke     # 70 browser checks: packs the frame and drives the real UI
 npm run dev       # hot-reloaded local harness
 npm run validate  # the registry's own publish gates
 ```

@@ -1713,11 +1713,15 @@
       });
       btn.textContent = compact ? '✓' : 'Added ✓';
       btn.classList.add('is-done');
-      // Say which of the two things actually happened — a lodging block that spans
-      // the nights is a materially different outcome from a pin on the map.
-      trek.notify('success', added && added.accommodation
+      // Say what actually happened. A lodging block spanning the nights is a
+      // materially different outcome from a pin on the map, and a budget line is a
+      // third thing again — all three are opportunistic server-side, so the only
+      // honest message is the one built from what came back.
+      var outcome = added && added.accommodation
         ? l.name + ' added as lodging for those nights'
-        : l.name + ' added to the trip');
+        : l.name + ' added to the trip';
+      if (added && added.cost) outcome += ', and to the budget';
+      trek.notify('success', outcome);
     } catch (err) {
       btn.disabled = false;
       btn.textContent = restore;

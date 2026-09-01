@@ -304,6 +304,39 @@ async function lodgingFor(ctx, tripId, place, listing, body) {
   }
 }
 
+/**
+ * Put the stay on the trip's budget.
+ *
+ * A stay is usually the largest line on a trip, and adding one used to record its
+ * price as a NOTE STRING on the place — visible, but not money the trip knew about.
+ *
+ * The figure is the payload's own total, never nights x nightly: real results carry
+ * discount lines, so the computed version would be confidently wrong (see
+ * parsePriceDetails). No total means no line, rather than a guess.
+ *
+ * Opportunistic, exactly like lodgingFor: an instance that has not granted
+ * db:write:costs must still get the place the traveller actually asked for.
+ */
+async function budgetLineFor(ctx, tripId, listing) {
+  const total = Number(listing && listing.priceTotal);
+  if (!Number.isFinite(total) || total <= 0) return null;
+  try {
+    const nights = Number(listing.priceNights);
+    const label = Number.isFinite(nights) && nights > 0
+      ? `${listing.name} (${nights} ${nights === 1 ? 'night' : 'nights'})`
+      : String(listing.name || 'Airbnb stay');
+    return await ctx.costs.create(tripId, {
+      name: label.slice(0, 200),
+      category: 'Accommodation',
+      total_price: total,
+      currency: listing.priceCurrency || undefined,
+    });
+  } catch (err) {
+    ctx.log.warn(`airbnb-mcp: could not add the budget line — ${err && err.message}`);
+    return null;
+  }
+}
+
 module.exports = definePlugin({
   async onLoad(ctx) {
     await ctx.db.migrate(
@@ -661,6 +694,7 @@ module.exports = definePlugin({
 
           const place = await ctx.places.create(tripId, fields);
           const accommodation = await lodgingFor(ctx, tripId, place, listing, b);
+          const cost = await budgetLineFor(ctx, tripId, listing);
           await ctx.meta.set('place', place.id, 'airbnb', {
             listingId: String(listing.id),
             listingUrl: listing.url || null,
@@ -672,7 +706,7 @@ module.exports = definePlugin({
             adults: toInt(b.adults),
             addedAt: new Date().toISOString(),
           });
-          return reply(200, { place, accommodation: accommodation || null });
+          return reply(200, { place, accommodation: accommodation || null, cost: cost || null });
         } catch (err) {
           return errorReply(err, ctx);
         }
@@ -823,6 +857,70 @@ module.exports = definePlugin({
   },
 
   hooks: {
+    /**
+     * "3 nights with nowhere to stay."
+     *
+     * For a plugin about stays this is the most useful sentence it can say, and the
+     * planner already has somewhere to say it. The hard part is not finding the gap —
+     * it is knowing when to keep quiet. This runs on EVERY trip in an instance that
+     * installed the plugin, so a provider that speaks unprompted becomes the noisiest
+     * thing in the planner and takes the plugin down with it.
+     *
+     * So it addresses only someone who has already started booking lodging: a trip
+     * with zero accommodations gets nothing. That trip is not a problem to report, it
+     * is lodging handled elsewhere, or not yet begun, and this plugin has no standing
+     * to nag about either. A trip with one stay booked and a hole in the middle is a
+     * different thing entirely — that is a person who will thank you.
+     */
+    warningProvider: {
+      async getWarnings(tripId, ctx) {
+        let days;
+        let stays;
+        try {
+          [days, stays] = await Promise.all([
+            ctx.trips.getDays(tripId),
+            ctx.trips.getAccommodations(tripId),
+          ]);
+        } catch (err) {
+          // A refusal here must never break somebody else's trip page.
+          ctx.log.info(`airbnb-mcp: no lodging warning — ${(err && err.message) || 'read refused'}`);
+          return [];
+        }
+        if (!Array.isArray(days) || !Array.isArray(stays) || !stays.length) return [];
+
+        const ordered = days
+          .filter((d) => d && d.id != null)
+          .sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+        // The LAST day is a check-out, not a night anyone sleeps through. Counting it
+        // would tell every correctly-booked trip it had a hole on its final day.
+        const nights = ordered.slice(0, -1);
+        if (!nights.length) return [];
+
+        const position = new Map(ordered.map((d, i) => [String(d.id), i]));
+        const covered = new Set();
+        for (const stay of stays) {
+          const from = position.get(String(stay && stay.start_day_id));
+          const to = position.get(String(stay && stay.end_day_id));
+          if (from == null || to == null) continue;
+          // A stay spans the nights BETWEEN its two days, so the end day is exclusive
+          // for the same reason the trip's last day is.
+          for (let i = Math.min(from, to); i < Math.max(from, to); i++) covered.add(i);
+        }
+
+        const gaps = nights.filter((_, i) => !covered.has(i));
+        if (!gaps.length) return [];
+
+        const count = gaps.length;
+        return [{
+          level: 'info',
+          message: `${count} ${count === 1 ? 'night' : 'nights'} on this trip have no accommodation booked. `
+            + 'The Airbnb tab can search those dates.',
+          // Anchor to the first uncovered night, so the planner can take you there.
+          dayId: gaps[0].id,
+        }];
+      },
+    },
+
     placeDetailProvider: {
       async getDetails(placeId, ctx) {
         const info = await ctx.meta.get('place', placeId, 'airbnb');

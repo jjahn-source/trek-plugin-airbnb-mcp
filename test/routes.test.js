@@ -6,6 +6,7 @@ const plugin = require('../server/index.js');
 
 const GRANTS = [
   'db:own', 'db:meta', 'db:read:trips', 'db:write:places', 'db:write:accommodations',
+  'db:read:costs', 'db:write:costs',
   'oauth:client', 'http:outbound:mcp.openbnb.ai', 'http:outbound:*.muscache.com',
   'hook:place-detail-provider',
 ];
@@ -771,4 +772,65 @@ test('a dark theme gets the dark Esri canvas, not the light one', async () => {
     globalThis.fetch = real;
   }
   assert.ok(asked[0].includes('World_Dark_Gray_Base'), asked[0]);
+});
+
+/* -------------------------------------------------------------- budget line */
+
+/**
+ * A stay is money. Adding one used to record its price as a NOTE STRING on the place
+ * and nothing else, so the trip's budget stayed innocent of the single largest line
+ * on most trips.
+ *
+ * Opportunistic, exactly like the lodging block: an instance that has not granted
+ * db:write:costs, or a payload with no parseable total, must still add the place.
+ */
+const PRICED_LISTING = {
+  id: '1',
+  name: 'Sunlit loft',
+  url: 'https://www.airbnb.com/rooms/1',
+  lat: 48.86,
+  lng: 2.35,
+  priceLabel: '$1,022 USD total',
+  priceTotal: 1021.72,
+  priceCurrency: 'USD',
+  priceNights: 4,
+};
+
+test('/add puts the stay on the trip budget', async (t) => {
+  withMcp(t, {});
+  const h = host({ oauthAccessToken: 'tok' });
+  const res = await h.run(plugin).route({ method: 'POST', path: '/add' }, {
+    body: { tripId: 7, listing: PRICED_LISTING, checkin: '2026-10-10', checkout: '2026-10-14' },
+  });
+  assert.equal(res.status, 200);
+
+  const costs = await h.ctx.costs.getByTrip(7);
+  assert.equal(costs.length, 1, 'one budget line for the stay');
+  assert.equal(costs[0].total_price, 1021.72);
+  assert.equal(costs[0].currency, 'USD');
+  assert.match(costs[0].name, /Sunlit loft/);
+  assert.equal(body(res).cost.id, costs[0].id, 'and the caller is told it happened');
+});
+
+test('a stay with no parseable total adds the place and no budget line', async (t) => {
+  withMcp(t, {});
+  const h = host({ oauthAccessToken: 'tok' });
+  const res = await h.run(plugin).route({ method: 'POST', path: '/add' }, {
+    body: { tripId: 7, listing: { id: '2', name: 'Price on application' } },
+  });
+  assert.equal(res.status, 200);
+  assert.equal(body(res).cost, null);
+  assert.equal((await h.ctx.costs.getByTrip(7)).length, 0);
+});
+
+test('without db:write:costs the place is still added', async (t) => {
+  withMcp(t, {});
+  const grants = GRANTS.filter((g) => g !== 'db:write:costs');
+  const h = host({ oauthAccessToken: 'tok', grants });
+  const res = await h.run(plugin).route({ method: 'POST', path: '/add' }, {
+    body: { tripId: 7, listing: PRICED_LISTING, checkin: '2026-10-10', checkout: '2026-10-14' },
+  });
+  assert.equal(res.status, 200, 'a missing cost grant must never lose the place');
+  assert.ok(body(res).place, 'the place is what the traveller asked for');
+  assert.equal(body(res).cost, null);
 });
