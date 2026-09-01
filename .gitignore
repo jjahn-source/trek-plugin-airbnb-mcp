@@ -4,3 +4,4 @@ plugin.zip
 .trek-dev/
 .shot/
 dev-fixtures.json
+.build/
