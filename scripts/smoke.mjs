@@ -516,6 +516,23 @@ t('Clear dates empties both ends', await page.evaluate(() =>
   && document.getElementById('checkin-value').textContent === 'Add date'));
 await page.locator('[data-close-pop="dates-pop"]').click();
 
+// Exactly one day is in the tab order and the arrows move it — the ARIA date-picker
+// pattern. Every day being tabbable meant up to seventy stops between "Check in" and
+// the Done button: reachable in the sense that a corridor is reachable.
+await page.locator('#checkin-btn').click();
+t('only one day in the calendar is a tab stop',
+  await page.evaluate(() => document.querySelectorAll('#cal-months [data-date][tabindex="0"]').length) === 1);
+await page.locator('#cal-months [data-date][tabindex="0"]').focus();
+const dayBefore = await page.evaluate(() => document.activeElement?.getAttribute('data-date'));
+await page.keyboard.press('ArrowDown');
+const dayAfter = await page.evaluate(() => document.activeElement?.getAttribute('data-date'));
+t('ArrowDown moves the calendar focus a week on', (() => {
+  const gap = (new Date(dayAfter) - new Date(dayBefore)) / 86400000;
+  return gap === 7;
+})(), `${dayBefore} -> ${dayAfter}`);
+await page.keyboard.press('Escape');
+
+
 // The plugin often lives in a narrow side panel. The filter sheet must stay inside
 // that frame, and its two price inputs must remain separate usable controls.
 await page.setViewportSize({ width: 360, height: 700 });

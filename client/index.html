@@ -768,6 +768,7 @@
    */
   var calMonth = null;          // first of the two months on screen
   var picking = 'checkin';      // which end the next click sets
+  var calFocus = null;          // the ISO date currently in the tab order
   var DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
   function iso(d) {
@@ -805,8 +806,10 @@
     var co = $('checkout').value;
     var todayIso = iso(new Date());
 
-    var cells = DOW.map(function (d) { return '<div class="cal-dow">' + d + '</div>'; }).join('');
-    for (var i = 0; i < pad; i++) cells += '<div></div>';
+    var cells = DOW.map(function (d) {
+      return '<div class="cal-dow" role="columnheader" aria-hidden="true">' + d + '</div>';
+    }).join('');
+    for (var i = 0; i < pad; i++) cells += '<div role="gridcell"></div>';
     for (var day = 1; day <= days; day++) {
       var v = iso(new Date(year, month, day));
       var isEnd = v === ci || v === co;
@@ -814,24 +817,78 @@
       // Only the check-out end is bounded: picking a check-in resets the range, so an
       // earlier date is a legitimate new start rather than an invalid choice.
       var disabled = picking === 'checkout' && ci && v <= ci;
-      cells += '<button type="button" class="cal-day' +
+      // Roving tabindex: exactly ONE day is in the tab order, and the arrow keys move
+      // it. Every day being tabbable meant up to seventy stops between "Check in" and
+      // the Done button — reachable, in the sense that a corridor is reachable.
+      cells += '<button type="button" role="gridcell" class="cal-day' +
         (isEnd ? ' is-end' : '') + (inRange ? ' in-range' : '') +
         (v === todayIso ? ' is-today' : '') + '"' +
         ' data-date="' + v + '"' + (disabled ? ' disabled' : '') +
+        ' tabindex="' + (v === calFocus ? '0' : '-1') + '"' +
         ' aria-label="' + esc(new Date(year, month, day).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })) + '"' +
-        (isEnd ? ' aria-pressed="true"' : '') + '>' + day + '</button>';
+        ' aria-selected="' + (isEnd ? 'true' : 'false') + '">' + day + '</button>';
     }
-    return '<div><div class="cal-month-name">' +
-      esc(base.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })) +
-      '</div><div class="cal-grid">' + cells + '</div></div>';
+    var name = base.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+    return '<div><div class="cal-month-name">' + esc(name) + '</div>' +
+      '<div class="cal-grid" role="grid" aria-label="' + esc(name) + '">' + cells + '</div></div>';
   }
 
-  function renderCalendar() {
+  /** Whether an ISO date falls inside the two months currently drawn. */
+  function calVisible(v) {
+    var d = parseIso(v);
+    if (!d || !calMonth) return false;
+    var first = new Date(calMonth.getFullYear(), calMonth.getMonth(), 1);
+    var afterLast = new Date(calMonth.getFullYear(), calMonth.getMonth() + 2, 1);
+    return d >= first && d < afterLast;
+  }
+
+  function renderCalendar(keepFocus) {
     if (!calMonth) calMonth = new Date();
+    // The roving stop defaults to the selected end, else today, else the first day
+    // shown — so opening the picker lands somewhere meaningful rather than on the 1st
+    // of whatever month happens to be first.
+    if (!calFocus || !calVisible(calFocus)) {
+      var preferred = (picking === 'checkout' && $('checkout').value) || $('checkin').value || iso(new Date());
+      calFocus = calVisible(preferred) ? preferred : iso(new Date(calMonth.getFullYear(), calMonth.getMonth(), 1));
+    }
     var next = new Date(calMonth.getFullYear(), calMonth.getMonth() + 1, 1);
     $('cal-months').innerHTML = monthGrid(calMonth) + monthGrid(next);
     $('cal-title').textContent = picking === 'checkin' ? 'Select your check-in date' : 'Select your check-out date';
+    if (keepFocus) {
+      var cell = $('cal-months').querySelector('[data-date="' + calFocus + '"]');
+      if (cell) cell.focus();
+    }
   }
+
+  /**
+   * Arrow-key navigation across the grid, per the ARIA date-picker pattern.
+   *
+   * Moving past the two months on screen pages them, so the whole calendar is
+   * reachable without touching the month arrows.
+   */
+  function moveCalFocus(deltaDays) {
+    var from = parseIso(calFocus) || new Date();
+    var to = new Date(from.getFullYear(), from.getMonth(), from.getDate() + deltaDays);
+    calFocus = iso(to);
+    if (!calVisible(calFocus)) calMonth = new Date(to.getFullYear(), to.getMonth(), 1);
+    renderCalendar(true);
+  }
+
+  $('cal-months').addEventListener('keydown', function (e) {
+    if (!e.target.closest || !e.target.closest('[data-date]')) return;
+    var step = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 7, ArrowUp: -7 }[e.key];
+    if (step) { e.preventDefault(); moveCalFocus(step); return; }
+    if (e.key === 'Home') { e.preventDefault(); moveCalFocus(-(parseIso(calFocus) || new Date()).getDay()); return; }
+    if (e.key === 'End') { e.preventDefault(); moveCalFocus(6 - (parseIso(calFocus) || new Date()).getDay()); return; }
+    if (e.key === 'PageUp' || e.key === 'PageDown') {
+      e.preventDefault();
+      var d = parseIso(calFocus) || new Date();
+      var shifted = new Date(d.getFullYear(), d.getMonth() + (e.key === 'PageDown' ? 1 : -1), d.getDate());
+      calFocus = iso(shifted);
+      calMonth = new Date(shifted.getFullYear(), shifted.getMonth(), 1);
+      renderCalendar(true);
+    }
+  });
 
   function openDates(which) {
     picking = which;
@@ -870,6 +927,7 @@
     var btn = e.target.closest('[data-date]');
     if (!btn || btn.disabled) return;
     var v = btn.getAttribute('data-date');
+    calFocus = v;
     if (picking === 'checkin') {
       $('checkin').value = v;
       // A check-out that no longer follows the check-in is stale, not a preference.
