@@ -86,7 +86,8 @@ test('/status reports configured-but-not-connected before the user links OpenBnB
   const res = await h.run(plugin).route({ method: 'GET', path: '/status' });
   assert.equal(res.status, 200);
   assert.deepEqual(body(res), {
-    configured: true, missing: [], connected: false, endpoint: 'https://mcp.openbnb.ai/mcp',
+    configured: true, missing: [], missingLabels: [], connected: false,
+    endpoint: 'https://mcp.openbnb.ai/mcp',
   });
 });
 

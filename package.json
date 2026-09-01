@@ -1,6 +1,6 @@
 {
   "name": "trek-plugin-airbnb-mcp",
-  "version": "1.6.1",
+  "version": "1.7.0",
   "private": true,
   "type": "commonjs",
   "description": "TREK trip-page plugin: search Airbnb via each traveller's own OpenBnB MCP account.",

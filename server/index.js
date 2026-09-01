@@ -19,18 +19,56 @@ function reply(status, body) {
   return { status, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) };
 }
 
+/**
+ * Whether a string is an endpoint this plugin could actually call.
+ *
+ * A plugin's outbound allow-list is per-host, so an http:// or malformed override would
+ * be refused by the host anyway. Shared by the silent fallback below and by the settings
+ * page's "Test connection", which must agree on what "bad" means — the test exists to
+ * report the fallback, so it cannot use a different rule to decide one happened.
+ */
+function isHttpsUrl(raw) {
+  try {
+    return new URL(raw).protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 function mcpUrl(ctx) {
   const raw = ctx.config && typeof ctx.config.mcp_url === 'string' ? ctx.config.mcp_url.trim() : '';
-  if (!raw) return DEFAULT_MCP_URL;
-  try {
-    const u = new URL(raw);
-    // A plugin's outbound allow-list is per-host, so an http:// or odd-host override
-    // would be refused by the host anyway — fail loudly here instead.
-    if (u.protocol !== 'https:') return DEFAULT_MCP_URL;
-    return u.toString();
-  } catch {
-    return DEFAULT_MCP_URL;
-  }
+  if (!raw || !isHttpsUrl(raw)) return DEFAULT_MCP_URL;
+  return new URL(raw).toString();
+}
+
+/**
+ * The instance settings the HOST's OAuth broker reads, paired with the labels the
+ * settings form shows for them.
+ *
+ * The pairing is the point. These four are the only settings this plugin cannot
+ * supply a fallback for — the broker reads them straight out of the stored config,
+ * so a blank one is a dead end no amount of plugin-side defaulting can rescue.
+ * Naming them by their FORM LABEL rather than their storage key is what makes the
+ * message actionable now that an admin has a form to look at: "OAuth client id" is
+ * a field they can point at, `oauth_client_id` is not.
+ */
+const REQUIRED_SETTINGS = [
+  { key: 'oauth_authorize_url', label: 'OAuth authorize URL' },
+  { key: 'oauth_token_url', label: 'OAuth token URL' },
+  { key: 'oauth_client_id', label: 'OAuth client id' },
+  { key: 'oauth_client_secret', label: 'OAuth client secret' },
+];
+
+/** The required settings still blank, in manifest order. */
+function missingSettings(ctx) {
+  const cfg = ctx.config || {};
+  return REQUIRED_SETTINGS.filter((s) => !String(cfg[s.key] || '').trim());
+}
+
+/** "a", "a and b", "a, b and c" — a list a person reads, not a JSON array. */
+function sentenceList(items) {
+  if (items.length <= 1) return items[0] || '';
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
 }
 
 /**
@@ -247,19 +285,25 @@ module.exports = definePlugin({
       path: '/status',
       auth: true,
       async handler(_req, ctx) {
-        const cfg = ctx.config || {};
-        // Name the missing keys rather than just saying "not configured". A TREK without an
-        // instance-settings form cannot show the operator a form to compare against, so the
-        // list IS the instruction.
-        const REQUIRED = ['oauth_authorize_url', 'oauth_token_url', 'oauth_client_id', 'oauth_client_secret'];
-        const missing = REQUIRED.filter((k) => !String(cfg[k] || '').trim());
+        // Name what is missing rather than just saying "not configured", and name it
+        // twice: `missing` is the storage keys (what an admin PUTs to the config API on
+        // a TREK with no settings form), `missingLabels` is the field labels (what an
+        // admin READS off the form on a TREK that has one). Which of the two helps
+        // depends on the host, and the plugin cannot tell from here which host it is on.
+        const gaps = missingSettings(ctx);
         let connected = false;
         try {
           connected = !!(await ctx.oauth.getAccessToken());
         } catch {
           connected = false;
         }
-        return reply(200, { configured: missing.length === 0, missing, connected, endpoint: mcpUrl(ctx) });
+        return reply(200, {
+          configured: gaps.length === 0,
+          missing: gaps.map((s) => s.key),
+          missingLabels: gaps.map((s) => s.label),
+          connected,
+          endpoint: mcpUrl(ctx),
+        });
       },
     },
 
@@ -591,6 +635,102 @@ module.exports = definePlugin({
       },
     },
   ],
+
+  /**
+   * Buttons on the plugin's own settings page. The keys match the manifest's `actions`.
+   *
+   * This exists because saving these settings is a one-way conversation otherwise: the
+   * four OAuth fields are consumed by the HOST's broker, never by plugin code, so a typo
+   * in the token URL does not surface until some traveller clicks Connect days later and
+   * gets a sign-in that never completes. An admin who can check their own work while the
+   * form is still open in front of them fixes it in seconds instead.
+   */
+  actions: {
+    async test_connection(ctx) {
+      const gaps = missingSettings(ctx);
+      if (gaps.length) {
+        return {
+          ok: false,
+          message: `Not configured yet — still empty: ${sentenceList(gaps.map((s) => s.label))}.`,
+        };
+      }
+
+      // mcpUrl() falls back silently on a bad override, which is right for a search (a
+      // traveller should not be blocked by an admin's typo) but wrong here: a test that
+      // quietly passes against a DIFFERENT endpoint than the one configured is worse
+      // than no test. Say so instead.
+      //
+      // Judge the raw value on its own terms rather than by comparing it against what
+      // mcpUrl() returned: URL normalisation rewrites perfectly good input ("https://h"
+      // gains a trailing slash), so a mismatch there means nothing.
+      const raw = String((ctx.config || {}).mcp_url || '').trim();
+      if (raw && !isHttpsUrl(raw)) {
+        return {
+          ok: false,
+          message: `"OpenBnB MCP endpoint" is not a usable https URL, so the hosted ${DEFAULT_MCP_URL} is being used instead. Clear the field to accept that, or correct it.`,
+        };
+      }
+      const url = mcpUrl(ctx);
+
+      let token = null;
+      try {
+        token = await ctx.oauth.getAccessToken();
+      } catch {
+        token = null;
+      }
+      if (!token) {
+        // Everything checkable without a user is checked. The client id and secret are
+        // only ever exercised by the broker's token exchange, so claiming they are good
+        // here would be a guess — say exactly how far the test got.
+        return {
+          ok: true,
+          message:
+            'All four settings are filled in. Connect your own OpenBnB account under Settings → Plugins → Airbnb Stays → Connect, then run this again to check the credentials end to end.',
+        };
+      }
+
+      const client = new McpClient({ url, token });
+      try {
+        await client.connect();
+        // hasTool() already treats "the server would not list its tools" as good enough
+        // — the same benefit of the doubt a real search gets. Only a server that listed
+        // its tools and omitted this one is a configuration error worth reporting.
+        if (!client.hasTool('airbnb_search')) {
+          return {
+            ok: false,
+            message: `Connected to ${url}, but it does not offer an "airbnb_search" tool. Check the "OpenBnB MCP endpoint" setting.`,
+          };
+        }
+        return { ok: true, message: `Connected to ${url} and signed in. Search is ready.` };
+      } catch (err) {
+        const code = err instanceof McpError ? err.code : null;
+        if (code === 'UNAUTHORIZED') {
+          return {
+            ok: false,
+            message:
+              'OpenBnB rejected the token. Disconnect and reconnect your account; if that does not help, re-check the client id and secret.',
+          };
+        }
+        const detail = String((err && err.message) || '');
+        ctx.log.warn(`airbnb-mcp: test_connection failed — ${detail}`);
+        // friendlyError's own fallback is search copy ("The search failed."), which is
+        // the wrong sentence on a settings page — only borrow it when it recognised
+        // something, and say where the failure was otherwise.
+        const friendly = detail ? friendlyError(detail) : '';
+        return {
+          ok: false,
+          message: friendly && friendly !== detail
+            ? `Could not reach ${url}. ${friendly}`
+            : `Could not reach ${url}${detail ? ` — ${detail}` : ''}. Check the endpoint and this server's outbound access.`,
+        };
+      } finally {
+        // A test must not leave a session behind on OpenBnB's server, and it is
+        // deliberately not put in the shared client cache: a search should not inherit
+        // a connection opened to prove a point.
+        await Promise.resolve(client.close()).catch(() => {});
+      }
+    },
+  },
 
   hooks: {
     placeDetailProvider: {

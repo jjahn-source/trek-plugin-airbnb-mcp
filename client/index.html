@@ -456,10 +456,11 @@
     $('app').hidden = true;
 
     if (state === 'unconfigured') {
-      // Two setup paths, described by CAPABILITY rather than by version: as of TREK 4.1
-      // there is no UI for a plugin's instance settings at all, and the release that adds
-      // one does not exist yet, so naming a version number here would send an operator
-      // looking for something that is not out. The admin API route works on every 4.x.
+      // Two setup paths, described by CAPABILITY rather than by version. A TREK new
+      // enough to build a settings form from the manifest shows one under ⋯ → Instance
+      // settings; older 4.x has no such UI and needs the admin API. This panel cannot
+      // tell which host it is on, so it points at the menu first and keeps the API as
+      // the stated fallback rather than naming a version number either way.
       var missingHtml = missingKeys.length
         ? '<p class="trek-muted">Still needed: ' +
           missingKeys.map(function (k) { return '<code>' + esc(k) + '</code>'; }).join(', ') + '</p>'
@@ -470,9 +471,11 @@
         '<p class="trek-muted">An administrator links this TREK server to OpenBnB once. Run ' +
         '<code>npm run register -- &lt;your TREK URL&gt;</code> in the plugin repo to get a client id and secret.</p>' +
         missingHtml +
-        '<p class="trek-muted">If <strong>Admin &rarr; Plugins &rarr; Airbnb Stays</strong> offers a ' +
-        '<strong>Settings</strong> form, paste them there. If it does not — no TREK 4.1 or earlier has one — ' +
-        'send the same values to the admin API instead; the plugin’s README has the exact command.</p>' +
+        '<p class="trek-muted">Paste them under <strong>Admin &rarr; Plugins &rarr; Airbnb Stays &rarr; ' +
+        '&#8943; &rarr; Instance settings</strong>. On an older TREK with no such menu, send the same values ' +
+        'to the admin API instead &mdash; the plugin’s README has the exact command. ' +
+        '<strong>Settings &rarr; Plugins &rarr; Airbnb Stays</strong> then offers a ' +
+        '<strong>Test connection</strong> button that says what is still wrong.</p>' +
         '</div>';
       return;
     }

@@ -72,19 +72,29 @@ It registers a confidential client and prints a **client id** and **client secre
 
 ### 2. Give the values to TREK (admin, once)
 
-Four settings have to reach the server. Two of them — the authorize and token URLs — are
-constants of the OpenBnB service and this plugin ships them as manifest defaults, so on a
-TREK new enough to honour defaults they are already filled in and you only supply the two
-credentials.
+Four settings have to reach the server: the authorize and token URLs (constants of the
+OpenBnB service — the same on every install) and the two credentials the script printed.
 
-**If your TREK shows a Settings form** for this plugin under **Admin → Plugins → Airbnb
-Stays**, fill in `OAuth client id` and `OAuth client secret` there; everything else is
-pre-filled.
+**On a TREK with an instance-settings UI**, open **Admin → Plugins → Airbnb Stays →
+⋯ → Instance settings**. TREK builds that form from this plugin's manifest, so every
+field arrives labelled, marked required or optional, and carrying the value it expects as
+greyed-out placeholder text. Type the two URLs exactly as the placeholders show them,
+paste the client id and secret, and press **Save**.
 
-**No TREK release has that form yet** — up to and including 4.1 there is no UI for a
-plugin's instance settings — so today this is the path you want. Send the same values to
-the admin API. Sign in to TREK as an admin, then from the browser console on
-your TREK tab (it reuses your session cookie):
+> Placeholders are a hint, not a value — an empty field saves as empty. The two URLs
+> have to be typed in even though they never vary.
+
+Saving **restarts the plugin for you** if it is running, so the new values take effect
+immediately — a plugin is handed its config once, when its process starts, and TREK
+re-spawns it on save rather than making you do it. The toast tells you when it did.
+
+To check your work, go to **Settings → Plugins → Airbnb Stays** and press
+**Test connection**. It reports the first thing that is actually wrong — a field still
+blank, an endpoint that will not answer, a token OpenBnB rejects — instead of leaving you
+to discover it when a traveller's sign-in fails days later.
+
+**On an older TREK with no such menu**, send the same values to the admin API. Sign in as
+an admin, then from the browser console on your TREK tab (it reuses your session cookie):
 
 ```js
 await fetch('/api/admin/plugins/airbnb-mcp/config', {
@@ -103,17 +113,19 @@ Activate the plugin first (**Admin → Plugins → Airbnb Stays**, toggle it on)
 above stores the settings either way, but there is nothing running to read them until it
 is active.
 
-Then **restart it**: **Admin → Plugins → ⋯ → Restart**. This step is required, not
-tidiness — a plugin reads its settings once, when its process starts, so without a restart
-the save appears to work and nothing changes. (Do not reach for `POST /reload`: that
-endpoint is dev-only and answers 403 on a normal install. The panel's Restart is a
-deactivate/activate cycle, which is the mechanism you want.)
+Then **restart it**: **Admin → Plugins → ⋯ → Restart**. On a TREK old enough to lack the
+settings form, this step is required rather than tidiness — a plugin reads its settings
+once, when its process starts, so without a restart the save appears to work and nothing
+changes. (Do not reach for `POST /reload`: that endpoint is dev-only and answers 403 on a
+normal install. The panel's Restart is a deactivate/activate cycle, which is the mechanism
+you want.)
 
 The secret is stored encrypted either way and never leaves the host. The plugin's own tab
-lists the keys still missing, so you can check your work there.
+also lists the settings still missing, so you can check your work there.
 
-> The map and the MCP endpoint need no configuration at all — they fall back to built-in
-> defaults, and their settings exist only to override them.
+> The map and the MCP endpoint need no configuration at all. Leave them blank: the plugin
+> falls back to OpenStreetMap tiles and the hosted OpenBnB endpoint on its own, and those
+> settings exist only to override that.
 
 ### 3. Each traveller connects their own account
 

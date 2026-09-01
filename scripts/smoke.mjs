@@ -404,10 +404,12 @@ await page.locator('[data-close-pop="dates-pop"]').click();
   t('unconfigured instance explains what the admin must do', /administrator/i.test(gateText));
   t('the gate names the exact settings that are still missing',
     /oauth_client_id/.test(gateText) && /oauth_client_secret/.test(gateText), gateText.slice(0, 160));
-  // Described by capability, never by a version number: the release that adds a settings
-  // form does not exist yet, so naming one would send an operator hunting for it.
-  t('the gate covers TREK with no settings form, and promises no version that does not exist',
-    /Settings/.test(gateText) && /admin API/i.test(gateText) && !/4\.2/.test(gateText), gateText.slice(0, 200));
+  // Described by capability, never by a version number. The gate has to serve both hosts
+  // at once — it points at the Instance settings menu first, and still names the admin
+  // API for a TREK that has no such menu — because it cannot tell which one it is on.
+  t('the gate points at Instance settings, keeps the admin API fallback, and names no version',
+    /Instance settings/i.test(gateText) && /admin API/i.test(gateText) && !/4\.\d/.test(gateText),
+    gateText.slice(0, 240));
   t('unconfigured instance hides the search form', await page3.locator('#app').isHidden());
   await page3.close();
 }
