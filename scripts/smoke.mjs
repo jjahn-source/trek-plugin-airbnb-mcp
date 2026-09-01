@@ -20,7 +20,11 @@ if (!frame) {
 }
 
 const RESULTS = [
-  { id: '1', url: 'https://www.airbnb.com/rooms/1', name: 'Sunlit loft above Rue des Rosiers', subtitle: 'Entire rental unit', area: 'Le Marais · 2 beds', badge: 'Guest favourite', priceLabel: '$1,240 for 4 nights', priceAmount: 1240, rating: 4.92, reviews: 148, lat: 48.86, lng: 2.35, photos: ['https://a0.muscache.com/im/pictures/one.jpg'] },
+  { id: '1', url: 'https://www.airbnb.com/rooms/1', name: 'Sunlit loft above Rue des Rosiers', subtitle: 'Entire rental unit', area: 'Le Marais · 2 beds', badge: 'Guest favourite', priceLabel: '$1,240 for 4 nights', priceAmount: 1240, rating: 4.92, reviews: 148, lat: 48.86, lng: 2.35, photos: [
+    'https://a0.muscache.com/im/pictures/one.jpg',
+    'https://a0.muscache.com/im/pictures/two.jpg',
+    'https://a0.muscache.com/im/pictures/three.jpg',
+  ] },
   // Taken from real captured data: apostrophes, en-dashes and an ampersand are what
   // Airbnb listing names actually contain, and they are exactly what a double-escaping
   // bug turns into "&#39;" on screen.
@@ -80,7 +84,9 @@ await page.addInitScript(({ results: R, listing: L }) => {
         },
       };
       else if (sub === '/add') data = { place: { id: 99 }, accommodation: { id: 5 } };
-      else if (sub === '/photo') data = { dataUri: 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==' };
+      else if (sub === '/photo') data = String(m.sub).includes('three.jpg')
+        ? {}
+        : { dataUri: 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==' };
       else if (sub === '/places') data = { suggestions: [
         { label: 'Tokyo', sublabel: 'Tokyo, Japan', lat: 35.6762, lng: 139.6503 },
         { label: 'Shibuya', sublabel: 'Shibuya City, Tokyo, Japan', lat: 35.6595, lng: 139.7005 },
@@ -127,6 +133,31 @@ t('reuses the cached photo across a re-render', photoCallsAfter === photoCallsBe
 t('the photo survives the re-render', await page.locator('.thumb').first().evaluate((e) => e.src.startsWith('data:')));
 t('sorting does not remeasure travel times', invoked.filter((c) => c.sub === '/commute').length === 1);
 
+// Each result previews all of the photos the search already returned, with the same
+// over-image arrows and position dots travellers expect from Airbnb cards.
+const listingCallsBeforePreview = invoked.filter((c) => c.sub.startsWith('/listing')).length;
+await page.locator('[data-details="1"] .card-photo-next').click();
+await page.waitForFunction(() => {
+  const img = document.querySelector('[data-details="1"] img[data-card-at]');
+  return img?.getAttribute('data-card-at') === '1' && img.src.startsWith('data:');
+});
+t('next previews the next listing photo without opening details',
+  await page.locator('[data-details="1"] img[data-card-at]').getAttribute('data-card-at') === '1'
+  && invoked.filter((c) => c.sub.startsWith('/listing')).length === listingCallsBeforePreview);
+t('the card carousel marks the current photo',
+  (await page.locator('[data-details="1"] .card-dot.is-current').count()) === 1);
+await page.locator('[data-details="1"] .card-photo-next').click();
+await page.waitForFunction(() => {
+  const img = document.querySelector('[data-details="1"] img[data-card-at]');
+  return img?.getAttribute('data-card-at') === '1' && !img.classList.contains('is-loading');
+});
+t('a failed preview keeps the current photo instead of showing a broken tile',
+  await page.locator('[data-details="1"] img[data-card-at]').evaluate((img) =>
+    img.src.startsWith('data:') && img.alt.startsWith('Photo 2 of')));
+await page.locator('[data-details="1"] .card-photo-prev').click();
+t('previous returns to the prior listing photo',
+  await page.locator('[data-details="1"] img[data-card-at]').getAttribute('data-card-at') === '0');
+
 await page.selectOption('#commute-mode', 'walking');
 await page.waitForFunction(() => document.querySelector('[data-commute="1"]')?.textContent.includes('22 min'));
 t('changing travel mode refreshes the card times', invoked.filter((c) => c.sub === '/commute').length === 2);
@@ -155,6 +186,7 @@ t('opening details moves focus into the detail view',
 // 2c. the detail view shows the area the stay is in. The map fills in after the panel
 // paints, like the photos do, so wait for it rather than racing it.
 await page.waitForSelector('#detail-map .map-mosaic img', { timeout: 10000 });
+await page.waitForSelector('#map-scroll[data-centered="true"]', { timeout: 5000 });
 t('the detail view renders a map for a listing with coordinates',
   (await page.locator('#detail-map .map-mosaic img').count()) === 9);
 t('the map asks for the tiles matching the current theme',
@@ -163,7 +195,71 @@ t('the map shows an approximate area, not a precise pin',
   (await page.locator('#detail-map .map-area').count()) === 1
   && /approximate area/i.test(await page.locator('#detail').innerText()));
 t('the map credits the tile source',
-  /OpenStreetMap/i.test(await page.locator('#detail-map .map-attr').innerText()));
+  /Esri|OpenStreetMap/i.test(await page.locator('#detail-map .map-attr').innerText()));
+
+// 2d. The box shows ~620x240 of a 768px mosaic, so most of the neighbourhood is out of
+// frame. It has to be reachable, and it has to open centred on the listing rather than
+// on a corner.
+const mapPan = await page.evaluate(() => {
+  const sc = document.getElementById('map-scroll');
+  if (!sc) return null;
+  const marker = document.querySelector('#detail-map .map-area');
+  const markerX = parseFloat(marker.style.left);
+  const markerY = parseFloat(marker.style.top);
+  const expectedLeft = Math.min(sc.scrollWidth - sc.clientWidth, Math.max(0, markerX - sc.clientWidth / 2));
+  const expectedTop = Math.min(sc.scrollHeight - sc.clientHeight, Math.max(0, markerY - sc.clientHeight / 2));
+  const before = { left: sc.scrollLeft, top: sc.scrollTop };
+  sc.scrollLeft = before.left + 60;
+  return {
+    scrollable: sc.scrollWidth > sc.clientWidth && sc.scrollHeight > sc.clientHeight,
+    centred: Math.abs(before.left - expectedLeft) <= 1 && Math.abs(before.top - expectedTop) <= 1,
+    moved: sc.scrollLeft !== before.left,
+    before, expected: { left: expectedLeft, top: expectedTop },
+  };
+});
+t('the map can be panned to the rest of the mosaic',
+  !!mapPan && mapPan.scrollable && mapPan.moved, JSON.stringify(mapPan));
+t('the map opens centred on the listing, clamped only where the mosaic ends',
+  !!mapPan && mapPan.centred, JSON.stringify(mapPan));
+t('the attribution stays pinned while the tiles scroll',
+  await page.evaluate(() => {
+    const attr = document.querySelector('#detail-map .map-attr');
+    const sc = document.getElementById('map-scroll');
+    return !!attr && !!sc && !sc.contains(attr);
+  }));
+
+// 2e. Photos open as a carousel rather than being a strip you can only squint at.
+const shots = await page.locator('.detail-photos img').count();
+if (shots > 1) {
+  await page.waitForFunction(() =>
+    document.querySelector('.detail-photos img[data-lb="0"]')?.src.startsWith('data:'),
+  );
+  await page.locator('.detail-photos img[data-lb="0"]').click();
+  await page.waitForSelector('#lb:not([hidden])', { timeout: 5000 });
+  t('clicking a photo opens the carousel', await page.locator('#lb').isVisible());
+  t('the carousel starts on the photo that was clicked',
+    (await page.locator('#lb-count').innerText()).trim().startsWith('1 /'));
+  t('previous is disabled on the first photo', await page.locator('#lb-prev').isDisabled());
+  await page.locator('#lb-next').click();
+  t('next advances the carousel',
+    (await page.locator('#lb-count').innerText()).trim().startsWith('2 /'));
+  t('previous becomes available once past the first', !(await page.locator('#lb-prev').isDisabled()));
+  await page.keyboard.press('ArrowLeft');
+  t('the arrow keys drive the carousel too',
+    (await page.locator('#lb-count').innerText()).trim().startsWith('1 /'));
+  await page.keyboard.press('Escape');
+  t('Escape closes the carousel', await page.locator('#lb').isHidden());
+}
+
+// 2f. The amenity values are the point of the section — the kit's nowrap+ellipsis on
+// .trek-field-value was hiding most of every list.
+t('amenity values wrap instead of being cut off with an ellipsis',
+  await page.evaluate(() => {
+    const v = document.querySelector('.amenities .trek-field-value');
+    if (!v) return false;
+    const cs = getComputedStyle(v);
+    return cs.whiteSpace !== 'nowrap' && cs.textOverflow !== 'ellipsis' && v.scrollWidth <= v.clientWidth + 1;
+  }));
 
 // 3. Back returns to the grid
 await page.locator('#detail-back').click();
@@ -274,7 +370,15 @@ t('the adult stepper will not go below one',
 await page.locator('[data-close-pop="who-pop"]').click();
 await page.locator('#filters-btn').click();
 await page.fill('#minPrice', '80');
+// Place type is a plain <select> the design kit upgrades into an in-document dropdown.
+// Setting it is enough; what matters is that the KIT'S trigger shows the choice, since
+// that is the part the traveller actually reads.
 await page.selectOption('#propertyType', 'entire_home');
+t('the place-type select reports the choice back on the kit trigger',
+  (await page.locator('#propertyType').evaluate((sel) => {
+    const trigger = sel.parentNode.querySelector('.trek-select-value');
+    return trigger ? trigger.textContent.trim() : '(no kit trigger)';
+  })) === 'Entire home');
 await page.locator('#filters-apply').click();
 const lastSearch = await waitForCall('/search');
 t('the filter chip counts the active filters',
@@ -340,6 +444,35 @@ t('Clear dates empties both ends', await page.evaluate(() =>
   !document.getElementById('checkin').value && !document.getElementById('checkout').value
   && document.getElementById('checkin-value').textContent === 'Add date'));
 await page.locator('[data-close-pop="dates-pop"]').click();
+
+// The plugin often lives in a narrow side panel. The filter sheet must stay inside
+// that frame, and its two price inputs must remain separate usable controls.
+await page.setViewportSize({ width: 360, height: 700 });
+await page.locator('#filters-btn').click();
+const mobileFilters = await page.evaluate(() => {
+  const pop = document.getElementById('filters-pop').getBoundingClientRect();
+  const min = document.getElementById('minPrice').getBoundingClientRect();
+  const max = document.getElementById('maxPrice').getBoundingClientRect();
+  const row = getComputedStyle(document.querySelector('#filters-pop .pop-row'));
+  return {
+    inside: pop.left >= 0 && pop.right <= innerWidth,
+    separate: min.right < max.left && min.width > 40 && max.width > 40,
+    stacked: row.flexDirection === 'column',
+    pop: { left: pop.left, right: pop.right, width: pop.width },
+  };
+});
+t('the filter panel fits a narrow frame without crushed controls',
+  mobileFilters.inside && mobileFilters.separate && mobileFilters.stacked,
+  JSON.stringify(mobileFilters));
+// Scoped to THIS select's own menu: Sort and Travel-by are kit-upgraded too, so an
+// unscoped .trek-select-menu query would measure whichever one the DOM yielded first.
+t('place-type names stay fully visible in the narrow filter panel',
+  await page.locator('#propertyType').evaluate((sel) => {
+    sel.parentNode.querySelector('.trek-select-trigger').click();
+    const options = [...sel.parentNode.querySelectorAll('.trek-select-menu [role="option"]')];
+    return options.length === 5 && options.every((o) => o.scrollWidth <= o.clientWidth + 1);
+  }));
+await page.keyboard.press('Escape');
 
 // --- second scenario: a connected user with no previous search ------------------
 {

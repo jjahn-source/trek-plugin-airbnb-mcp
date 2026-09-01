@@ -148,8 +148,7 @@
       .pop-filters .pop-row { align-items: stretch; flex-direction: column; gap: 8px; }
       .pop-filters .stepper { width: 100%; }
       .pop-filters .stepper .trek-input { flex: 1 1 0; width: auto; min-width: 0; }
-      .pop-filters .pt, .pop-filters .pt-btn { box-sizing: border-box; width: 100%; }
-      .pop-filters .pt-list { left: 0; right: 0; }
+      .pop-filters .trek-select { box-sizing: border-box; width: 100%; }
     }
 
     /* Calendar — deliberately the same visual language as TREK's own date picker:
@@ -382,35 +381,6 @@
       .lb-nav { width: 38px; height: 38px; }
     }
 
-    /* ------------------------------------------------- place-type listbox */
-    /* A native <select> inside a plugin frame drops its option list through the iframe
-       edge, where it is clipped mid-word ("Entire hom…"). The frame cannot grow to fit
-       an OS popup, so the menu is drawn in the document instead — inside the popover
-       that owns it, where there is always room. */
-    .pt { position: relative; }
-    .pt-btn {
-      display: inline-flex; align-items: center; justify-content: space-between; gap: 8px;
-      min-width: 148px; padding: 7px 12px; cursor: pointer;
-      border: 1px solid var(--border-primary); border-radius: 10px;
-      background: var(--bg-input, var(--bg-card)); color: var(--text-primary);
-      font: inherit; font-size: 13px; text-align: left;
-    }
-    .pt-btn:hover { background: var(--bg-hover); }
-    .pt-btn[aria-expanded="true"] { border-color: var(--accent); }
-    .pt-caret { flex: 0 0 auto; font-size: 10px; color: var(--text-muted); }
-    .pt-list {
-      position: absolute; top: calc(100% + 6px); right: 0; z-index: 40; min-width: 100%;
-      margin: 0; padding: 6px; list-style: none;
-      background: var(--bg-card); border: 1px solid var(--border-primary);
-      border-radius: 12px; box-shadow: var(--shadow-md, var(--shadow-card));
-      max-height: 220px; overflow-y: auto;
-    }
-    .pt-list li {
-      padding: 8px 12px; border-radius: 8px; cursor: pointer;
-      font-size: 13px; color: var(--text-primary); white-space: nowrap;
-    }
-    .pt-list li:hover, .pt-list li[aria-selected="true"] { background: var(--bg-hover); }
-    .pt-list li[aria-selected="true"] { font-weight: 600; }
     .amenities { display: grid; gap: 14px 20px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
     /* The kit gives .trek-field-value nowrap + ellipsis, which suits a one-word value
        and destroys an amenity list: "Bath, Hairdryer, Shampoo, Conditio…" hides most of
@@ -529,17 +499,21 @@
                 </div>
               </div>
               <div class="pop-row">
-                <div class="pop-row-label" id="pt-label">Place type</div>
-                <div class="pt" id="pt">
-                  <!-- The value still lives in an input with the original id, so every
-                       reader of $('propertyType').value keeps working untouched. -->
-                  <input type="hidden" id="propertyType" value="" />
-                  <button type="button" class="pt-btn" id="pt-btn"
-                          aria-haspopup="listbox" aria-expanded="false" aria-labelledby="pt-label pt-btn">
-                    <span id="pt-value">Any</span><span class="pt-caret" aria-hidden="true">▾</span>
-                  </button>
-                  <ul class="pt-list" id="pt-list" role="listbox" aria-labelledby="pt-label" hidden></ul>
-                </div>
+                <label class="pop-row-label" id="pt-label" for="propertyType">Place type</label>
+                <!-- A plain <select>. This used to be a hand-built listbox, because a
+                     native select's OS-drawn popup dropped through the plugin frame's
+                     edge and was clipped mid-word ("Entire hom…"). The design kit now
+                     upgrades every native select into an in-document, keyboard-accessible
+                     dropdown itself — the Sort and Travel-by controls above have relied on
+                     that all along — so the bespoke copy was a worse reimplementation of
+                     a solved problem, and went. -->
+                <select class="trek-select" id="propertyType">
+                  <option value="">Any</option>
+                  <option value="entire_home">Entire home</option>
+                  <option value="private_room">Private room</option>
+                  <option value="shared_room">Shared room</option>
+                  <option value="hotel_room">Hotel room</option>
+                </select>
               </div>
               <div class="pop-actions">
                 <button type="button" class="trek-btn trek-btn--ghost" id="filters-clear">Clear</button>
@@ -662,7 +636,6 @@
       $(id).hidden = true;
       POPS[id].forEach(function (b) { $(b).setAttribute('aria-expanded', 'false'); });
     });
-    if (except !== 'filters-pop') ptClose();
   }
 
   function togglePop(popId, btn) {
@@ -875,78 +848,17 @@
 
   /* ------------------------------------------------------------------- filters */
 
-  /* ---------------------------------------------------------- place type */
-  var PLACE_TYPES = [
-    { value: '', label: 'Any' },
-    { value: 'entire_home', label: 'Entire home' },
-    { value: 'private_room', label: 'Private room' },
-    { value: 'shared_room', label: 'Shared room' },
-    { value: 'hotel_room', label: 'Hotel room' },
-  ];
-
-  function ptLabel(v) {
-    for (var i = 0; i < PLACE_TYPES.length; i++) if (PLACE_TYPES[i].value === v) return PLACE_TYPES[i].label;
-    return 'Any';
-  }
-
-  /** Mirror the hidden input onto the button. Called after anything sets .value
-   *  behind the control's back — Clear, and restoring a cached search. */
+  /**
+   * Tell the design kit the place-type value changed underneath it.
+   *
+   * The kit replaces a native <select> with its own trigger + menu and mirrors the
+   * selection back with a single `change` listener. So code that sets `.value` behind
+   * the control's back — Clear, and restoring a cached search — has to say so, or the
+   * trigger goes on showing the label of an option that is no longer selected.
+   */
   function syncPlaceType() {
-    $('pt-value').textContent = ptLabel($('propertyType').value);
+    $('propertyType').dispatchEvent(new Event('change', { bubbles: true }));
   }
-
-  function ptClose() {
-    $('pt-list').hidden = true;
-    $('pt-btn').setAttribute('aria-expanded', 'false');
-  }
-
-  function ptOpen() {
-    var cur = $('propertyType').value;
-    $('pt-list').innerHTML = PLACE_TYPES.map(function (o) {
-      return '<li role="option" data-value="' + esc(o.value) + '" tabindex="-1" aria-selected="' +
-        (o.value === cur ? 'true' : 'false') + '">' + esc(o.label) + '</li>';
-    }).join('');
-    $('pt-list').hidden = false;
-    $('pt-btn').setAttribute('aria-expanded', 'true');
-    var sel = $('pt-list').querySelector('[aria-selected="true"]');
-    if (sel) sel.focus();
-  }
-
-  function ptPick(v) {
-    $('propertyType').value = v;
-    syncPlaceType();
-    ptClose();
-    renderFilterCount();
-    $('pt-btn').focus();
-  }
-
-  $('pt-btn').addEventListener('click', function (e) {
-    e.stopPropagation();
-    if ($('pt-list').hidden) ptOpen(); else ptClose();
-  });
-  $('pt-list').addEventListener('click', function (e) {
-    var li = e.target.closest('li[data-value]');
-    if (li) { e.stopPropagation(); ptPick(li.getAttribute('data-value')); }
-  });
-  // Arrow keys and Enter, so the control is usable without a pointer — the native
-  // select gave that for free and a custom one has to earn it back.
-  $('pt').addEventListener('keydown', function (e) {
-    var open = !$('pt-list').hidden;
-    if (e.key === 'Escape' && open) { e.stopPropagation(); ptClose(); $('pt-btn').focus(); return; }
-    if ((e.key === 'Enter' || e.key === ' ') && !open && e.target === $('pt-btn')) {
-      e.preventDefault(); ptOpen(); return;
-    }
-    if (!open) return;
-    var items = Array.prototype.slice.call($('pt-list').querySelectorAll('li'));
-    var at = items.indexOf(document.activeElement);
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-      e.preventDefault();
-      var next = e.key === 'ArrowDown' ? Math.min(items.length - 1, at + 1) : Math.max(0, at - 1);
-      if (items[next]) items[next].focus();
-    } else if (e.key === 'Enter' && at >= 0) {
-      e.preventDefault(); ptPick(items[at].getAttribute('data-value'));
-    }
-  });
 
   function activeFilterCount() {
     var n = 0;
