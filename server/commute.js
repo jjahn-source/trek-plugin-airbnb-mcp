@@ -7,8 +7,8 @@
  * itinerary, so it can answer "is this stay actually convenient for what I am
  * doing?" rather than only "how much is it?".
  *
- * One `maps_distance_matrix` call covers up to 20 results — the tool takes many
- * origins and destinations at once — so this costs one round trip, not one per
+ * One `maps_distance_matrix` call covers up to 20 results, since the tool takes many
+ * origins and destinations at once, so this costs one round trip, not one per
  * listing.
  */
 

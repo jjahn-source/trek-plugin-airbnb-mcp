@@ -9,7 +9,7 @@ const HOSTED = require('./fixtures/hosted-places.json');
  * The destination typeahead reads `maps_search_places` / `maps_geocode`.
  *
  * The first two tests use payloads CAPTURED from the hosted OpenBnB server
- * (`maps_search_places`/`maps_geocode` for "tokyo japan", 2026-08-31) — those are the
+ * (`maps_search_places`/`maps_geocode` for "tokyo japan", 2026-08-31). Those are the
  * contract. The rest pin the parser's tolerance for the other shapes Google-derived
  * payloads take: the hosted server has already been found to differ from the
  * open-source one in nine ways, so reading `displayName` as well as `name` costs a few
@@ -23,7 +23,7 @@ test('REAL hosted maps_search_places payload', () => {
   }]);
 });
 
-test('REAL hosted maps_geocode payload — a single object, not a list', () => {
+test('REAL hosted maps_geocode payload: a single object, not a list', () => {
   const out = placeCandidates(HOSTED.geocode);
   assert.equal(out.length, 1);
   assert.equal(out[0].label, 'Tokyo, Japan');
@@ -76,7 +76,7 @@ test('a bare array of rows is accepted', () => {
   assert.equal(out[0].label, 'Kyoto');
 });
 
-test('coordinates are optional — a row without them still suggests', () => {
+test('coordinates are optional: a row without them still suggests', () => {
   const out = placeCandidates({ places: [{ name: 'Osaka' }] });
   assert.deepEqual(out, [{ label: 'Osaka', sublabel: null, lat: null, lng: null }]);
 });

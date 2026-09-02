@@ -4,7 +4,7 @@
  *
  * The two paths MUST agree on the redirect URI. OAuth compares redirect URIs exactly,
  * so a derivation that differs by a trailing slash or a dropped subpath does not fail
- * here — it fails months later, as a traveller's sign-in that never completes, with
+ * here. It fails months later, as a traveller's sign-in that never completes, with
  * nothing on screen to connect it back to the day someone registered the client.
  * That is the whole reason this logic lives in one module instead of two.
  */
@@ -42,7 +42,7 @@ test('junk is refused with a message naming the field rather than a URL parser e
 });
 
 /**
- * A self-hosted OpenBnB registers against ITSELF, not against the hosted service —
+ * A self-hosted OpenBnB registers against ITSELF, not against the hosted service,
  * otherwise an operator running their own server would be handed credentials for
  * somebody else's.
  */
@@ -101,7 +101,7 @@ test('registers a confidential client and returns everything the admin must past
   assert.equal(out.redirectUri, 'https://trek.example.com/api/plugin-oauth/airbnb-mcp/callback');
 
   // TREK's broker always sends a client_secret, so a PKCE-only public client is useless
-  // here — the registration has to ask for a confidential one explicitly.
+  // here, so the registration has to ask for a confidential one explicitly.
   const reg = net.calls.find((c) => c.method === 'POST');
   assert.equal(reg.body.token_endpoint_auth_method, 'client_secret_post');
   assert.deepEqual(reg.body.redirect_uris, ['https://trek.example.com/api/plugin-oauth/airbnb-mcp/callback']);

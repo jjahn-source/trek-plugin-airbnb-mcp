@@ -1,12 +1,12 @@
 {
   "id": "airbnb-mcp",
   "name": "Airbnb Stays",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "apiVersion": 1,
   "type": "trip-page",
   "trek": ">=4.0.0 <5.0.0",
   "author": "John Jahn",
-  "description": "Find somewhere to stay without leaving your trip — search Airbnb for your dates, compare prices and ratings, and add the winner to the plan in one tap.",
+  "description": "Search Airbnb for your dates without leaving your trip. Compare prices and ratings, then add the winner to the plan in one tap.",
   "icon": "BedDouble",
   "license": "MIT",
   "homepage": "https://github.com/jjahn-source/trek-plugin-airbnb-mcp",
@@ -45,7 +45,7 @@
       "required": false,
       "scope": "instance",
       "placeholder": "https://trek.example.com",
-      "hint": "Needed by the \"Register with OpenBnB\" button, which lives on your own Settings → Plugins → Airbnb Stays card (TREK renders plugin buttons there, not in this admin form). Type the address your users reach TREK on, including any path it is hosted under, then Save — the button turns it into the OAuth redirect URI."
+      "hint": "The address your users reach TREK on, including any path it is hosted under. Save it before pressing \"Register with OpenBnB\", which sits on your own Settings → Plugins → Airbnb Stays card rather than in this form."
     },
     {
       "key": "oauth_authorize_url",
@@ -54,7 +54,7 @@
       "required": true,
       "scope": "instance",
       "placeholder": "https://mcp.openbnb.ai/authorize",
-      "hint": "Constant for the hosted OpenBnB service — type the greyed-out value exactly as shown. Change it only if you run your own OpenBnB.",
+      "hint": "Constant for the hosted OpenBnB service. Type the greyed-out value exactly as shown, and change it only if you run your own OpenBnB.",
       "default": "https://mcp.openbnb.ai/authorize"
     },
     {
@@ -64,7 +64,7 @@
       "required": true,
       "scope": "instance",
       "placeholder": "https://mcp.openbnb.ai/token",
-      "hint": "Constant for the hosted OpenBnB service — type the greyed-out value exactly as shown. Change it only if you run your own OpenBnB.",
+      "hint": "Constant for the hosted OpenBnB service. Type the greyed-out value exactly as shown, and change it only if you run your own OpenBnB.",
       "default": "https://mcp.openbnb.ai/token"
     },
     {
@@ -74,7 +74,7 @@
       "required": true,
       "scope": "instance",
       "placeholder": "openbnb-xxxxxxxxxxxxxxxx",
-      "hint": "Go to Settings → Plugins → Airbnb Stays and press \"Register with OpenBnB\", then come back here and paste the client id it printed. Unique to this TREK instance. (Scripted alternative: `npm run register -- <your TREK URL>` in the plugin repo.)"
+      "hint": "Press \"Register with OpenBnB\" on your own Settings → Plugins → Airbnb Stays card, then paste the client id it prints. Unique to this TREK instance. (Scripted alternative: npm run register -- <your TREK URL>.)"
     },
     {
       "key": "oauth_client_secret",
@@ -83,7 +83,7 @@
       "required": true,
       "secret": true,
       "scope": "instance",
-      "hint": "From the same registration. Stored encrypted; never leaves this server."
+      "hint": "From the same registration. Stored encrypted, and never leaves this server."
     },
     {
       "key": "mcp_url",
@@ -92,7 +92,7 @@
       "required": false,
       "scope": "instance",
       "placeholder": "https://mcp.openbnb.ai/mcp",
-      "hint": "Optional. Leave blank to use the hosted OpenBnB service; the plugin falls back to the value shown.",
+      "hint": "Optional. Leave blank to use the hosted OpenBnB service, which is the value shown greyed out.",
       "default": "https://mcp.openbnb.ai/mcp"
     },
     {
@@ -104,7 +104,7 @@
       "options": [
         {
           "value": "esri",
-          "label": "Esri grey canvas — matches TREK's basemap (default)"
+          "label": "Esri grey canvas (default, matches TREK's basemap)"
         },
         {
           "value": "osm",
@@ -115,7 +115,7 @@
           "label": "Custom tile server (fill in the three fields below)"
         }
       ],
-      "hint": "Which basemap the \"Where you'll be\" map draws on. Leave unset for Esri's grey canvas, which needs no key and matches the basemap TREK draws its own maps on."
+      "hint": "Which basemap the \"Where you'll be\" map draws on. Leave unset for Esri's grey canvas, which needs no key and matches TREK's own maps."
     },
     {
       "key": "map_tile_url",
@@ -142,19 +142,19 @@
       "required": false,
       "scope": "instance",
       "placeholder": "Tiles © Example Maps",
-      "hint": "Leave blank and the credit follows whichever tile source is in use. Set it when you point the tiles at a provider the plugin does not recognise — publishing the wrong credit is a licensing problem, not a cosmetic one."
+      "hint": "Leave blank and the credit follows whichever tile source is in use. Set it when you point the tiles at a provider the plugin does not recognise, since publishing the wrong credit is a licensing problem rather than a cosmetic one."
     }
   ],
   "actions": [
     {
       "key": "register_client",
       "label": "Register with OpenBnB",
-      "hint": "Registers this server with OpenBnB and prints a client id and secret. Fill in \"This TREK server's URL\" under Admin → Plugins → Airbnb Stays → Instance settings and Save first; paste the two values back into that same form afterwards."
+      "hint": "Registers this server with OpenBnB and prints a client id and secret. Fill in \"This TREK server's URL\" under Admin → Plugins → Airbnb Stays → Instance settings and Save first, then paste the two values back into that form."
     },
     {
       "key": "test_connection",
       "label": "Test connection",
-      "hint": "Checks this instance’s OpenBnB settings end to end and names the first thing that is wrong."
+      "hint": "Checks this instance's OpenBnB settings end to end and names the first thing that is wrong."
     }
   ],
   "operatorEgress": true

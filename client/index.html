@@ -123,7 +123,7 @@
       position: absolute; top: 100%; z-index: 30; margin-top: 8px; padding: 14px; min-width: 260px;
       background: var(--bg-card); border: 1px solid var(--border-primary);
       border-radius: 16px; box-shadow: var(--shadow-md, var(--shadow-card));
-      /* A trip page FILLS its frame, so the popover's room is the frame's height — not
+      /* A trip page FILLS its frame, so the popover's room is the frame's height, not
          the page's. On a short frame (a small window, or a host that sizes the frame to
          our own short empty state) a 210px popover opening ~145px down runs past the
          bottom edge and its actions are simply unreachable: nothing here scrolls, because
@@ -154,7 +154,7 @@
       .pop-filters .trek-select { box-sizing: border-box; width: 100%; }
     }
 
-    /* Calendar — deliberately the same visual language as TREK's own date picker:
+    /* Calendar. Deliberately the same visual language as TREK's own date picker:
        narrow weekday initials, a 7-column grid, 32px cells, accent for the selection. */
     .cal-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
     .cal-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
@@ -185,7 +185,7 @@
     }
     .pop-row + .pop-row { border-top: 1px solid var(--border-primary); }
     /* nowrap is the point: at the popover's min-width the two 84px price inputs left the
-       label about 66px, and "Price per night" broke onto three lines — which reads as a
+       label about 66px, and "Price per night" broke onto three lines, which reads as a
        clipped control rather than a wrapped label. The row is sized to fit the label
        whole instead (see .pop-filters), so this can never be the thing that gives. */
     .pop-row-label { font-size: 14px; color: var(--text-primary); white-space: nowrap; }
@@ -240,7 +240,7 @@
     .card-add:hover:not(:disabled) { transform: scale(1.08); }
     .card-add:disabled { opacity: .55; cursor: default; }
     /* Always visible, the way Airbnb's heart is. Hiding it until hover made the card's
-       primary action undiscoverable — and invisible entirely on touch. Hover only
+       primary action undiscoverable, and invisible entirely on touch. Hover only
        strengthens it. */
     .card-add { opacity: .92; }
     .card:hover .card-add, .card-add:focus-visible, .card-add.is-done { opacity: 1; }
@@ -321,7 +321,7 @@
     .state { max-width: 560px; }
     /* Map mosaic. The tiles arrive as data URIs (the frame's CSP blocks remote images)
        and are laid out with CSS grid, then shifted so the listing's area sits in the
-       middle of the viewport box — no image compositing on the server. */
+       middle of the viewport box, with no image compositing on the server. */
     .map-box {
       /* Capped so the 3x3 mosaic covers it. Wider than the mosaic and the tiles would
          sit in the middle of an empty box with gutters either side. */
@@ -329,7 +329,7 @@
       background: var(--bg-tertiary, var(--bg-hover)); border: 1px solid var(--border-primary);
     }
     /* The mosaic is 768px square and the box shows ~620x240 of it, so most of the
-       neighbourhood was simply cropped away. The tiles are already paid for — let the
+       neighbourhood was simply cropped away. The tiles are already paid for, so let the
        reader pan around them instead of throwing five sixths of the map out. The
        scroller is a child rather than the box itself so the attribution can stay pinned
        to a corner instead of scrolling off with the tiles. */
@@ -529,8 +529,8 @@
                      native select's OS-drawn popup dropped through the plugin frame's
                      edge and was clipped mid-word ("Entire hom…"). The design kit now
                      upgrades every native select into an in-document, keyboard-accessible
-                     dropdown itself — the Sort and Travel-by controls above have relied on
-                     that all along — so the bespoke copy was a worse reimplementation of
+                     dropdown itself. The Sort and Travel-by controls above have relied on
+                     that all along, so the bespoke copy was a worse reimplementation of
                      a solved problem, and went. -->
                 <select class="trek-select" id="propertyType">
                   <option value="">Any</option>
@@ -611,12 +611,12 @@
 
   /**
    * Sort and Travel-by are the traveller's own view of a result set, not part of the
-   * search, so the server-side restore cache does not carry them — and they reset on
+   * search, so the server-side restore cache does not carry them, and they reset on
    * every tab switch. The bridge offers per-tab state scoped to the trip; use it.
    *
    * Reads are RACED against a timer and never awaited on their own. The session
    * protocol is answered by the host, and a host that ignores it leaves the promise
-   * unresolved forever — which would hang boot on a preference nobody would miss.
+   * unresolved forever, which would hang boot on a preference nobody would miss.
    * A preference is worth remembering, never worth a blank tab.
    */
   var VIEW_KEY = 'view-prefs';
@@ -646,7 +646,7 @@
   async function loadViewPrefs() {
     var prefs = await sessionGet(VIEW_KEY);
     if (!prefs || typeof prefs !== 'object') return;
-    // Only accept a value the control actually offers — stored state is not a reason
+    // Only accept a value the control actually offers. Stored state is not a reason
     // to put a <select> into a state it has no option for.
     var has = function (sel, v) {
       return !!v && Array.prototype.some.call($(sel).options, function (o) { return o.value === v; });
@@ -661,7 +661,7 @@
     // The lightbox lives OUTSIDE #app and marks the page behind it inert. A session
     // that expires while someone is looking at photos would otherwise hide the app,
     // draw the reconnect panel into a container that is still inert, and leave the
-    // carousel floating over it — a dead end with no way out but a reload.
+    // carousel floating over it, a dead end with no way out but a reload.
     if (!$('lb').hidden) lbClose();
     if (state === 'ok') { gate.innerHTML = ''; $('app').hidden = false; return; }
     $('app').hidden = true;
@@ -675,14 +675,14 @@
       //
       // The steps are numbered and the fields are ticked off because this is the one
       // screen an admin reads while doing the work. It used to open by telling them to
-      // run a CLI in the plugin repo — advice that is useless to the admin most likely
+      // run a CLI in the plugin repo, advice that is useless to the admin most likely
       // to be standing here, who installed this from the registry and has no checkout.
       var settingsPath =
         '<strong>Admin &rarr; Plugins &rarr; Airbnb Stays &rarr; &#8943; &rarr; Instance settings</strong>';
       var steps = [
         'In ' + settingsPath + ', put your TREK address into <strong>This TREK server’s URL</strong> and press <strong>Save</strong>.',
-        'Go to <strong>Settings &rarr; Plugins &rarr; Airbnb Stays</strong> and press <strong>Register with OpenBnB</strong> — TREK puts plugin buttons there, not in the admin form. It prints a client id and a client secret.',
-        'Back in ' + settingsPath + ', paste those two in and type the two OAuth URLs shown in grey — they are placeholders, not values.',
+        'Go to <strong>Settings &rarr; Plugins &rarr; Airbnb Stays</strong> and press <strong>Register with OpenBnB</strong>. TREK puts plugin buttons there, not in the admin form. It prints a client id and a client secret.',
+        'Back in ' + settingsPath + ', paste those two in and type the two OAuth URLs shown in grey. They are placeholders, not values.',
         'Press <strong>Save</strong>. <strong>Test connection</strong>, next to the Register button, then checks your work.',
       ];
       var checklist = missingLabels.length
@@ -731,7 +731,7 @@
    *
    * `[hidden]` is `display:none !important` here, and hiding the ancestor of the
    * focused element drops focus to <body> in every browser. So Escape, "Done" and
-   * "Show stays" — all three of which live INSIDE the panel they close — used to
+   * "Show stays", all three of which live INSIDE the panel they close, used to
    * leave a keyboard user at the top of the document with no idea where they were.
    */
   var popOpener = null;
@@ -763,8 +763,8 @@
   /**
    * A two-month range picker. TREK's own CustomDateTimePicker is a React component in
    * the host app and a sandboxed frame cannot import it, so this reproduces its visual
-   * language instead — narrow weekday initials, a 7-column grid, 32px round cells, the
-   * accent for the selection — and adds the range behaviour a stay needs.
+   * language instead: narrow weekday initials, a 7-column grid, 32px round cells, the
+   * accent for the selection. It also adds the range behaviour a stay needs.
    */
   var calMonth = null;          // first of the two months on screen
   var picking = 'checkin';      // which end the next click sets
@@ -819,7 +819,7 @@
       var disabled = picking === 'checkout' && ci && v <= ci;
       // Roving tabindex: exactly ONE day is in the tab order, and the arrow keys move
       // it. Every day being tabbable meant up to seventy stops between "Check in" and
-      // the Done button — reachable, in the sense that a corridor is reachable.
+      // the Done button, reachable in the sense that a corridor is reachable.
       cells += '<button type="button" role="gridcell" class="cal-day' +
         (isEnd ? ' is-end' : '') + (inRange ? ' in-range' : '') +
         (v === todayIso ? ' is-today' : '') + '"' +
@@ -845,7 +845,7 @@
   function renderCalendar(keepFocus) {
     if (!calMonth) calMonth = new Date();
     // The roving stop defaults to the selected end, else today, else the first day
-    // shown — so opening the picker lands somewhere meaningful rather than on the 1st
+    // shown, so opening the picker lands somewhere meaningful rather than on the 1st
     // of whatever month happens to be first.
     if (!calFocus || !calVisible(calFocus)) {
       var preferred = (picking === 'checkout' && $('checkout').value) || $('checkin').value || iso(new Date());
@@ -955,8 +955,8 @@
 
   /**
    * Decide "was this click inside a popover?" during the CAPTURE phase, while the target
-   * is still in the document. A handler that re-renders — the calendar replaces its whole
-   * month grid on every pick — detaches the target before the click bubbles up here, and
+   * is still in the document. A handler that re-renders (the calendar replaces its whole
+   * month grid on every pick) detaches the target before the click bubbles up here, and
    * `closest()` on a detached node finds nothing, so the outside-click rule fired and
    * closed the calendar on the first date you clicked.
    */
@@ -1024,7 +1024,7 @@
    *
    * The kit replaces a native <select> with its own trigger + menu and mirrors the
    * selection back with a single `change` listener. So code that sets `.value` behind
-   * the control's back — Clear, and restoring a cached search — has to say so, or the
+   * the control's back (Clear, and restoring a cached search) has to say so, or the
    * trigger goes on showing the label of an option that is no longer selected.
    */
   function syncPlaceType() {
@@ -1073,7 +1073,7 @@
     $('suggest').hidden = true;
     $('location').setAttribute('aria-expanded', 'false');
     // Set on arrow-key movement and never cleared, this pointed at an option id that
-    // renderSuggest had since rebuilt or removed — so a screen reader announced an
+    // renderSuggest had since rebuilt or removed, so a screen reader announced an
     // active option that was not there. It belongs to an OPEN list only.
     $('location').removeAttribute('aria-activedescendant');
     suggestIndex = -1;
@@ -1095,7 +1095,7 @@
   function chooseSuggest(i) {
     var s = suggestItems[i];
     if (!s) return;
-    // The sublabel carries the country/region, and Airbnb searches better with it —
+    // The sublabel carries the country/region, and Airbnb searches better with it,
     // "Shibuya" alone is ambiguous, "Shibuya City, Tokyo, Japan" is not.
     $('location').value = s.sublabel && s.sublabel.indexOf(s.label) !== 0
       ? s.label + ', ' + s.sublabel
@@ -1184,7 +1184,7 @@
    *
    * A discounted stay's label carries both, and printing it whole next to the nightly
    * rate made the busiest cards wrap to three lines while their neighbours used one.
-   * The old price is worth keeping — it is the reason the stay is a deal — so it moves
+   * The old price is worth keeping (it is the reason the stay is a deal), so it moves
    * to a line of its own rather than being thrown away.
    *
    * The clause is English, so a locale that words it differently simply falls through
@@ -1240,7 +1240,7 @@
       : '';
     return '' +
       '<article class="card" data-details="' + esc(l.id) + '" tabindex="0" role="button" ' +
-        'aria-label="' + esc(l.name) + ' — view details">' +
+        'aria-label="' + esc(l.name) + ', view details">' +
         '<div class="card-media">' + media + photoControls +
           (l.badge ? '<span class="card-badge">' + esc(l.badge) + '</span>' : '') +
           '<button class="card-add" type="button" data-add="' + esc(l.id) + '" ' +
@@ -1296,7 +1296,7 @@
   }
 
   function render() {
-    // A fresh render always returns to the grid — the open detail belonged to the
+    // A fresh render always returns to the grid. The open detail belonged to the
     // previous result set and its Back button would otherwise reveal stale cards.
     if (!$('detail').hidden) showResults();
     var items = sorted(listings);
@@ -1391,7 +1391,7 @@
    * Bounded, unlike every server-side cache here, which it used not to be: each entry
    * is a base64 image up to the proxy's 3 MB cap, and a long session across many
    * searches grew this forever inside the frame. A Map keeps insertion order, so the
-   * oldest goes when the lid is reached — and a hit re-inserts, making it a real LRU
+   * oldest goes when the lid is reached, and a hit re-inserts, making it a real LRU
    * rather than a queue that discards the photos being looked at.
    */
   var PHOTO_CACHE_MAX = 150;
@@ -1428,7 +1428,7 @@
 
   /**
    * The frame's CSP forbids remote images, so each photo is fetched through the
-   * plugin's own proxy and swapped in as a data URI. Failures stay silent — a
+   * plugin's own proxy and swapped in as a data URI. Failures stay silent, since a
    * missing picture must never break the card.
    *
    * render() rebuilds the whole grid (a sort, or a Load more), so without this
@@ -1449,7 +1449,7 @@
   }
 
   /**
-   * Fill the detail view's map box. Failure is silent by design — the box simply keeps
+   * Fill the detail view's map box. Failure is silent by design, and the box simply keeps
    * its neutral background. A listing is still perfectly usable without a map, and an
    * error banner for a decorative element would be noise.
    */
@@ -1505,7 +1505,7 @@
       }).join('');
       // The mosaic sits in flow inside a scroller rather than being offset with
       // left/top, so the reader can pan the part of the neighbourhood the box cannot
-      // show. The area circle moves into the mosaic — it marks a place on the map, so
+      // show. The area circle moves into the mosaic, since it marks a place on the map, so
       // it has to travel with the tiles rather than stay pinned to the middle.
       box.innerHTML =
         '<div class="map-scroll" id="map-scroll" tabindex="0" aria-label="Map of the area, scrollable">' +
@@ -1575,14 +1575,14 @@
       render();
       // Announce the OUTCOME, not silence. This used to clear the live region the
       // moment the search returned, so a screen-reader user heard "Searching Airbnb…"
-      // and then nothing — no count, and no word that zero matched. The count chip is
+      // and then nothing, no count and no word that zero matched. The count chip is
       // not a live region and cannot carry this.
       setStatus(listings.length
         ? listings.length + (cursor ? '+' : '') + (listings.length === 1 ? ' stay found' : ' stays found')
         : 'No stays matched. Try widening the dates or clearing a filter.');
       loadCommutes();
     } catch (e) {
-      // 403/401 mean the account link is missing or stale — send the user to fix it
+      // 403/401 mean the account link is missing or stale, so send the user to fix it
       // rather than showing a dead error.
       if (e.code === 403 || e.code === 401) {
         renderGate('disconnected');
@@ -1621,7 +1621,7 @@
     return null;
   };
 
-  /** Full listing records, keyed by id — details are immutable per search, so one fetch each. */
+  /** Full listing records, keyed by id. Details are immutable per search, so one fetch each. */
   var detailCache = {};
 
   function moveCardPhoto(btn, delta) {
@@ -1743,7 +1743,7 @@
   /* --------------------------------------------------------------- carousel */
   /* Photo bytes are proxied through the plugin (the frame's CSP blocks remote images),
      so the lightbox reuses the <img> elements already decoded in the strip rather than
-     fetching anything again — opening it costs nothing. */
+     fetching anything again, so opening it costs nothing. */
   var lbPics = [];
   var lbAt = 0;
   var lbReturn = null;
@@ -1775,7 +1775,7 @@
    *
    * The dialog declares aria-modal="true" and sits LAST in the document, so without a
    * trap forward-Tab left the page entirely and Shift+Tab walked backwards into the
-   * search bar and result cards — live controls sitting under an 88%-opaque backdrop.
+   * search bar and result cards, live controls sitting under an 88%-opaque backdrop.
    */
   function lbFocusables() {
     return Array.prototype.filter.call(
@@ -1924,7 +1924,7 @@
   async function addToTrip(btn, l) {
     btn.disabled = true;
     var restore = btn.textContent;
-    // The card's button is a 32px circle — only a glyph fits. The detail view's is a
+    // The card's button is a 32px circle, so only a glyph fits. The detail view's is a
     // full-width button where a bare tick would read as a mystery.
     var compact = btn.classList.contains('card-add');
     btn.textContent = compact ? '…' : 'Adding…';
@@ -1942,7 +1942,7 @@
       btn.classList.add('is-done');
       // Say what actually happened. A lodging block spanning the nights is a
       // materially different outcome from a pin on the map, and a budget line is a
-      // third thing again — all three are opportunistic server-side, so the only
+      // third thing again. All three are opportunistic server-side, so the only
       // honest message is the one built from what came back.
       var outcome = added && added.accommodation
         ? l.name + ' added as lodging for those nights'
@@ -2014,12 +2014,12 @@
     } catch (_) { return false; }
   }
 
-  /** First run, nothing searched yet — say what to do instead of showing a void. */
+  /** First run, nothing searched yet. Say what to do instead of showing a void. */
   function renderIntro() {
     $('results').innerHTML =
       '<div class="trek-muted empty" style="grid-column:1/-1">' +
       '<div class="empty-title">Where to?</div>' +
-      'Your trip’s dates are already filled in — type a destination and press Search.</div>';
+      'Your trip’s dates are already filled in. Type a destination and press Search.</div>';
   }
 
   async function seedDefaults() {

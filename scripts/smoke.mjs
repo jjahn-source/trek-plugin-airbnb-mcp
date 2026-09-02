@@ -2,7 +2,7 @@
 /**
  * Browser smoke test for the packed frame.
  *
- * Unit tests cover the server; this covers the half they cannot reach — that the
+ * Unit tests cover the server; this covers the half they cannot reach: that the
  * real UI, with the design kit inlined exactly as it ships, drives the documented
  * host protocol correctly. The page is loaded top-level so the kit's postMessage
  * to `window.parent` lands back on the same window, letting us stand in for TREK
@@ -212,11 +212,11 @@ await page.waitForSelector('#detail .trek-title', { timeout: 10000 });
 const detailText = await page.locator('#detail').innerText();
 t('calls /listing with the listing id', invoked.some((c) => c.sub.startsWith('/listing?id=1')));
 t('shows the description', detailText.includes('original beams'));
-// The kit uppercases .trek-field-label, so innerText yields "BATHROOM" — match loosely.
+// The kit uppercases .trek-field-label, so innerText yields "BATHROOM", so match loosely.
 const detailLower = detailText.toLowerCase();
 t('shows amenity groups', detailLower.includes('bathroom') && detailLower.includes('not included'));
 
-// The breakdown is itemised from the payload, never recomputed — real results carry
+// The breakdown is itemised from the payload, never recomputed, and real results carry
 // discount lines that make nights x nightly larger than the total, so a plugin doing
 // the arithmetic itself would quote figures that are confidently wrong.
 t('the detail view itemises the price rather than restating one number', await page.evaluate(() => {
@@ -292,7 +292,7 @@ if (shots > 1) {
   t('previous is disabled on the first photo', await page.locator('#lb-prev').isDisabled());
 
   // It declares aria-modal="true" and sits last in the document, so without a trap
-  // Shift+Tab walks backwards into the search bar and result cards — live controls
+  // Shift+Tab walks backwards into the search bar and result cards, live controls
   // sitting under an opaque backdrop.
   t('the carousel takes the page behind it out of the tab order',
     await page.evaluate(() => !!document.querySelector('.trek-scroll')?.inert));
@@ -313,7 +313,7 @@ if (shots > 1) {
   t('Escape closes the carousel', await page.locator('#lb').isHidden());
 }
 
-// 2f. The amenity values are the point of the section — the kit's nowrap+ellipsis on
+// 2f. The amenity values are the point of the section, and the kit's nowrap+ellipsis on
 // .trek-field-value was hiding most of every list.
 t('amenity values wrap instead of being cut off with an ellipsis',
   await page.evaluate(() => {
@@ -372,7 +372,7 @@ t('says the stay became lodging, not just a pin',
 
 
 /** Wait for a recorded plugin call. `invoked` is filled via an exposed function, so the
- *  record lands a tick or two after the click that caused it — polling beats guessing. */
+ *  record lands a tick or two after the click that caused it, so polling beats guessing. */
 async function waitForCall(sub, timeout = 5000) {
   const started = Date.now();
   for (;;) {
@@ -432,7 +432,7 @@ t('the adult stepper will not go below one',
 await page.locator('[data-close-pop="who-pop"]').click();
 
 // Escape, "Done" and "Show stays" all live INSIDE the panel they close, and [hidden]
-// is display:none — so hiding the panel used to drop focus onto <body>, leaving a
+// is display:none, so hiding the panel used to drop focus onto <body>, leaving a
 // keyboard user at the top of the document with no idea where they had been.
 await page.locator('#who-btn').click();
 await page.keyboard.press('Escape');
@@ -461,7 +461,7 @@ t('applying filters runs a search carrying them',
 
 // 10. popovers open under the control that opened them. The guests panel used to be
 // parented to the bar itself, so it anchored to the bar's left edge and appeared under
-// Where — the bug being fixed here is positional, so the assertion is geometric.
+// Where: the bug being fixed here is positional, so the assertion is geometric.
 await page.locator('#who-btn').click();
 const anchoring = await page.evaluate(() => {
   const r = (sel) => document.querySelector(sel).getBoundingClientRect();
@@ -516,7 +516,7 @@ t('Clear dates empties both ends', await page.evaluate(() =>
   && document.getElementById('checkin-value').textContent === 'Add date'));
 await page.locator('[data-close-pop="dates-pop"]').click();
 
-// Exactly one day is in the tab order and the arrows move it — the ARIA date-picker
+// Exactly one day is in the tab order and the arrows move it, matching the ARIA date-picker
 // pattern. Every day being tabbable meant up to seventy stops between "Check in" and
 // the Done button: reachable in the sense that a corridor is reachable.
 await page.locator('#checkin-btn').click();
@@ -638,8 +638,8 @@ await page.keyboard.press('Escape');
       && !/npm run register/i.test(gateText),
     gateText.slice(0, 320));
   // Described by capability, never by a version number. The gate has to serve both hosts
-  // at once — it points at the Instance settings menu first, and still names the admin
-  // API for a TREK that has no such menu — because it cannot tell which one it is on.
+  // at once. It points at the Instance settings menu first, and still names the admin
+  // API for a TREK that has no such menu, because it cannot tell which one it is on.
   t('the gate points at Instance settings, keeps the admin API fallback, and names no version',
     /Instance settings/i.test(gateText) && /admin API/i.test(gateText) && !/4\.\d/.test(gateText),
     gateText.slice(0, 240));
@@ -651,7 +651,7 @@ await browser.close();
 
 let failed = 0;
 for (const r of results) {
-  console.log(`  ${r.ok ? '✓' : '✗'} ${r.name}${r.extra ? ' — ' + r.extra : ''}`);
+  console.log(`  ${r.ok ? '✓' : '✗'} ${r.name}${r.extra ? ': ' + r.extra : ''}`);
   if (!r.ok) failed++;
 }
 console.log(failed ? `\n${failed} smoke check(s) failed` : `\nall ${results.length} smoke checks passed`);

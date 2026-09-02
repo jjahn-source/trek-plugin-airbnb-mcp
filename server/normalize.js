@@ -6,7 +6,7 @@
  * The hosted openbnb.ai endpoint is a superset of the open-source server, and the
  * open-source server itself reshapes whatever Airbnb's page happens to contain
  * (arrays are joined into strings, optional subtrees come and go). So this file
- * never indexes a deep path directly — it searches for the value it wants and
+ * never indexes a deep path directly. It searches for the value it wants and
  * falls back cleanly. A listing that is missing a price or a photo still renders;
  * only `id` is truly required.
  */
@@ -33,7 +33,7 @@ function findString(node, keys, depth = 0) {
  * Read a field that the hosted endpoint returns as a bare string but the
  * open-source server wraps in an object (`{body}` / `{text}`). Verified against
  * real hosted output: `badges` is "Guest favourite", and structuredContent's
- * lines are plain strings — both were being silently dropped before.
+ * lines are plain strings, and both were being silently dropped before.
  */
 function textOf(value, keys) {
   if (typeof value === 'string') return value.trim() || null;
@@ -48,7 +48,7 @@ function textOf(value, keys) {
 /**
  * The next page's cursor.
  *
- * The hosted endpoint returns `pageCursors`: every page's cursor, in order —
+ * The hosted endpoint returns `pageCursors`: every page's cursor, in order,
  * not a "next" pointer. Reading it as one left the cursor null, so Load more
  * never appeared. Find where we are and step forward; the open-source server's
  * `nextPageCursor` still wins when present.
@@ -59,7 +59,7 @@ function nextCursor(pagination, currentCursor) {
   const cursors = Array.isArray(pagination.pageCursors) ? pagination.pageCursors : null;
   if (!cursors || !cursors.length) return typeof pagination.cursor === 'string' ? pagination.cursor : null;
   const index = currentCursor ? cursors.indexOf(currentCursor) : 0;
-  if (index < 0) return null; // a cursor we did not issue — stop rather than loop
+  if (index < 0) return null; // a cursor we did not issue, so stop rather than loop
   return cursors[index + 1] || null;
 }
 
@@ -117,7 +117,7 @@ function parseRating(label) {
 
 /**
  * Pull a comparable number out of a price label like "$1,234 total" or "€1.234".
- * Used only for client-side sorting — the label stays the source of truth on screen,
+ * Used only for client-side sorting. The label stays the source of truth on screen,
  * because we cannot reliably know whether a figure is nightly or total.
  *
  * Locale matters here: Airbnb renders prices in the viewer's locale, so "1.234" is
@@ -153,9 +153,9 @@ function parsePriceAmount(label) {
 /**
  * The full price, read out of the breakdown Airbnb already wrote.
  *
- * `explanationData.priceDetails` spells it all out —
+ * `explanationData.priceDetails` spells it all out,
  *   "4 nights x $221.35 USD: $885.38 USD, Taxes: $136.34 USD, Total: $1,021.72 USD"
- * — so nothing here is arithmetic we invent. That matters: multiplying a nightly rate
+ * so nothing here is arithmetic we invent. That matters: multiplying a nightly rate
  * by a night count gives a number that is confidently wrong the moment a cleaning fee,
  * a weekly discount or a tax exists, and each of those is ordinary.
  *
@@ -163,8 +163,8 @@ function parsePriceAmount(label) {
  * rate people actually compare on, and the tax share that surprises them at checkout,
  * were sitting one field away unread.
  *
- * Every field is independently optional. A label this cannot parse — a locale wording
- * it differently, a stay quoted on application — yields nulls, and the UI falls back
+ * Every field is independently optional. A label this cannot parse (a locale wording
+ * it differently, a stay quoted on application) yields nulls, and the UI falls back
  * to the label it has always shown rather than printing a guess.
  */
 function parsePriceDetails(text) {
@@ -187,11 +187,11 @@ function parsePriceDetails(text) {
     return null;
   };
 
-  // "4 nights x $221.35 USD: $885.38 USD" — the count, the rate, and the rate's subtotal.
+  // "4 nights x $221.35 USD: $885.38 USD": the count, the rate, and the rate's subtotal.
   const perNight = find(/(\d+)\s*nights?\s*[x×]\s*(.+?)\s*:\s*(.+)/i);
   const totalPart = find(/^\s*total\s*:\s*(.+)/i);
   const taxPart = find(/^\s*tax(?:es)?\s*:\s*(.+)/i);
-  // Real payloads carry discount lines — "Early booking discount: -$119.53 USD" — which
+  // Real payloads carry discount lines such as "Early booking discount: -$119.53 USD", which
   // is why the total can sit BELOW nights x nightly, and why reading it beats computing
   // it. parsePriceAmount reads the magnitude; the sign is already in the wording.
   const discountPart = find(/^\s*(.*discount.*?)\s*:\s*(.+)/i);
@@ -399,7 +399,7 @@ function normalizeListing(id, payload) {
   return {
     id: String(id),
     // The hosted server calls this `listingUrl`, and it carries the dates and guest
-    // count — worth keeping over a URL rebuilt from the id alone.
+    // count, worth keeping over a URL rebuilt from the id alone.
     url:
       (typeof payload.listingUrl === 'string' && payload.listingUrl) ||
       (typeof payload.url === 'string' && payload.url) ||
@@ -455,7 +455,7 @@ function placeCandidates(payload) {
 
     const name = str(display);
     const addr = str(address);
-    // A geocode row has only an address — that IS the label. A places row has both, so
+    // A geocode row has only an address, and that IS the label. A places row has both, so
     // the name leads and the address becomes the secondary line.
     const label = name || addr;
     if (!label) continue;

@@ -136,7 +136,7 @@ test('a blank-but-present setting counts as missing, not as configured', async (
   assert.deepEqual(body(res).missing, ['oauth_authorize_url', 'oauth_token_url']);
 });
 
-test('/map works with NO map settings at all — the built-in tile source is a fallback, not a requirement', async (t) => {
+test('/map works with NO map settings at all: the built-in tile source is a fallback, not a requirement', async (t) => {
   const original = globalThis.fetch;
   const asked = [];
   globalThis.fetch = async (url) => {
@@ -161,7 +161,7 @@ test('/map works with NO map settings at all — the built-in tile source is a f
     asked.every((u) => u.startsWith('https://server.arcgisonline.com/') && u.includes('World_Light_Gray_Base')),
     asked.join(','),
   );
-  // Esri orders the path {z}/{y}/{x}, the row before the column — unlike every other
+  // Esri orders the path {z}/{y}/{x}, the row before the column, unlike every other
   // template here. Substitution is by name, so getting this wrong would silently
   // transpose the mosaic rather than fail.
   assert.match(asked[0], /\/tile\/14\/\d+\/\d+$/);
@@ -608,7 +608,7 @@ test('replacing a stale session hands the old one back instead of abandoning it'
   const driver = host({ oauthAccessToken: 'evict-token' }).run(plugin);
 
   // Call 1 primes the cache; call 2 fails the way an expired session does, which
-  // evicts the cached client — and eviction should terminate its MCP session.
+  // evicts the cached client, and eviction should terminate its MCP session.
   mcp.onTool = (n) => (n === 2 ? { httpStatus: 404 } : { payload: SEARCH_PAYLOAD });
 
   await driver.route({ method: 'POST', path: '/search' }, { body: { location: 'Paris' } });
@@ -625,7 +625,7 @@ test('replacing a stale session hands the old one back instead of abandoning it'
  * The content type is embedded in the `data:` URI the frame puts in an <img src>, so a
  * CDN answering `image/png" onerror="…` would close the attribute and open an event
  * handler inside the plugin frame. `startsWith('image/')` waves that through; the
- * allow-list does not. Same defect class as the map tiles — same fix, shared.
+ * allow-list does not. Same defect class as the map tiles, same fix, shared.
  */
 test('/photo refuses a content type that only STARTS as an image', async () => {
   const real = globalThis.fetch;
@@ -671,7 +671,7 @@ test('/photo still embeds a genuine image', async () => {
 
 /**
  * Two searches fired before either has finished both miss the empty cache, so both
- * build a client and both handshake. Only one can occupy the cache key — and the loser
+ * build a client and both handshake. Only one can occupy the cache key, and the loser
  * used to be dropped on the floor with a live session still open on OpenBnB's server.
  *
  * That is the leak close() exists to prevent, arrived at from the other direction: a
@@ -689,7 +689,7 @@ test('a concurrent first search does not abandon the session it loses to', async
   // The DELETE is fire-and-forget, so let the microtask queue drain.
   await new Promise((r) => setTimeout(r, 20));
 
-  assert.equal(mcp.inits, 2, 'both callers legitimately handshook — that is the race');
+  assert.equal(mcp.inits, 2, 'both callers legitimately handshook, that is the race');
   assert.equal(mcp.deletes, 1, 'the client that lost the cache slot was terminated, not leaked');
 });
 
@@ -747,7 +747,7 @@ test('Custom reads the tile fields', async () => {
 
 /**
  * The load-bearing rung of the ladder. An operator who pointed 1.x at their own tile
- * server has no `map_style` at all after upgrading — and must not silently get Esri
+ * server has no `map_style` at all after upgrading, and must not silently get Esri
  * back, which would be this plugin quietly overriding a deliberate choice.
  */
 test('a 1.x install with only map_tile_url set keeps its own tiles', async () => {

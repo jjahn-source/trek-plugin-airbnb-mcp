@@ -5,7 +5,7 @@
  *
  * The manifest half is not busywork. A settings form is DERIVED from the manifest, so
  * a field that reads fine in a JSON file can still render as an empty box with no clue
- * what to type — and nothing else in this repo would catch that, because no plugin code
+ * what to type, and nothing else in this repo would catch that, because no plugin code
  * ever reads those fields.
  */
 const test = require('node:test');
@@ -81,8 +81,8 @@ test('every setting is instance-scoped, labelled and hinted', () => {
   assert.ok(manifest.settings.length > 0);
   for (const s of manifest.settings) {
     assert.equal(s.scope, 'instance', `${s.key} must be an instance setting`);
-    assert.ok(s.label, `${s.key} needs a label — the form has no other name for it`);
-    assert.ok(s.hint, `${s.key} needs a hint — the form renders it as the helper text`);
+    assert.ok(s.label, `${s.key} needs a label, the form has no other name for it`);
+    assert.ok(s.hint, `${s.key} needs a hint, the form renders it as the helper text`);
   }
 });
 
@@ -90,7 +90,7 @@ test('a "default" is a bonus, never the thing that makes a field usable', () => 
   // TREK is adding `default` (jubnl, on TREK-Plugins#87), so declaring one is worth it:
   // on a host that honours it the two constant OAuth URLs arrive filled in and setup is
   // two fields instead of four. But every host older than that release drops it silently
-  // — `persistSettingsFields` never reads the key — so nothing may DEPEND on it. Each
+  // `persistSettingsFields` never reads the key, so nothing may DEPEND on it. Each
   // field must still be usable with the value absent: a placeholder to show what to type,
   // and, for anything optional, a code-side fallback so blank means "use the built-in".
   for (const s of manifest.settings) {
@@ -102,7 +102,7 @@ test('a "default" is a bonus, never the thing that makes a field usable', () => 
         assert.ok(o && o.value !== undefined && o.label, `${s.key} has an option missing a value or label`);
       }
     } else if (!s.secret) {
-      assert.ok(s.placeholder, `${s.key} needs a placeholder — the only value hint an empty field gets`);
+      assert.ok(s.placeholder, `${s.key} needs a placeholder, the only value hint an empty field gets`);
     }
     if (s.default !== undefined) {
       // Two places to state the same value is two places to get it wrong. Keeping them
@@ -165,7 +165,7 @@ test('test_connection reports how far it got when nobody has connected an accoun
   const h = host({ oauthAccessToken: null });
   const res = await h.run(plugin).action('test_connection');
   // Complete settings with no connected user is a legitimate mid-setup state, not a
-  // failure — but it must not claim the credentials themselves were verified.
+  // failure, but it must not claim the credentials themselves were verified.
   assert.equal(res.ok, true);
   assert.match(res.message, /Connect your own OpenBnB account/);
 });
@@ -185,7 +185,7 @@ test('test_connection rejects an MCP endpoint override that is not usable https'
 test('test_connection accepts a valid https endpoint that URL parsing would rewrite', async (t) => {
   const calls = withMcp(t);
   // "https://host" with no path normalises to "https://host/". Deciding the override was
-  // bad by comparing it against the normalised value would reject this — and reject it
+  // bad by comparing it against the normalised value would reject this, and reject it
   // with a message telling the admin their correct URL is unusable.
   const h = host({
     config: Object.assign({}, OAUTH_CONFIG, { mcp_url: 'https://mcp.openbnb.ai' }),
@@ -283,7 +283,7 @@ test('register_client returns the id and secret an admin has to paste', async (t
 
 /**
  * The message is bounded host-side by an amount the SDK does not specify, and the
- * secret is the one value that cannot be recovered from anywhere else on the page —
+ * secret is the one value that cannot be recovered from anywhere else on the page,
  * the two URLs are already sitting in their fields as placeholder text. So the secret
  * has to appear early enough to survive a trim.
  */

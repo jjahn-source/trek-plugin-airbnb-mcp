@@ -2,7 +2,7 @@
 /**
  * "Three nights with nowhere to stay."
  *
- * For a plugin about stays, that is the most useful sentence it can say — and the
+ * For a plugin about stays, that is the most useful sentence it can say, and the
  * planner already has a place to say it. The hard part is not finding the gap, it is
  * knowing when to keep quiet: a warning provider runs on every trip in an instance
  * that installed this, so one that speaks up unprompted becomes the noisiest thing in
@@ -22,8 +22,8 @@ const GRANTS = ['db:own', 'db:read:trips', 'hook:trip-warning-provider'];
 /**
  * A trip with `days` consecutive days from 2026-10-10.
  *
- * `book` names lodging blocks by DAY INDEX — [[0, 1]] is "booked from the first day to
- * the second" — because the day ids do not exist until this function has built them.
+ * `book` names lodging blocks by DAY INDEX, so [[0, 1]] is "booked from the first day to
+ * the second", because the day ids do not exist until this function has built them.
  */
 function tripHost({ days = 5, book = [], grants = GRANTS } = {}) {
   const dayRows = [];

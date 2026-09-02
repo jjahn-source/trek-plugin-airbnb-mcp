@@ -27,7 +27,7 @@ function reply(status, body) {
  *
  * A plugin's outbound allow-list is per-host, so an http:// or malformed override would
  * be refused by the host anyway. Shared by the silent fallback below and by the settings
- * page's "Test connection", which must agree on what "bad" means — the test exists to
+ * page's "Test connection", which must agree on what "bad" means, since the test exists to
  * report the fallback, so it cannot use a different rule to decide one happened.
  */
 function isHttpsUrl(raw) {
@@ -49,7 +49,7 @@ function mcpUrl(ctx) {
  * settings form shows for them.
  *
  * The pairing is the point. These four are the only settings this plugin cannot
- * supply a fallback for — the broker reads them straight out of the stored config,
+ * supply a fallback for. The broker reads them straight out of the stored config,
  * so a blank one is a dead end no amount of plugin-side defaulting can rescue.
  * Naming them by their FORM LABEL rather than their storage key is what makes the
  * message actionable now that an admin has a form to look at: "OAuth client id" is
@@ -69,7 +69,7 @@ const REQUIRED_SETTINGS = [
  * templates, so the resolution has to answer for installs configured under either
  * shape. In order:
  *
- *   1. An explicit `map_style` wins — the admin chose from the list.
+ *   1. An explicit `map_style` wins, since the admin chose from the list.
  *   2. Otherwise a set `map_tile_url` is honoured as if Custom had been chosen. This
  *      is the load-bearing rung: an operator who pointed 1.x at their own tile server
  *      must not silently get Esri back after upgrading.
@@ -96,7 +96,7 @@ function missingSettings(ctx) {
   return REQUIRED_SETTINGS.filter((s) => !String(cfg[s.key] || '').trim());
 }
 
-/** "a", "a and b", "a, b and c" — a list a person reads, not a JSON array. */
+/** "a", "a and b", "a, b and c": a list a person reads, not a JSON array. */
 function sentenceList(items) {
   if (items.length <= 1) return items[0] || '';
   return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
@@ -104,7 +104,7 @@ function sentenceList(items) {
 
 /**
  * Connected MCP clients, keyed by endpoint + access token. Reusing one saves the
- * initialize/initialized handshake on every search — otherwise each query costs
+ * initialize/initialized handshake on every search, otherwise each query costs
  * three round trips and leaves another session behind on OpenBnB's server. The
  * key includes the token, so a refreshed token never reuses another's session and
  * entries fall out naturally as tokens rotate.
@@ -125,7 +125,7 @@ function evict(key) {
 function cacheClient(key, client) {
   // Two calls that both miss the empty cache both handshake, and only one can have the
   // slot. Overwriting blindly would drop the loser's client while its MCP session is
-  // still open on OpenBnB's server — the very leak close() exists to prevent, reached
+  // still open on OpenBnB's server, the very leak close() exists to prevent, reached
   // by a race rather than by an eviction. A debounced /places typeahead overlapping a
   // /search submit is the ordinary way to get here.
   const existing = clientCache.get(key);
@@ -140,7 +140,7 @@ function cacheClient(key, client) {
 
 /**
  * Call an OpenBnB tool as the ACTING USER. Every call uses that user's own
- * short-lived token — the plugin never holds a credential of its own.
+ * short-lived token, so the plugin never holds a credential of its own.
  *
  * Throws NOT_CONNECTED when the user has not linked an OpenBnB account yet.
  */
@@ -161,7 +161,7 @@ async function callTool(ctx, name, args, alternatives) {
       } catch (err) {
         evict(key);
         // A bad token or a real tool failure (robots.txt, unknown listing) will
-        // fail again identically — only a dropped SESSION is worth retrying, and
+        // fail again identically. Only a dropped SESSION is worth retrying, and
         // retrying a tool error would hit Airbnb twice for nothing.
         const code = err instanceof McpError ? err.code : null;
         if (code === 'UNAUTHORIZED' || code === 'TOOL') throw err;
@@ -221,7 +221,7 @@ function errorReply(err, ctx) {
  *
  * Slicing the JSON string instead (what this used to do) cuts it mid-structure:
  * the blob is then unparseable, `/last` throws, the error is swallowed, and restore
- * silently stops working — after having written a few hundred KB of garbage per
+ * silently stops working, after having written a few hundred KB of garbage per
  * trip and user. Returns null when even an empty result set will not fit, which
  * means "do not cache", not "cache something broken".
  */
@@ -271,11 +271,11 @@ function parsePhotoUrl(raw, mcpHost) {
  * A bare place is a poor fit for somewhere you SLEEP: TREK models that as a
  * day_accommodation spanning the nights, which also creates the partner hotel
  * reservation. That needs the trip to actually have days on the chosen dates, so
- * this is opportunistic — if the dates fall outside the trip, or the user lacks
+ * this is opportunistic: if the dates fall outside the trip, or the user lacks
  * day_edit, the place still stands on its own and the add succeeds either way.
  *
  * `check_in`/`check_out` on an accommodation are TIMES (the planner renders them
- * with fmtTime, alongside a check_in_end window), not dates — the dates come from
+ * with fmtTime, alongside a check_in_end window), not dates. The dates come from
  * start_day_id/end_day_id. We do not know Airbnb's times, so they stay null.
  */
 async function lodgingFor(ctx, tripId, place, listing, body) {
@@ -294,12 +294,12 @@ async function lodgingFor(ctx, tripId, place, listing, body) {
       place_id: place.id,
       start_day_id: startDayId,
       end_day_id: endDayId,
-      notes: [listing.url, listing.priceLabel].filter(Boolean).join(' — ').slice(0, 2000) || null,
+      notes: [listing.url, listing.priceLabel].filter(Boolean).join('\n').slice(0, 2000) || null,
     });
   } catch (err) {
     // A missing day_edit permission, or any other refusal, must not lose the place
     // the user just added.
-    ctx.log.warn(`airbnb-mcp: could not create the lodging block — ${err && err.message}`);
+    ctx.log.warn(`airbnb-mcp: could not create the lodging block: ${err && err.message}`);
     return null;
   }
 }
@@ -308,7 +308,7 @@ async function lodgingFor(ctx, tripId, place, listing, body) {
  * Put the stay on the trip's budget.
  *
  * A stay is usually the largest line on a trip, and adding one used to record its
- * price as a NOTE STRING on the place — visible, but not money the trip knew about.
+ * price as a NOTE STRING on the place: visible, but not money the trip knew about.
  *
  * The figure is the payload's own total, never nights x nightly: real results carry
  * discount lines, so the computed version would be confidently wrong (see
@@ -332,7 +332,7 @@ async function budgetLineFor(ctx, tripId, listing) {
       currency: listing.priceCurrency || undefined,
     });
   } catch (err) {
-    ctx.log.warn(`airbnb-mcp: could not add the budget line — ${err && err.message}`);
+    ctx.log.warn(`airbnb-mcp: could not add the budget line: ${err && err.message}`);
     return null;
   }
 }
@@ -410,7 +410,7 @@ module.exports = definePlugin({
        * several candidates, which is what a suggestion list wants; `maps_geocode`
        * resolves exactly one and is the better answer for a region ("tokyo japan"),
        * so it backfills when places comes back empty. Both ride the acting user's
-       * existing OpenBnB session — no extra vendor, no extra egress host.
+       * existing OpenBnB session, with no extra vendor and no extra egress host.
        *
        * A failure here is never fatal: the user can always type a location by hand,
        * so an upstream error degrades to an empty list rather than an error banner.
@@ -437,7 +437,7 @@ module.exports = definePlugin({
           const payload = await callTool(ctx, 'maps_search_places', { query: q });
           for (const p of placeCandidates(payload)) push(p.label, p.sublabel, p.lat, p.lng);
         } catch (err) {
-          // NOT_CONNECTED is the one case worth surfacing — the caller shows the
+          // NOT_CONNECTED is the one case worth surfacing, since the caller shows the
           // connect gate rather than a silently empty list.
           if (err && err.code === 'NOT_CONNECTED') return errorReply(err, ctx);
           ctx.log.info(`places: search failed (${err && err.message})`);
@@ -496,7 +496,7 @@ module.exports = definePlugin({
                 );
               }
             } catch (err) {
-              ctx.log.warn(`airbnb-mcp: could not cache last search — ${err && err.message}`);
+              ctx.log.warn(`airbnb-mcp: could not cache last search: ${err && err.message}`);
             }
           }
           return reply(200, out);
@@ -598,7 +598,7 @@ module.exports = definePlugin({
     },
 
     {
-      // The plugin frame's CSP is `img-src 'self' data: blob:` — a remote <img>
+      // The plugin frame's CSP is `img-src 'self' data: blob:`, so a remote <img>
       // never renders. Listing photos therefore come back as data URIs through here.
       method: 'GET',
       path: '/photo',
@@ -632,7 +632,7 @@ module.exports = definePlugin({
     {
       /**
        * Static map tiles around a listing, as data URIs. The frame's CSP forbids remote
-       * images, so the fetch has to happen here — same reason as /photo.
+       * images, so the fetch has to happen here, for the same reason as /photo.
        *
        * The tile source is an INSTANCE setting, so an operator who runs their own tile
        * server (or pays for one) points this at it and adds the host under Admin →
@@ -730,7 +730,7 @@ module.exports = definePlugin({
      * Register this TREK instance with OpenBnB, from the settings page.
      *
      * Setup used to require a repo checkout, a Node install and a CLI run before an
-     * admin could paste anything — and an admin who installed this from the registry
+     * admin could paste anything, and an admin who installed this from the registry
      * has no repo to check out. The same registration runs here instead.
      *
      * Note WHERE this button appears: TREK renders plugin actions on the acting user's
@@ -743,7 +743,7 @@ module.exports = definePlugin({
      * the credentials straight out of the encrypted instance config, so the last step
      * is still a paste. The message therefore leads with the two values that cannot be
      * guessed and does NOT repeat the two constant URLs, which are already sitting in
-     * their fields as placeholders — an action message is bounded host-side, and the
+     * their fields as placeholders, since an action message is bounded host-side, and the
      * secret is the part that must survive the trim.
      */
     async register_client(ctx) {
@@ -753,7 +753,7 @@ module.exports = definePlugin({
         return {
           ok: false,
           message:
-            'Fill in "This TREK server\'s URL" above — the address your users reach TREK on — then press Save and run this again.',
+            'Fill in "This TREK server\'s URL" above, the address your users reach TREK on, then press Save and run this again.',
         };
       }
 
@@ -766,13 +766,13 @@ module.exports = definePlugin({
         return {
           ok: true,
           message:
-            `Registered. Client id: ${out.clientId} — Client secret: ${out.clientSecret} — ` +
+            `Registered. Client id: ${out.clientId}, client secret: ${out.clientSecret}. ` +
             'paste both into Admin → Plugins → Airbnb Stays → Instance settings, along with the ' +
             'two URLs shown there in grey (they are placeholders, not values), and Save.',
         };
       } catch (err) {
         const detail = String((err && err.message) || 'registration failed');
-        ctx.log.warn(`airbnb-mcp: register_client failed — ${detail}`);
+        ctx.log.warn(`airbnb-mcp: register_client failed: ${detail}`);
         return { ok: false, message: detail };
       }
     },
@@ -782,7 +782,7 @@ module.exports = definePlugin({
       if (gaps.length) {
         return {
           ok: false,
-          message: `Not configured yet — still empty: ${sentenceList(gaps.map((s) => s.label))}.`,
+          message: `Not configured yet. Still empty: ${sentenceList(gaps.map((s) => s.label))}.`,
         };
       }
 
@@ -812,7 +812,7 @@ module.exports = definePlugin({
       if (!token) {
         // Everything checkable without a user is checked. The client id and secret are
         // only ever exercised by the broker's token exchange, so claiming they are good
-        // here would be a guess — say exactly how far the test got.
+        // here would be a guess, so say exactly how far the test got.
         return {
           ok: true,
           message:
@@ -824,7 +824,7 @@ module.exports = definePlugin({
       try {
         await client.connect();
         // hasTool() already treats "the server would not list its tools" as good enough
-        // — the same benefit of the doubt a real search gets. Only a server that listed
+        // This is the same benefit of the doubt a real search gets. Only a server that listed
         // its tools and omitted this one is a configuration error worth reporting.
         if (!client.hasTool('airbnb_search')) {
           return {
@@ -843,16 +843,16 @@ module.exports = definePlugin({
           };
         }
         const detail = String((err && err.message) || '');
-        ctx.log.warn(`airbnb-mcp: test_connection failed — ${detail}`);
+        ctx.log.warn(`airbnb-mcp: test_connection failed: ${detail}`);
         // friendlyError's own fallback is search copy ("The search failed."), which is
-        // the wrong sentence on a settings page — only borrow it when it recognised
+        // the wrong sentence on a settings page, so only borrow it when it recognised
         // something, and say where the failure was otherwise.
         const friendly = detail ? friendlyError(detail) : '';
         return {
           ok: false,
           message: friendly && friendly !== detail
             ? `Could not reach ${url}. ${friendly}`
-            : `Could not reach ${url}${detail ? ` — ${detail}` : ''}. Check the endpoint and this server's outbound access.`,
+            : `Could not reach ${url}${detail ? `: ${detail}` : ''}. Check the endpoint and this server's outbound access.`,
         };
       } finally {
         // A test must not leave a session behind on OpenBnB's server, and it is
@@ -868,7 +868,7 @@ module.exports = definePlugin({
      * "3 nights with nowhere to stay."
      *
      * For a plugin about stays this is the most useful sentence it can say, and the
-     * planner already has somewhere to say it. The hard part is not finding the gap —
+     * planner already has somewhere to say it. The hard part is not finding the gap,
      * it is knowing when to keep quiet. This runs on EVERY trip in an instance that
      * installed the plugin, so a provider that speaks unprompted becomes the noisiest
      * thing in the planner and takes the plugin down with it.
@@ -877,7 +877,7 @@ module.exports = definePlugin({
      * with zero accommodations gets nothing. That trip is not a problem to report, it
      * is lodging handled elsewhere, or not yet begun, and this plugin has no standing
      * to nag about either. A trip with one stay booked and a hole in the middle is a
-     * different thing entirely — that is a person who will thank you.
+     * different thing entirely, and that is a person who will thank you.
      */
     warningProvider: {
       async getWarnings(tripId, ctx) {
@@ -890,7 +890,7 @@ module.exports = definePlugin({
           ]);
         } catch (err) {
           // A refusal here must never break somebody else's trip page.
-          ctx.log.info(`airbnb-mcp: no lodging warning — ${(err && err.message) || 'read refused'}`);
+          ctx.log.info(`airbnb-mcp: no lodging warning: ${(err && err.message) || 'read refused'}`);
           return [];
         }
         if (!Array.isArray(days) || !Array.isArray(stays) || !stays.length) return [];

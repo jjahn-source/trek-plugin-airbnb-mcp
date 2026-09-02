@@ -3,7 +3,7 @@
 /**
  * A small static map for the listing detail view.
  *
- * The plugin frame's CSP is `img-src 'self' data: blob:` — it will not load a tile from
+ * The plugin frame's CSP is `img-src 'self' data: blob:`, so it will not load a tile from
  * a map host, ever. So tiles are fetched HERE and handed to the frame as data URIs, the
  * same way listing photos already are, and the frame composes them with CSS grid. No
  * image library is involved, which matters: the manifest declares `nativeModules: false`.
@@ -18,14 +18,14 @@
  * own maps on, so the detail map does not look like a different application.
  *
  * TREK's own default is OpenFreeMap Positron, which cannot be used here: OpenFreeMap
- * serves VECTOR tiles only, as MapLibre style documents, and this is a raster stitcher —
+ * serves VECTOR tiles only, as MapLibre style documents, and this is a raster stitcher,
  * it has to fetch finished {z}/{x}/{y} images because the plugin frame's CSP forbids
  * loading a tile from a map host at all. Esri's grey canvas is the same design intent in
  * raster form, it is keyless, and TREK offers it as a basemap of its own, so the two
  * surfaces agree. CARTO's Positron raster would have been the closest match but has
  * carried an "API KEY REQUIRED" watermark on keyless tiles since 26.08.2026.
  *
- * Note the {z}/{y}/{x} order — Esri puts the row before the column, unlike every other
+ * Note the {z}/{y}/{x} order, since Esri puts the row before the column, unlike every other
  * template here. tileUrl() substitutes by NAME, so this needs no special handling.
  *
  * Every map setting remains an OVERRIDE, never a requirement: on a TREK that cannot fill
@@ -42,7 +42,7 @@ const OSM_ATTRIBUTION = '© OpenStreetMap contributors';
  * OpenStreetMap's standard raster tiles, offered as a named "Map style" choice.
  *
  * Its host is already declared in the manifest's egress, so choosing it needs no
- * Allowed-hosts step — which is the point of naming it in the dropdown rather than
+ * Allowed-hosts step, which is the point of naming it in the dropdown rather than
  * leaving an admin to paste this template and then wonder why nothing loads.
  */
 const OSM_TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -52,19 +52,19 @@ const OSM_TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
  *
  * The source decides, not the call site. An operator who points `map_tile_url` at OSM
  * and leaves `map_attribution` alone would otherwise get Esri's credit printed under
- * OpenStreetMap tiles — wrong, and a licence problem in both directions.
+ * OpenStreetMap tiles, which is wrong and a licence problem in both directions.
  */
 function attributionFor(template) {
   const t = String(template || '');
   if (!t || t.includes('arcgisonline.com')) return DEFAULT_ATTRIBUTION;
   if (t.includes('openstreetmap.org')) return OSM_ATTRIBUTION;
-  // An unknown source gets no invented credit — the operator who pointed us at it
+  // An unknown source gets no invented credit. The operator who pointed us at it
   // knows who owns it and can say so with `map_attribution`.
   return '';
 }
 
 const TILE = 256;
-const GRID = 3; // 3x3 tiles around the centre — enough context to recognise a neighbourhood
+const GRID = 3; // 3x3 tiles around the centre, enough context to recognise a neighbourhood
 const TILE_MAX_BYTES = 512 * 1024;
 const CACHE_MAX = 240;
 
@@ -75,7 +75,7 @@ const tileCache = new Map();
  * Web-Mercator: fractional tile coordinates for a lat/lng at a zoom level.
  *
  * The result is pinned inside [0, n). At the Mercator limit the arithmetic lands a few
- * billionths BELOW zero, and `Math.floor` turns that into tile -1 — which silently
+ * billionths BELOW zero, and `Math.floor` turns that into tile -1, which silently
  * shifted the whole mosaic by one tile for a listing at an extreme latitude.
  */
 function project(lat, lng, zoom) {
@@ -112,7 +112,7 @@ const TILE_UA = 'TREK-airbnb-stays-plugin/1.6 (+https://github.com/jjahn-source/
 /**
  * The image content type, or null if the header is not one we are willing to embed.
  *
- * This value is not merely a gate — it is CONCATENATED into the `data:` URI that ends
+ * This value is not merely a gate. It is CONCATENATED into the `data:` URI that ends
  * up in an `<img src>` inside the frame. A tile host answering
  *   Content-Type: image/png" onerror="…
  * satisfies any `startsWith('image/')` test, then closes the src attribute and opens an
@@ -120,7 +120,7 @@ const TILE_UA = 'TREK-airbnb-stays-plugin/1.6 (+https://github.com/jjahn-source/
  * prefix it hopes for: an allow-list cannot be talked into admitting a quote.
  *
  * Shared with /photo in index.js, which embeds CDN bytes the same way and is reachable
- * by the same trick. The frame escapes the URI as well — this is the half that holds
+ * by the same trick. The frame escapes the URI as well, and this is the half that holds
  * even if a future caller forgets to.
  *
  * Raster only: SVG is a document format that happens to draw, and no tile or listing
@@ -142,7 +142,7 @@ function imageContentType(raw) {
  * never volume.
  *
  * So: refuse a declared Content-Length over the cap without reading anything, then
- * read incrementally and stop the moment the running total passes it — because a body
+ * read incrementally and stop the moment the running total passes it, because a body
  * is free to lie about its length, or omit one.
  *
  * Shared by the map tiles and by /photo in index.js. Both embed third-party bytes into

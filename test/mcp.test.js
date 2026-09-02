@@ -141,7 +141,7 @@ test('close() never throws, even when the server refuses termination', async () 
   ]);
   const c = new McpClient({ url: 'https://mcp.test/mcp', token: 't', fetchImpl });
   await c.connect();
-  // No response queued, so the stub throws — a server that answers 405, or none at all.
+  // No response queued, so the stub throws, like a server that answers 405, or none at all.
   await c.close();
   assert.equal(c.sessionId, null);
 });
@@ -149,7 +149,7 @@ test('close() never throws, even when the server refuses termination', async () 
 /**
  * A gateway in front of the MCP endpoint answers a 502 with an HTML error page and a
  * non-SSE content type. The SSE branch already tolerates a frame that will not parse;
- * the plain-JSON branch threw a bare SyntaxError, which is not an McpError — so it
+ * the plain-JSON branch threw a bare SyntaxError, which is not an McpError, so it
  * sailed past friendlyError() and put "Unexpected token '<'" on a traveller's screen.
  */
 test('parseBody turns a non-JSON body into an McpError, not a raw SyntaxError', () => {

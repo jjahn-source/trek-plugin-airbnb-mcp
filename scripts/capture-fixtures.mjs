@@ -9,7 +9,7 @@
  * test/fixtures/hosted-*.json so the normalisers can be tested against reality.
  *
  * Your access token stays in this process. It is never printed and never written
- * to disk — only the listing data (which is public) is saved.
+ * to disk. Only the listing data (which is public) is saved.
  *
  *   node scripts/capture-fixtures.mjs "Paris, France" 2026-10-10 2026-10-14
  */
@@ -69,7 +69,7 @@ const code = await new Promise((resolve, reject) => {
     const err = url.searchParams.get('error');
     res.writeHead(200, { 'content-type': 'text/html' });
     res.end(`<!doctype html><meta charset="utf-8"><body style="font:16px system-ui;padding:3rem">
-      <h2>${got ? 'Signed in — you can close this tab.' : 'Sign-in failed'}</h2>
+      <h2>${got ? 'Signed in, you can close this tab.' : 'Sign-in failed'}</h2>
       <p style="color:#666">${got ? 'Fixture capture is running in your terminal.' : err || ''}</p>`);
     server.close();
     if (url.searchParams.get('state') !== state) return reject(new Error('state mismatch'));
@@ -156,7 +156,7 @@ const first = (searchPayload.searchResults || [])[0];
 console.log(`  Got ${(searchPayload.searchResults || []).length} results.`);
 
 // The hosted server names this `airbnb_listing`; the open-source one
-// `airbnb_listing_details`. Ask, rather than guess — guessing wrong is exactly
+// `airbnb_listing_details`. Ask, rather than guess, because guessing wrong is exactly
 // what produced a fixture containing "-32602 Tool not found".
 const listingTool = ['airbnb_listing', 'airbnb_listing_details'].find((n) => toolNames.includes(n));
 let listingPayload = null;
@@ -190,7 +190,7 @@ if (toolNames.includes('maps_distance_matrix')) {
     name: 'maps_distance_matrix',
     arguments: {
       origins: [origin],
-      // A landmark, a station and a raw coordinate — the three shapes a trip's
+      // A landmark, a station and a raw coordinate: the three shapes a trip's
       // places actually come in.
       destinations: ['Louvre Museum, Paris', 'Gare du Nord, Paris', '48.8584,2.2945'],
       mode: 'transit',
@@ -220,6 +220,6 @@ console.log(`
     test/fixtures/hosted-tools.json
     test/fixtures/hosted-search.json${listingPayload ? '\n    test/fixtures/hosted-listing.json' : ''}${matrixPayload ? '\n    test/fixtures/hosted-distance-matrix.json' : ''}${placesPayload ? '\n    test/fixtures/hosted-places.json' : ''}
 
-  These contain public listing data only — no token, no account details.
+  These contain public listing data only, with no token and no account details.
   Hand them back to Claude and the normalisers can be checked against reality.
 `);

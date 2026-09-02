@@ -144,7 +144,7 @@ test('a section the listing genuinely lacks stays null rather than inventing tex
 /**
  * The price breakdown, checked against real captured payloads rather than against a
  * hand-written example of what one might look like. This is the assertion that would
- * catch OpenBnB rewording `priceDetails` — at which point the cards quietly lose the
+ * catch OpenBnB rewording `priceDetails`, at which point the cards quietly lose the
  * nightly rate and the budget line loses its number, with every other test still green.
  */
 test('every real result yields a nightly rate and a total that agree with each other', () => {
@@ -162,7 +162,7 @@ test('every real result yields a nightly rate and a total that agree with each o
     // The total is in the same postcode as the nights it covers, but deliberately NOT
     // equal to them: taxes sit on top and discounts come off. One real result here is
     // "4 nights x $321.99: $1,287.97, Early booking discount: -$119.53, Taxes: $24.10,
-    // Total: $1,192.54" — below nights x nightly. That result is the whole argument for
+    // Total: $1,192.54", below nights x nightly. That result is the whole argument for
     // reading the total rather than computing it, so the bound is loose on purpose.
     const nightsCost = r.pricePerNight * r.priceNights;
     assert.ok(

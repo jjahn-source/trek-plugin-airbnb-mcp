@@ -5,12 +5,12 @@
  *
  * Most admins should not need this: the plugin's own settings page has a **Register
  * with OpenBnB** button that does exactly the same thing, and someone who installed
- * this from the registry has no repo to run a script in. This is the scripted path —
+ * this from the registry has no repo to run a script in. This is the scripted path,
  * for provisioning, CI, or an operator who would rather watch it happen in a shell.
  *
  * Both paths call the SAME module, deliberately. OAuth compares redirect URIs exactly,
  * so two derivations differing by a trailing slash or a dropped subpath would not fail
- * here — they would fail months later, as a sign-in that never completes.
+ * here, since they would fail months later, as a sign-in that never completes.
  *
  * Usage:
  *   node scripts/register-oauth-client.mjs https://trek.example.com [issuer]
@@ -38,7 +38,7 @@ if (!appUrl || appUrl === '--help' || appUrl === '-h') {
   Example:
     node scripts/register-oauth-client.mjs https://trek.example.com
 
-  <your-trek-url> must be exactly your server's APP_URL — the public base URL
+  <your-trek-url> must be exactly your server's APP_URL, the public base URL
   your users reach TREK on, INCLUDING any path if TREK is hosted under one
   (https://example.com/trek). The redirect URI is derived from it and OpenBnB
   only redirects to the URI registered here, so a mismatch breaks sign-in.
@@ -72,7 +72,7 @@ try {
 console.log(`  Registered.
 
   Paste these into TREK -> Admin -> Plugins -> Airbnb Stays -> Instance settings
-  (on an older TREK with no such menu, send them to the admin API — see the README):
+  (on an older TREK with no such menu, send them to the admin API, see the README):
 
     OAuth authorize URL   ${out.authorizeUrl}
     OAuth token URL       ${out.tokenUrl}
@@ -80,7 +80,7 @@ console.log(`  Registered.
     OAuth client secret   ${out.clientSecret}
 
   The form shows the two URLs as greyed-out placeholder text. That is a hint, not a
-  value — type them in, or the fields save empty.
+  value, so type them in or the fields save empty.
 
   Keep the secret out of version control. Each traveller then connects their own
   OpenBnB account under Settings -> Plugins -> Airbnb Stays -> Connect.

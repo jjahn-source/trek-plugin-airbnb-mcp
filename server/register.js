@@ -7,7 +7,7 @@
  * `register_client` action, so an admin never needs a repo checkout, a Node install or
  * a terminal; `scripts/register-oauth-client.mjs` runs the same code for scripted and
  * CI installs. They MUST agree on the redirect URI, because OAuth compares redirect
- * URIs exactly — a derivation that differs by a trailing slash or a dropped subpath
+ * URIs exactly, and a derivation that differs by a trailing slash or a dropped subpath
  * does not fail at registration, it fails months later as a traveller's sign-in that
  * never completes, with nothing on screen tying it back to this step.
  *
@@ -30,7 +30,7 @@ function withTimeout() {
  * The exact URI TREK will redirect to, derived the way TREK derives it.
  *
  * TREK builds `${getAppUrl()}/api/plugin-oauth/<id>/callback`, and getAppUrl() is
- * APP_URL with trailing slashes stripped — PATH INCLUDED. Taking the URL's origin here
+ * APP_URL with trailing slashes stripped, PATH INCLUDED. Taking the URL's origin here
  * would silently drop a subpath (https://example.com/trek), which is precisely the
  * mismatch that surfaces as a broken sign-in much later.
  */
@@ -57,7 +57,7 @@ function redirectUriFor(appUrl, pluginId = PLUGIN_ID) {
  * The authorization server to register with, derived from the configured MCP endpoint.
  *
  * An operator running their own OpenBnB registers against THEIR server, not against
- * the hosted one — otherwise they would be handed credentials for somebody else's
+ * the hosted one, otherwise they would be handed credentials for somebody else's
  * service. A blank or unusable endpoint means "use the hosted service", the same
  * fallback mcpUrl() makes.
  */
@@ -78,7 +78,7 @@ async function discover(issuer, fetchImpl) {
     res = await fetchImpl(url, { signal: withTimeout() });
   } catch (err) {
     throw new Error(
-      `Could not reach ${issuer} to discover its OAuth endpoints — ${(err && err.message) || 'no answer'}.`,
+      `Could not reach ${issuer} to discover its OAuth endpoints: ${(err && err.message) || 'no answer'}.`,
     );
   }
   if (!res.ok) throw new Error(`Discovery at ${url} returned ${res.status}.`);
@@ -122,13 +122,13 @@ async function registerClient({ appUrl, mcpUrl, issuer, fetchImpl = globalThis.f
         grant_types: ['authorization_code', 'refresh_token'],
         response_types: ['code'],
         // TREK's broker always sends a client_secret, so a PKCE-only public client is
-        // useless here — ask for a confidential one explicitly.
+        // useless here, so ask for a confidential one explicitly.
         token_endpoint_auth_method: 'client_secret_post',
       }),
       signal: withTimeout(),
     });
   } catch (err) {
-    throw new Error(`Registration at ${registrationUrl} failed — ${(err && err.message) || 'no answer'}.`);
+    throw new Error(`Registration at ${registrationUrl} failed: ${(err && err.message) || 'no answer'}.`);
   }
 
   const text = await res.text();

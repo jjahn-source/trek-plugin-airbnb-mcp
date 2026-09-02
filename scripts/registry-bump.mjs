@@ -14,7 +14,7 @@
  *   node scripts/registry-bump.mjs vX.Y.Z                            # amend the open PR
  *
  * If no PR is open it says so and points you back at `publish`, which is the correct tool
- * for that case — this script never opens one.
+ * for that case, and this script never opens one.
  */
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
@@ -44,7 +44,7 @@ try {
   prs = JSON.parse(run('gh', ['pr', 'list', '--repo', REGISTRY, '--state', 'open',
     '--json', 'number,headRefName,headRepositoryOwner,title', '--limit', '100']));
 } catch (e) {
-  die(`could not list PRs on ${REGISTRY} — is \`gh\` authenticated?\n  ${e.message}`);
+  die(`could not list PRs on ${REGISTRY}: is \`gh\` authenticated?\n  ${e.message}`);
 }
 const mine = prs.filter((p) => p.headRefName.startsWith(`plugin-${PLUGIN_ID}-`));
 
@@ -56,12 +56,12 @@ if (mine.length === 0) {
 }
 if (mine.length > 1) {
   die(`${mine.length} open PRs for ${PLUGIN_ID} (${mine.map((p) => '#' + p.number).join(', ')}).\n` +
-      '  Close all but one first — amending the wrong branch is worse than a duplicate.');
+      '  Close all but one first. Amending the wrong branch is worse than a duplicate.');
 }
 
 const pr = mine[0];
 const fork = `${pr.headRepositoryOwner.login}/${REGISTRY.split('/')[1]}`;
-console.log(`\n  Amending #${pr.number} — "${pr.title}"`);
+console.log(`\n  Amending #${pr.number}: "${pr.title}"`);
 console.log(`  branch ${pr.headRefName} on ${fork}\n`);
 
 // 2. Check out that branch.
@@ -84,13 +84,13 @@ try {
   die(`\`trek-plugin entry\` did not return JSON:\n${merged.slice(0, 400)}`);
 }
 if (!parsed.versions?.some((v) => v.version === tag.slice(1))) {
-  die(`the rebuilt entry does not contain ${tag} — refusing to push it`);
+  die(`the rebuilt entry does not contain ${tag}, refusing to push it`);
 }
 
 // `entry` stamps a fresh publishedAt every run, so re-running for a version the branch
 // already carries would push a commit whose only content is a moved timestamp. Keep the
-// original stamp for anything already there — it is when that version was published, not
-// when this script last ran — which makes a re-run a genuine no-op.
+// original stamp for anything already there. It is when that version was published, not
+// when this script last ran, which makes a re-run a genuine no-op.
 for (const v of parsed.versions) {
   const had = before.versions?.find((b) => b.version === v.version);
   if (had?.publishedAt) v.publishedAt = had.publishedAt;
@@ -100,7 +100,7 @@ writeFileSync(entryPath, JSON.stringify(parsed, null, 2) + '\n');
 // 4. Commit and push. Never force: this branch is a maintainer's review surface.
 const status = run('git', ['status', '--porcelain'], { cwd: work });
 if (!status) {
-  console.log(`  Nothing changed — ${tag} is already on the branch.\n`);
+  console.log(`  Nothing changed, ${tag} is already on the branch.\n`);
   process.exit(0);
 }
 if (dryRun) {

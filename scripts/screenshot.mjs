@@ -5,7 +5,7 @@
  *
  * The page is loaded top-level, so the kit's postMessage to `window.parent` lands
  * back on the same window. That lets us stand in for the host using only the
- * documented protocol — no patching of the kit, so what is captured is the real UI.
+ * documented protocol, with no patching of the kit, so what is captured is the real UI.
  */
 import { chromium } from 'playwright';
 import { readFileSync } from 'node:fs';
@@ -18,7 +18,7 @@ if (!frame) {
   process.exit(1);
 }
 
-// Real listings, normalised from the captured hosted-endpoint response — so the
+// Real listings, normalised from the captured hosted-endpoint response, so the
 // store card shows what the plugin actually renders, not a hand-written mock.
 const { normalizeSearch } = await import('../server/normalize.js').then((m) => m.default ?? m);
 const { staticMap } = await import('../server/map.js').then((m) => m.default ?? m);

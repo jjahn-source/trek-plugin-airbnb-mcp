@@ -1,13 +1,13 @@
 'use strict';
 
 /**
- * Minimal Streamable-HTTP MCP client — just enough of the transport to call two
+ * Minimal Streamable-HTTP MCP client, just enough of the transport to call two
  * tools on the hosted OpenBnB server.
  *
  * We do not use @modelcontextprotocol/sdk on purpose: a TREK plugin ships as a
  * flat CommonJS bundle with no install step on the host, so a dependency-free
  * transport is worth more here than the SDK's generality. The protocol surface
- * we need is small and stable — initialize, notifications/initialized, tools/call.
+ * we need is small and stable: initialize, notifications/initialized, tools/call.
  */
 
 const PROTOCOL_VERSION = '2025-06-18';
@@ -30,7 +30,7 @@ function parseBody(contentType, text) {
       throw new McpError('OpenBnB answered with something that was not JSON', 'RPC');
     }
   }
-  // Take the LAST data: frame that parses as a JSON-RPC response — a stream may
+  // Take the LAST data: frame that parses as a JSON-RPC response, since a stream may
   // interleave progress notifications ahead of the actual result.
   let found = null;
   for (const line of text.split(/\r?\n/)) {
@@ -41,7 +41,7 @@ function parseBody(contentType, text) {
       const msg = JSON.parse(payload);
       if (msg && Object.hasOwn(msg, 'id')) found = msg;
     } catch {
-      /* a partial or non-JSON frame is not fatal — keep scanning */
+      /* a partial or non-JSON frame is not fatal, keep scanning */
     }
   }
   if (!found) throw new Error('MCP: no JSON-RPC frame in event stream');
@@ -131,7 +131,7 @@ class McpClient {
    * Terminate the session (MCP Streamable HTTP: DELETE with the session id).
    *
    * Without this, every evicted client abandons a live session for the server to
-   * expire on its own — impolite to a shared hosted service and, over a long-lived
+   * expire on its own, which is impolite to a shared hosted service and, over a long-lived
    * plugin process, a steady leak of them. Best-effort by design: a server that
    * does not support termination answers 405, and a failure here must never affect
    * the caller, which has already moved on to a new session.

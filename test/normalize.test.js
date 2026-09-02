@@ -136,8 +136,8 @@ test('normalizeListing rethrows an error payload', () => {
 /* ------------------------------------------------------------ price detail */
 
 /**
- * The hosted payload spells the whole price out — "4 nights x $221.35 USD: $885.38
- * USD, Taxes: $136.34 USD, Total: $1,021.72 USD" — so none of this is arithmetic we
+ * The hosted payload spells the whole price out: "4 nights x $221.35 USD: $885.38
+ * USD, Taxes: $136.34 USD, Total: $1,021.72 USD", so none of this is arithmetic we
  * have to invent. The card has always shown the accessibility label, which is the
  * TOTAL ("$1,022 USD total"); the nightly rate a traveller compares stays on, and the
  * tax share they get caught out by, were both sitting one field away unread.
@@ -196,7 +196,7 @@ test('a search result carries the breakdown alongside the label it already had',
     }],
   }, null);
   const r = out.results[0];
-  // The label and the sortable amount are untouched — the place-detail panel, the
+  // The label and the sortable amount are untouched. The place-detail panel, the
   // restore cache and the client's sort all read them.
   assert.equal(r.priceLabel, '$1,022 USD total');
   assert.equal(r.pricePerNight, 221.35);
