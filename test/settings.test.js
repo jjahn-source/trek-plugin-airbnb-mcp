@@ -187,6 +187,20 @@ test('the save TREK runs before "Register with OpenBnB" is not refused', () => {
     'which only Register itself can fill in');
 });
 
+test('both actions are instance-scoped, so they render beside the fields they feed', () => {
+  // The parser's two defaults are OPPOSITES, which is the trap. A settings field with no
+  // scope is 'instance' (manifest.ts:560); an ACTION with no scope is 'user'
+  // (manifest.ts:636). So leaving scope off these buttons is not "unset", it actively puts
+  // them on the traveller's own Settings -> Plugins card, two screens from the admin form
+  // holding the fields they fill in. TREK 4.2 (#2209) renders instance actions inside the
+  // admin instance-settings modal and saves a dirty form before running one, which is the
+  // whole reason setup is a single screen. Only an instance action gets that.
+  for (const a of manifest.actions) {
+    assert.equal(a.scope, 'instance',
+      `action "${a.key}" must declare scope:"instance" or it lands on the wrong screen`);
+  }
+});
+
 test('every declared action has a handler and every handler is declared', () => {
   assert.deepEqual(Object.keys(plugin.actions || {}).sort(), ACTION_KEYS.slice().sort());
 });
