@@ -123,14 +123,68 @@ test('the credentials never carry a default, however tempting the placeholder lo
   }
 });
 
-test('the four OAuth broker settings are required and the rest are optional', () => {
-  // The broker reads these four out of stored config; every other setting has a
-  // code-side fallback, so marking it required would block setup for nothing.
+/**
+ * What "Register with OpenBnB" hands back, and therefore what an admin cannot possibly
+ * have typed before pressing it.
+ */
+const REGISTRATION_OUTPUTS = ['oauth_client_id', 'oauth_client_secret'];
+
+/**
+ * TREK's save gate, reproduced: seedSettingsValues takes `stored ?? default`, then
+ * findMissingRequired returns the first blank, non-checkbox `required` field and Save is
+ * refused (client/src/components/Plugins/settingsForm.ts, mirrored server-side by
+ * PluginsService.assertRequiredFilled).
+ */
+function firstBlankRequired(settings, typed) {
+  return settings.find((s) => {
+    if (!s.required || s.input_type === 'checkbox') return false;
+    const v = typed[s.key] !== undefined ? typed[s.key] : s.default;
+    return v == null || String(v).trim() === '';
+  });
+}
+
+test('the two OAuth URLs are required and everything else is optional', () => {
+  // The broker reads four settings out of stored config, but only these two can be
+  // demanded at save time: they are constants with a default. The other two are
+  // OUTPUTS of the Register button (see the deadlock test below), and every remaining
+  // setting has a code-side fallback, so marking it required would block setup for
+  // nothing. Nothing is lost by dropping the asterisk: missingSettings() still names
+  // every empty broker field, and "Test connection" reads them back to the admin.
   const required = manifest.settings.filter((s) => s.required).map((s) => s.key);
-  assert.deepEqual(required, [
-    'oauth_authorize_url', 'oauth_token_url', 'oauth_client_id', 'oauth_client_secret',
-  ]);
+  assert.deepEqual(required, ['oauth_authorize_url', 'oauth_token_url']);
   assert.equal(manifest.settings.find((s) => s.key === 'oauth_client_secret').secret, true);
+});
+
+test('every required setting carries a default, so a fresh install can always save', () => {
+  // The invariant that keeps setup in a possible order. TREK 4.2 turned `required` from
+  // an asterisk into a save gate (#2199) and began saving a dirty form BEFORE running an
+  // action (#2209), so a required field with no default makes the very first save fail
+  // on a fresh install — including the save that has to happen for Register to run.
+  for (const s of manifest.settings.filter((f) => f.required)) {
+    assert.notEqual(s.default, undefined,
+      `${s.key} is required but has no default: a fresh install could never save this form`);
+  }
+});
+
+test('nothing the Register button produces is required', () => {
+  // Requiring an output of the step that has not run yet is a deadlock, not a strict
+  // setting. Paired with "the credentials never carry a default" above, this makes the
+  // deadlock unrepresentable: a credential can be neither defaulted nor required.
+  for (const key of REGISTRATION_OUTPUTS) {
+    const s = manifest.settings.find((f) => f.key === key);
+    assert.notEqual(s.required, true,
+      `${key} only exists after Register runs, so requiring it blocks the save Register needs`);
+  }
+});
+
+test('the save TREK runs before "Register with OpenBnB" is not refused', () => {
+  // The exact state an admin is in at that moment: the TREK URL typed, nothing else,
+  // the constants sitting in their fields as defaults. TREK saves this before it runs
+  // the action, so if this save is refused the button can never do anything.
+  const blocked = firstBlankRequired(manifest.settings, { trek_url: 'https://trek.example.com' });
+  assert.equal(blocked, undefined,
+    `setup deadlocks: TREK refuses the pre-Register save over "${blocked && blocked.label}", ` +
+    'which only Register itself can fill in');
 });
 
 test('every declared action has a handler and every handler is declared', () => {

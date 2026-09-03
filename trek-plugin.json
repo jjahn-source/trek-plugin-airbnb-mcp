@@ -1,7 +1,7 @@
 {
   "id": "airbnb-mcp",
   "name": "Airbnb Stays",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "apiVersion": 1,
   "type": "trip-page",
   "trek": ">=4.0.0 <5.0.0",
@@ -45,7 +45,7 @@
       "required": false,
       "scope": "instance",
       "placeholder": "https://trek.example.com",
-      "hint": "The address your users reach TREK on, including any path it is hosted under. Save it before pressing \"Register with OpenBnB\", which sits on your own Settings → Plugins → Airbnb Stays card rather than in this form."
+      "hint": "The address your users reach TREK on, including any path it is hosted under. Fill this in first, then press \"Register with OpenBnB\" below. TREK saves the form for you before the button runs."
     },
     {
       "key": "oauth_authorize_url",
@@ -54,7 +54,7 @@
       "required": true,
       "scope": "instance",
       "placeholder": "https://mcp.openbnb.ai/authorize",
-      "hint": "Constant for the hosted OpenBnB service. Type the greyed-out value exactly as shown, and change it only if you run your own OpenBnB.",
+      "hint": "Constant for the hosted OpenBnB service, already filled in. Change it only if you run your own OpenBnB. If the box is empty (TREK 4.1 and older), type the greyed-out value exactly as shown.",
       "default": "https://mcp.openbnb.ai/authorize"
     },
     {
@@ -64,26 +64,26 @@
       "required": true,
       "scope": "instance",
       "placeholder": "https://mcp.openbnb.ai/token",
-      "hint": "Constant for the hosted OpenBnB service. Type the greyed-out value exactly as shown, and change it only if you run your own OpenBnB.",
+      "hint": "Constant for the hosted OpenBnB service, already filled in. Change it only if you run your own OpenBnB. If the box is empty (TREK 4.1 and older), type the greyed-out value exactly as shown.",
       "default": "https://mcp.openbnb.ai/token"
     },
     {
       "key": "oauth_client_id",
       "label": "OAuth client id",
       "input_type": "text",
-      "required": true,
+      "required": false,
       "scope": "instance",
       "placeholder": "openbnb-xxxxxxxxxxxxxxxx",
-      "hint": "Press \"Register with OpenBnB\" on your own Settings → Plugins → Airbnb Stays card, then paste the client id it prints. Unique to this TREK instance. (Scripted alternative: npm run register -- <your TREK URL>.)"
+      "hint": "Leave empty until you have registered. Press \"Register with OpenBnB\" below, then paste the client id it prints. Unique to this TREK instance. (Scripted alternative: npm run register -- <your TREK URL>.)"
     },
     {
       "key": "oauth_client_secret",
       "label": "OAuth client secret",
       "input_type": "text",
-      "required": true,
+      "required": false,
       "secret": true,
       "scope": "instance",
-      "hint": "From the same registration. Stored encrypted, and never leaves this server."
+      "hint": "Leave empty until you have registered. From the same registration as the client id. Stored encrypted, and never leaves this server."
     },
     {
       "key": "mcp_url",
@@ -149,7 +149,7 @@
     {
       "key": "register_client",
       "label": "Register with OpenBnB",
-      "hint": "Registers this server with OpenBnB and prints a client id and secret. Fill in \"This TREK server's URL\" under Admin → Plugins → Airbnb Stays → Instance settings and Save first, then paste the two values back into that form."
+      "hint": "Fill in \"This TREK server's URL\" above, then press this. It registers this server with OpenBnB and prints a client id and secret to paste into the two fields above before you Save."
     },
     {
       "key": "test_connection",
