@@ -186,9 +186,9 @@ user connects, the tab shows a prompt instead of a search form.
 
 ```bash
 npm install
-npm test          # 164 unit tests: MCP transport, session reuse, normalisation, price parsing,
+npm test          # 173 unit tests: MCP transport, session reuse, normalisation, price parsing,
                   # OAuth registration, tile maths, the warning hook, every route
-npm run smoke     # 70 browser checks: packs the frame and drives the real UI
+npm run smoke     # 78 browser checks: packs the frame and drives the real UI
 npm run dev       # hot-reloaded local harness
 npm run validate  # the registry's own publish gates
 ```
