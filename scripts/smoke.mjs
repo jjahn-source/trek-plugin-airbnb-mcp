@@ -643,6 +643,19 @@ await page.keyboard.press('Escape');
   t('the gate points at Instance settings, keeps the admin API fallback, and names no version',
     /Instance settings/i.test(gateText) && /admin API/i.test(gateText) && !/4\.\d/.test(gateText),
     gateText.slice(0, 240));
+  // The numbered steps must describe the CURRENT host, where the actions are scoped
+  // `instance` and so render in the admin form's own Actions row. This copy used to
+  // send the admin to Settings -> Plugins for the button and tell them to type the
+  // two OAuth URLs by hand, both of which stopped being true once the actions moved.
+  // The older layout is still described, but underneath, as the exception it now is.
+  const stepsText = await page3.locator('#gate .setup-steps').innerText();
+  t('the numbered steps put the Register button in the admin Actions row',
+    /Actions/.test(stepsText)
+      && !/Settings\s*(&rarr;|\u2192|->)\s*Plugins/i.test(stepsText),
+    stepsText.slice(0, 240));
+  t('the numbered steps do not tell the admin to type the OAuth URLs in',
+    /already filled in/i.test(stepsText) && !/greyed-out/i.test(stepsText),
+    stepsText.slice(0, 240));
   t('unconfigured instance hides the search form', await page3.locator('#app').isHidden());
   await page3.close();
 }

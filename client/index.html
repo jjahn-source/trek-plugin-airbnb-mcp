@@ -680,10 +680,10 @@
       var settingsPath =
         '<strong>Admin &rarr; Plugins &rarr; Airbnb Stays &rarr; &#8943; &rarr; Instance settings</strong>';
       var steps = [
-        'In ' + settingsPath + ', put your TREK address into <strong>This TREK server’s URL</strong> and press <strong>Save</strong>.',
-        'Go to <strong>Settings &rarr; Plugins &rarr; Airbnb Stays</strong> and press <strong>Register with OpenBnB</strong>. TREK puts plugin buttons there, not in the admin form. It prints a client id and a client secret.',
-        'Back in ' + settingsPath + ', paste those two in and type the two OAuth URLs shown in grey. They are placeholders, not values.',
-        'Press <strong>Save</strong>. <strong>Test connection</strong>, next to the Register button, then checks your work.',
+        'In ' + settingsPath + ', put your TREK address into <strong>This TREK server’s URL</strong>.',
+        'Press <strong>Register with OpenBnB</strong>, in the <strong>Actions</strong> row under the fields. TREK saves the form for you before the button runs, so there is no separate Save first. It prints a client id and a client secret.',
+        'Paste those into <strong>OAuth client id</strong> and <strong>OAuth client secret</strong>, then press <strong>Save</strong>. The two OAuth URLs above them are already filled in.',
+        '<strong>Test connection</strong>, beside the Register button, then reports the first thing still wrong.',
       ];
       var checklist = missingLabels.length
         ? '<div class="setup-still">Still blank:</div><ul class="setup-list">' +
@@ -700,9 +700,11 @@
         steps.map(function (s) { return '<li>' + s + '</li>'; }).join('') +
         '</ol>' +
         checklist +
-        '<p class="trek-muted"><strong>Test connection</strong>, on the same page, then reports the first thing ' +
-        'still wrong. On an older TREK with no Instance settings menu, the same values go to the admin API ' +
-        'instead &mdash; the plugin’s README has the exact command.</p>' +
+        '<p class="trek-muted">On an older TREK the same three steps are spread over two screens: the ' +
+        'buttons sit on your own <strong>Settings &rarr; Plugins &rarr; Airbnb Stays</strong> card rather ' +
+        'than in the admin form, and the two OAuth URLs arrive blank, so type the greyed-out values shown. ' +
+        'On a TREK with no Instance settings menu at all, the same values go to the admin API instead. ' +
+        'The plugin’s README has both.</p>' +
         '</div>';
       return;
     }
