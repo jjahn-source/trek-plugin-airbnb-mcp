@@ -74,8 +74,14 @@ const before = JSON.parse(readFileSync(entryPath, 'utf8'));
 
 // 3. Rebuild the entry, merging this version onto what the branch already carries. The SDK
 //    owns the sha256/size/commitSha, which is the whole point of not doing this by hand.
+// --sign, always. This plugin shipped signed at 2.0.4, and TREK refuses an update that is
+// unsigned (or signed with a different key) on every instance that already has it. An
+// unsigned entry pushed from here would not fail here, and would not fail the registry
+// PR — it would fail much later, as an update nobody can install. `entry --sign` uses the
+// default key at ~/.trek-plugin/signing.key and signs the older versions in the entry too,
+// which is what the registry needs to accept the update.
 const merged = run('npx', ['-y', 'trek-plugin-sdk', 'entry',
-  '--repo', SOURCE_REPO, '--tag', tag, '--merge', entryPath], { cwd: process.cwd() });
+  '--repo', SOURCE_REPO, '--tag', tag, '--sign', '--merge', entryPath], { cwd: process.cwd() });
 
 let parsed;
 try {
@@ -85,6 +91,15 @@ try {
 }
 if (!parsed.versions?.some((v) => v.version === tag.slice(1))) {
   die(`the rebuilt entry does not contain ${tag}, refusing to push it`);
+}
+// Refuse here rather than let it reach a maintainer. An entry that lost its signature is
+// not a smaller version of a good entry: once installed, TREK will not take an unsigned
+// update to a plugin that shipped signed, so this would ship a version nobody can upgrade to.
+if (!parsed.authorPublicKey || !parsed.versions.every((v) => v.signature)) {
+  const bare = parsed.versions.filter((v) => !v.signature).map((v) => v.version).join(', ');
+  die(`the rebuilt entry is not fully signed (key: ${parsed.authorPublicKey ? 'present' : 'MISSING'}` +
+      `${bare ? `; unsigned: ${bare}` : ''}).\n` +
+      '  Check ~/.trek-plugin/signing.key exists — it is the key 2.0.4 shipped with.');
 }
 
 // `entry` stamps a fresh publishedAt every run, so re-running for a version the branch

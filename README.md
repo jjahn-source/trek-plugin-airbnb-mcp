@@ -211,10 +211,17 @@ single branch, merged together.
 So: if a registry PR is open, release and amend it rather than opening another.
 
 ```bash
-npx trek-plugin-sdk release . --repo jjahn-source/trek-plugin-airbnb-mcp --tag vX.Y.Z
+npx trek-plugin-sdk release . --repo jjahn-source/trek-plugin-airbnb-mcp --tag vX.Y.Z --sign
 node scripts/registry-bump.mjs vX.Y.Z --dry-run   # shows the diff, pushes nothing
 node scripts/registry-bump.mjs vX.Y.Z
 ```
+
+**Every release from 2.0.4 on is signed**, and that is not optional any more: TREK refuses
+an update that is unsigned, or signed with a different key, on every instance that already
+has this plugin. So `~/.trek-plugin/signing.key` has to be the same key 2.0.4 shipped with
+(public half `FTyD1ozI9RHZrPNyAFUQq/AEipEuv9EoxCr3677sfN4=`), and losing it means no
+further updates without a maintainer override. `registry-bump` passes `--sign` for you and
+refuses to push an entry that came back unsigned; `publish` and `release` need the flag.
 
 `release` cuts the GitHub release and stops short of the PR; `registry-bump` finds the one
 open PR for this plugin, merges the new version into the entry already on its branch, and
