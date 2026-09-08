@@ -5,3 +5,4 @@ plugin.zip
 .shot/
 dev-fixtures.json
 .build/
+.playwright-mcp/
