@@ -89,6 +89,10 @@ test('one uncovered night is worded as one, not "1 nights"', async () => {
   const out = await warn(host);
   assert.match(out[0].message, /1 night\b/);
   assert.doesNotMatch(out[0].message, /1 nights/);
+  // The noun was singular here long before the verb was: "1 night ... have no
+  // accommodation booked" read as broken English on every single-gap trip, which
+  // is the commonest gap there is.
+  assert.match(out[0].message, /1 night on this trip has /);
 });
 
 /**

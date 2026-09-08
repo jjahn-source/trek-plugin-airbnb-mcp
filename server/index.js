@@ -926,7 +926,11 @@ module.exports = definePlugin({
         const count = gaps.length;
         return [{
           level: 'info',
-          message: `${count} ${count === 1 ? 'night' : 'nights'} on this trip have no accommodation booked. `
+          // The verb agrees with the count too. Pluralising only the noun left
+          // "1 night on this trip have no accommodation booked" on every trip with
+          // a single gap, which is the commonest gap there is.
+          message: `${count} ${count === 1 ? 'night' : 'nights'} on this trip `
+            + `${count === 1 ? 'has' : 'have'} no accommodation booked. `
             + 'The Airbnb tab can search those dates.',
           // Anchor to the first uncovered night, so the planner can take you there.
           dayId: gaps[0].id,
