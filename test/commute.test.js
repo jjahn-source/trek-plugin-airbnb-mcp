@@ -170,3 +170,37 @@ test('/commute needs a tripId, and never calls out without listings', async (t) 
   assert.match(body(res).reason, /coordinates/i);
   assert.equal(calls.length, 0);
 });
+
+/**
+ * The hosted OpenBnB endpoint names the matrix `results`, not Google's `rows`.
+ *
+ * Everything above was written against the open-source server, which passes
+ * Google's own field through. The hosted one renames it, so a perfectly good
+ * answer normalised to {} and every stay showed no travel time at all — the
+ * feature was dead against the only service the plugin actually ships against.
+ * Payload captured from mcp.openbnb.ai on 2026-09-08.
+ */
+test('normalizeMatrix reads the hosted endpoint\'s "results" as well as "rows"', () => {
+  const origins = [{ id: 'L1' }];
+  const destinations = [{ id: 141, name: 'Namba' }];
+  const hosted = {
+    origin_addresses: ['3-chōme-2-18 Matsu, Nishinari Ward, Osaka, 557-0034, Japan'],
+    destination_addresses: ['3-chōme-8-9 Namba, Chuo Ward, Osaka, 542-0076, Japan'],
+    results: [
+      { elements: [{ status: 'OK', duration: { text: '54 mins', value: 3255 }, distance: { text: '3.8 km', value: 3789 } }] },
+    ],
+  };
+
+  const out = c.normalizeMatrix(hosted, origins, destinations);
+  assert.deepEqual(out.L1.map((l) => [l.placeId, l.name, l.label, l.seconds, l.distance]), [
+    [141, 'Namba', '54 min', 3255, '3.8 km'],
+  ]);
+});
+
+test('an unroutable pair from the hosted endpoint is dropped, not rendered as zero', () => {
+  const origins = [{ id: 'L1' }];
+  const destinations = [{ id: 141, name: 'Shinjuku' }];
+  // Osaka -> Tokyo by transit: Google answers ZERO_RESULTS rather than an error.
+  const hosted = { results: [{ elements: [{ status: 'ZERO_RESULTS' }] }] };
+  assert.deepEqual(c.normalizeMatrix(hosted, origins, destinations), {});
+});

@@ -98,7 +98,15 @@ function durationSeconds(element) {
 function normalizeMatrix(payload, origins, destinations) {
   const out = {};
   if (!payload || typeof payload !== 'object') return out;
-  const rows = Array.isArray(payload.rows) ? payload.rows : [];
+  // Google calls the matrix `rows`, and the open-source OpenBnB server passes that
+  // name straight through. The hosted endpoint renames it to `results`, so reading
+  // only `rows` left every stay with no travel time against the one service this
+  // plugin actually ships against — silently, because an empty matrix is also what
+  // a trip with nothing pinned looks like. Accept either name rather than betting
+  // on one: both carry the same Google element array underneath.
+  const rows = Array.isArray(payload.rows) ? payload.rows
+    : Array.isArray(payload.results) ? payload.results
+      : [];
 
   origins.forEach((origin, i) => {
     const row = rows[i];
