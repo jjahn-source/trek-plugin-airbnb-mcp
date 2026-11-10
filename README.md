@@ -64,6 +64,24 @@ reconnect.
 
 ![The Airbnb tab showing real search results for a trip to Paris](./docs/screenshot.png)
 
+## Compatibility
+
+Works on **TREK 4.x and 5.x** (`"trek": ">=4.0.0 <6.0.0"`). 2.1.0 is the first release
+TREK 5 will install: every earlier one declares `<5.0.0`, and TREK refuses a plugin
+outside its declared range rather than guessing. Nothing else had to change, because
+TREK 5 still implements plugin API v1 and still delivers every trip, day, place and
+stay field this plugin reads.
+
+2.1.0 was checked on a real TREK 5.1.3: install, activation, the tab inside the trip
+planner, adding a stay (place, lodging block and budget line), the unbooked-nights
+warning, the place-detail rows and the map tiles.
+
+One thing to know if you run TREK from source rather than from its image: on Node 25
+and newer, Node's permission model refuses all network access unless it is granted
+explicitly, and TREK 5.1.3 starts plugins without that grant. Every outbound request a
+plugin makes then fails, which here means no search, no photos and no map. The TREK
+image ships Node 24, where this does not happen.
+
 ## Setup
 
 Three steps, all of them on screens you already have open. An admin does the first two

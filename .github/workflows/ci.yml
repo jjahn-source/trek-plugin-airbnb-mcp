@@ -15,11 +15,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      # 24 is what this is developed and released on; 20 is the floor a TREK 4.x host
-      # may still be running, and it stays in the matrix so the floor is TESTED rather
-      # than merely claimed.
+      # 24 is what this is developed and released on, and what the TREK 5 image ships.
+      # 22 is the floor TREK 5 accepts and 20 is the floor a TREK 4.x host may still be
+      # running; both stay in the matrix so the floors are TESTED rather than merely
+      # claimed.
       matrix:
-        node: ['24', '20']
+        node: ['24', '22', '20']
     steps:
       - uses: actions/checkout@v4
 
