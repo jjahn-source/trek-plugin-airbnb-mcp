@@ -553,9 +553,8 @@ module.exports = definePlugin({
     },
 
     {
-      // Travel time from each stay to the places already on the trip. One matrix
-      // call covers up to 20 results, so this costs one round trip rather than one
-      // per listing.
+      // Travel time from each stay to the places already on the trip.
+      // Batch origins so each upstream matrix call contains at most 25 pairs.
       method: 'POST',
       path: '/commute',
       auth: true,
@@ -580,16 +579,37 @@ module.exports = definePlugin({
         }
 
         const mode = commute.normalizeMode(b.mode);
+
         try {
-          const payload = await callTool(ctx, 'maps_distance_matrix', {
-            origins: origins.map((o) => o.coord),
-            destinations: destinations.map((d) => d.coord),
-            mode,
-          });
+          const MAX_PAIRS = 25;
+          const batchSize = Math.max(
+            1,
+            Math.floor(MAX_PAIRS / destinations.length)
+          );
+          const times = {};
+
+          for (let start = 0; start < origins.length; start += batchSize) {
+            const batch = origins.slice(start, start + batchSize);
+
+            const payload = await callTool(ctx, 'maps_distance_matrix', {
+              origins: batch.map((o) => o.coord),
+              destinations: destinations.map((d) => d.coord),
+              mode,
+            });
+
+            Object.assign(
+              times,
+              commute.normalizeMatrix(payload, batch, destinations)
+            );
+          }
+
           return reply(200, {
             mode,
-            destinations: destinations.map((d) => ({ placeId: d.id, name: d.name })),
-            times: commute.normalizeMatrix(payload, origins, destinations),
+            destinations: destinations.map((d) => ({
+              placeId: d.id,
+              name: d.name,
+            })),
+            times,
           });
         } catch (err) {
           return errorReply(err, ctx);
