@@ -108,7 +108,21 @@ function mcpStub(t, toolResult) {
     if (b.method === 'notifications/initialized') return json(202, {});
     if (b.method === 'tools/list') return json(200, { id: b.id, result: { tools: [{ name: 'maps_distance_matrix' }] } });
     calls.push(b.params);
-    return json(200, { id: b.id, result: { content: [{ type: 'text', text: JSON.stringify(toolResult) }] } });
+
+    const response = typeof toolResult === 'function'
+      ? toolResult(b.params)
+      : toolResult;
+
+    return json(200, {
+      id: b.id,
+      result: {
+        ...(response && response.isError ? { isError: true } : {}),
+        content: [{
+          type: 'text',
+          text: JSON.stringify(response),
+        }],
+      },
+    });
   };
   t.after(() => { globalThis.fetch = original; });
   return calls;
@@ -203,4 +217,134 @@ test('an unroutable pair from the hosted endpoint is dropped, not rendered as ze
   // Osaka -> Tokyo by transit: Google answers ZERO_RESULTS rather than an error.
   const hosted = { results: [{ elements: [{ status: 'ZERO_RESULTS' }] }] };
   assert.deepEqual(c.normalizeMatrix(hosted, origins, destinations), {});
+});
+
+test('/commute batches requests within 25 pairs and preserves every listing result', async (t) => {
+  const listings = Array.from({ length: 18 }, (_, i) => ({
+    id: `L${i}`,
+    lat: 48.80 + i / 1000,
+    lng: 2.30,
+  }));
+
+  const places = Array.from({ length: 5 }, (_, i) => ({
+    id: 100 + i,
+    name: `Place ${i}`,
+    lat: 48.90 + i / 1000,
+    lng: 2.40,
+  }));
+
+  const listingIndexByCoord = new Map(
+    listings.map((listing, i) => [
+      c.coordString(listing.lat, listing.lng),
+      i,
+    ])
+  );
+
+  const calls = mcpStub(t, ({ name, arguments: args }) => {
+    assert.equal(name, 'maps_distance_matrix');
+
+    const pairs = args.origins.length * args.destinations.length;
+
+    if (pairs > 25) {
+      return {
+        isError: true,
+        error: `${pairs} pairs exceeds the limit of 25 per call`,
+      };
+    }
+
+    return {
+      results: args.origins.map((coord) => {
+        const listingIndex = listingIndexByCoord.get(coord);
+        assert.notEqual(listingIndex, undefined);
+
+        return {
+          elements: args.destinations.map((_, destinationIndex) => ({
+            status: 'OK',
+            duration: {
+              text: `${listingIndex + destinationIndex + 1} mins`,
+              value: (listingIndex + destinationIndex + 1) * 60,
+            },
+          })),
+        };
+      }),
+    };
+  });
+
+  // A distinct token avoids reusing a client cached by another route test.
+  const h = host(places, 'commute-batching-regression-token');
+
+  const res = await h.run(plugin).route(
+    { method: 'POST', path: '/commute' },
+    {
+      body: {
+        tripId: 7,
+        mode: 'walking',
+        listings,
+      },
+    }
+  );
+
+  const out = body(res);
+
+  assert.equal(res.status, 200, JSON.stringify(out));
+
+  assert.deepEqual(
+    calls.map((call) => call.arguments.origins.length),
+    [5, 5, 5, 3],
+    '18 origins against five destinations are split into four batches'
+  );
+
+  const expectedDestinations = places.map((place) =>
+    c.coordString(place.lat, place.lng)
+  );
+
+  for (const call of calls) {
+    const args = call.arguments;
+
+    assert.ok(
+      args.origins.length * args.destinations.length <= 25,
+      'every upstream request stays within the pair limit'
+    );
+
+    assert.deepEqual(args.destinations, expectedDestinations);
+    assert.equal(args.mode, 'walking');
+  }
+
+  assert.deepEqual(
+    calls.flatMap((call) => call.arguments.origins),
+    listings.map((listing) => c.coordString(listing.lat, listing.lng)),
+    'every origin is requested once, in order'
+  );
+
+  assert.deepEqual(
+    out.destinations,
+    places.map((place) => ({
+      placeId: place.id,
+      name: place.name,
+    }))
+  );
+
+  assert.equal(
+    Object.keys(out.times).length,
+    listings.length,
+    'results from all batches are retained'
+  );
+
+  for (let i = 0; i < listings.length; i++) {
+    assert.deepEqual(
+      out.times[listings[i].id].map((leg) => ({
+        placeId: leg.placeId,
+        name: leg.name,
+        seconds: leg.seconds,
+        label: leg.label,
+      })),
+      places.map((place, j) => ({
+        placeId: place.id,
+        name: place.name,
+        seconds: (i + j + 1) * 60,
+        label: `${i + j + 1} min`,
+      })),
+      `travel times remain matched to listing ${listings[i].id}`
+    );
+  }
 });
